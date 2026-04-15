@@ -67,6 +67,14 @@ func New() (*App, error) {
 }
 
 func registerRoutes(router *gin.Engine, cfg *config.Config, db *gorm.DB, redisClient *redis.Client) {
+	router.GET("/openapi.yaml", func(c *gin.Context) {
+		c.File("./docs/openapi.yaml")
+	})
+
+	router.GET("/swagger", func(c *gin.Context) {
+		c.File("./docs/swagger.html")
+	})
+
 	router.GET("/health", func(c *gin.Context) {
 		response.Success(c, http.StatusOK, "Service is healthy", gin.H{
 			"status":    "ok",
@@ -75,7 +83,7 @@ func registerRoutes(router *gin.Engine, cfg *config.Config, db *gorm.DB, redisCl
 		})
 	})
 
-	router.GET("/ready", func(c *gin.Context) {
+	readinessHandler := func(c *gin.Context) {
 		ctx, cancel := context.WithTimeout(c.Request.Context(), 2*time.Second)
 		defer cancel()
 
@@ -94,12 +102,19 @@ func registerRoutes(router *gin.Engine, cfg *config.Config, db *gorm.DB, redisCl
 			"service":   cfg.AppName,
 			"timestamp": time.Now().UTC().Format(time.RFC3339),
 		})
-	})
+	}
+
+	router.GET("/ready", readinessHandler)
 
 	api := router.Group("/api/v1")
 	{
 		api.GET("/health", func(c *gin.Context) {
-			response.Success(c, http.StatusOK, "API is healthy", gin.H{"status": "ok"})
+			response.Success(c, http.StatusOK, "API is healthy", gin.H{
+				"status":    "ok",
+				"service":   cfg.AppName,
+				"timestamp": time.Now().UTC().Format(time.RFC3339),
+			})
 		})
+		api.GET("/ready", readinessHandler)
 	}
 }

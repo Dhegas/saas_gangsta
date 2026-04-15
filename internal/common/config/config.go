@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -47,6 +48,10 @@ func Load() (*Config, error) {
 
 	if cfg.DatabaseURL == "" {
 		return nil, fmt.Errorf("DATABASE_URL is required")
+	}
+
+	if err := validateDatabaseURL(cfg.DatabaseURL); err != nil {
+		return nil, err
 	}
 
 	// Supabase direct integration values should be configured together.
@@ -113,4 +118,21 @@ func resolveAppPort() string {
 	}
 
 	return "8080"
+}
+
+func validateDatabaseURL(raw string) error {
+	parsed, err := url.Parse(raw)
+	if err != nil {
+		return fmt.Errorf("invalid DATABASE_URL: %w. If password contains special characters (for example @, :, /, #, ?), URL-encode it first", err)
+	}
+
+	if parsed.Scheme != "postgres" && parsed.Scheme != "postgresql" {
+		return fmt.Errorf("invalid DATABASE_URL scheme %q: use postgresql:// or postgres://", parsed.Scheme)
+	}
+
+	if parsed.Hostname() == "" {
+		return fmt.Errorf("invalid DATABASE_URL: hostname is required")
+	}
+
+	return nil
 }

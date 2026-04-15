@@ -16,7 +16,6 @@ WORKDIR /app
 RUN apk add --no-cache ca-certificates
 
 COPY --from=builder /app/bin/api ./api
-COPY --from=builder /app/.env.example ./.env
 
 EXPOSE 8080
 

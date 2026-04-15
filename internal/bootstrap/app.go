@@ -45,7 +45,8 @@ func New() (*App, error) {
 
 	redisClient, err := database.ConnectRedis(cfg.RedisURL)
 	if err != nil {
-		return nil, fmt.Errorf("bootstrap redis: %w", err)
+		log.Warn("bootstrap redis: continuing without redis", "error", err)
+		redisClient = nil
 	}
 
 	router := gin.New()
@@ -89,6 +90,11 @@ func registerRoutes(router *gin.Engine, cfg *config.Config, db *gorm.DB, redisCl
 
 		if err := database.IsReady(ctx, db); err != nil {
 			apperrors.Write(c, apperrors.New("INTERNAL_ERROR", "Database is not ready", http.StatusInternalServerError, nil))
+			return
+		}
+
+		if redisClient == nil {
+			apperrors.Write(c, apperrors.New("INTERNAL_ERROR", "Redis is not configured or not reachable", http.StatusInternalServerError, nil))
 			return
 		}
 

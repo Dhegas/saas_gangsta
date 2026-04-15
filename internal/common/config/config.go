@@ -15,6 +15,7 @@ type Config struct {
 	AppName string
 
 	DatabaseURL string
+	RedisURL    string
 
 	JWTSecret             string
 	JWTAccessTokenExpiry  time.Duration
@@ -31,6 +32,7 @@ func Load() (*Config, error) {
 		AppPort:               getEnv("APP_PORT", "8080"),
 		AppName:               getEnv("APP_NAME", "saas_gangsta"),
 		DatabaseURL:           strings.TrimSpace(getEnv("DATABASE_URL", "")),
+		RedisURL:              strings.TrimSpace(getEnv("REDIS_URL", "redis://localhost:6379/0")),
 		JWTSecret:             strings.TrimSpace(getEnv("JWT_SECRET", "")),
 		CORSAllowedOrigins:    splitCSV(getEnv("CORS_ALLOWED_ORIGINS", "http://localhost:3000")),
 		JWTAccessTokenExpiry:  15 * time.Minute,

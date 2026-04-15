@@ -42,5 +42,21 @@ func main() {
 	if err := server.Shutdown(ctx); err != nil {
 		app.Logger.Error("server shutdown error", "error", err)
 	}
+
+	if app.Redis != nil {
+		if err := app.Redis.Close(); err != nil {
+			app.Logger.Error("redis shutdown error", "error", err)
+		}
+	}
+
+	if app.DB != nil {
+		sqlDB, err := app.DB.DB()
+		if err == nil {
+			if err := sqlDB.Close(); err != nil {
+				app.Logger.Error("database shutdown error", "error", err)
+			}
+		}
+	}
+
 	app.Logger.Info("server stopped")
 }

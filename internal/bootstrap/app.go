@@ -14,6 +14,7 @@ import (
 	"github.com/dhegas/saas_gangsta/internal/database"
 	logpkg "github.com/dhegas/saas_gangsta/pkg/logger"
 	"github.com/gin-gonic/gin"
+	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )
 
@@ -21,6 +22,7 @@ type App struct {
 	Config *config.Config
 	Logger *slog.Logger
 	DB     *gorm.DB
+	Redis  *redis.Client
 	Router *gin.Engine
 }
 
@@ -41,6 +43,11 @@ func New() (*App, error) {
 		return nil, fmt.Errorf("bootstrap db: %w", err)
 	}
 
+	redisClient, err := database.ConnectRedis(cfg.RedisURL)
+	if err != nil {
+		return nil, fmt.Errorf("bootstrap redis: %w", err)
+	}
+
 	router := gin.New()
 	router.Use(
 		middleware.CORS(cfg),
@@ -48,17 +55,18 @@ func New() (*App, error) {
 		middleware.Recovery(log),
 	)
 
-	registerRoutes(router, cfg, db)
+	registerRoutes(router, cfg, db, redisClient)
 
 	return &App{
 		Config: cfg,
 		Logger: log,
 		DB:     db,
+		Redis:  redisClient,
 		Router: router,
 	}, nil
 }
 
-func registerRoutes(router *gin.Engine, cfg *config.Config, db *gorm.DB) {
+func registerRoutes(router *gin.Engine, cfg *config.Config, db *gorm.DB, redisClient *redis.Client) {
 	router.GET("/health", func(c *gin.Context) {
 		response.Success(c, http.StatusOK, "Service is healthy", gin.H{
 			"status":    "ok",
@@ -73,6 +81,11 @@ func registerRoutes(router *gin.Engine, cfg *config.Config, db *gorm.DB) {
 
 		if err := database.IsReady(ctx, db); err != nil {
 			apperrors.Write(c, apperrors.New("INTERNAL_ERROR", "Database is not ready", http.StatusInternalServerError, nil))
+			return
+		}
+
+		if err := database.IsRedisReady(ctx, redisClient); err != nil {
+			apperrors.Write(c, apperrors.New("INTERNAL_ERROR", "Redis is not ready", http.StatusInternalServerError, nil))
 			return
 		}
 

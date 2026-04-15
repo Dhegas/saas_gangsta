@@ -107,14 +107,14 @@ func splitCSV(raw string) []string {
 }
 
 func resolveAppPort() string {
-	appPort := strings.TrimSpace(os.Getenv("APP_PORT"))
-	if appPort != "" {
-		return appPort
-	}
-
 	railwayPort := strings.TrimSpace(os.Getenv("PORT"))
 	if railwayPort != "" {
 		return railwayPort
+	}
+
+	appPort := strings.TrimSpace(os.Getenv("APP_PORT"))
+	if appPort != "" {
+		return appPort
 	}
 
 	return "8080"

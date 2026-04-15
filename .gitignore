@@ -1,0 +1,45 @@
+# ---- Environment / secrets ----
+.env
+.env.*
+!.env.example
+
+# ---- Go build artifacts ----
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+*.coverprofile
+coverage.out
+
+# Common local binaries
+api
+api.exe
+main
+main.exe
+
+# ---- Build / temp directories ----
+bin/
+dist/
+build/
+tmp/
+
+# ---- Go workspace/cache (if created in repo) ----
+vendor/
+
+# ---- Logs ----
+*.log
+logs/
+
+# ---- IDE / Editor ----
+.vscode/
+.idea/
+*.swp
+*.swo
+*.tmp
+
+# ---- OS generated files ----
+.DS_Store
+Thumbs.db

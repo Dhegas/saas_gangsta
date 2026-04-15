@@ -18,6 +18,10 @@ func Connect(databaseURL string) (*gorm.DB, error) {
 }
 
 func IsReady(ctx context.Context, db *gorm.DB) error {
+	if db == nil {
+		return fmt.Errorf("database client is not initialized")
+	}
+
 	sqlDB, err := db.DB()
 	if err != nil {
 		return fmt.Errorf("open sql db: %w", err)

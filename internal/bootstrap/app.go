@@ -40,7 +40,8 @@ func New() (*App, error) {
 
 	db, err := database.Connect(cfg.DatabaseURL)
 	if err != nil {
-		return nil, fmt.Errorf("bootstrap db: %w", err)
+		log.Warn("bootstrap db: continuing without database", "error", err)
+		db = nil
 	}
 
 	redisClient, err := database.ConnectRedis(cfg.RedisURL)

@@ -1320,6 +1320,8 @@ Melalui Nginx (Docker): `http://localhost:80`
 
 Health check: `GET http://localhost:8080/health`
 
+Railway deployment guide: [docs/railway.md](docs/railway.md)
+
 ---
 
 > **Last Updated**: April 2026

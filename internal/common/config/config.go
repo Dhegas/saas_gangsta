@@ -29,7 +29,7 @@ func Load() (*Config, error) {
 
 	cfg := &Config{
 		AppEnv:                getEnv("APP_ENV", "development"),
-		AppPort:               getEnv("APP_PORT", "8080"),
+		AppPort:               resolveAppPort(),
 		AppName:               getEnv("APP_NAME", "saas_gangsta"),
 		DatabaseURL:           strings.TrimSpace(getEnv("DATABASE_URL", "")),
 		RedisURL:              strings.TrimSpace(getEnv("REDIS_URL", "redis://localhost:6379/0")),
@@ -79,4 +79,18 @@ func splitCSV(raw string) []string {
 		return []string{"http://localhost:3000"}
 	}
 	return result
+}
+
+func resolveAppPort() string {
+	appPort := strings.TrimSpace(os.Getenv("APP_PORT"))
+	if appPort != "" {
+		return appPort
+	}
+
+	railwayPort := strings.TrimSpace(os.Getenv("PORT"))
+	if railwayPort != "" {
+		return railwayPort
+	}
+
+	return "8080"
 }

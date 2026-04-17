@@ -124,6 +124,8 @@ func registerRoutes(router *gin.Engine, cfg *config.Config, db *gorm.DB, redisCl
 			authRoutes.POST("/login", authHandler.Login)
 		}
 
+		RegisterAdminRoutes(api, db)
+
 		api.GET("/health", func(c *gin.Context) {
 			response.Success(c, http.StatusOK, "API is healthy", gin.H{
 				"status":    "ok",

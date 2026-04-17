@@ -12,6 +12,9 @@ import (
 	"github.com/dhegas/saas_gangsta/internal/common/middleware"
 	"github.com/dhegas/saas_gangsta/internal/common/response"
 	"github.com/dhegas/saas_gangsta/internal/database"
+	authhttp "github.com/dhegas/saas_gangsta/internal/modules/auth/delivery/http"
+	authrepo "github.com/dhegas/saas_gangsta/internal/modules/auth/repository"
+	authusecase "github.com/dhegas/saas_gangsta/internal/modules/auth/usecase"
 	logpkg "github.com/dhegas/saas_gangsta/pkg/logger"
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
@@ -115,6 +118,15 @@ func registerRoutes(router *gin.Engine, cfg *config.Config, db *gorm.DB, redisCl
 
 	api := router.Group("/api/v1")
 	{
+		authRepository := authrepo.NewAuthRepository(db)
+		authUC := authusecase.NewAuthUsecase(authRepository, cfg)
+		authHandler := authhttp.NewAuthHandler(authUC)
+
+		authRoutes := api.Group("/auth")
+		{
+			authRoutes.POST("/login", authHandler.Login)
+		}
+
 		api.GET("/health", func(c *gin.Context) {
 			response.Success(c, http.StatusOK, "API is healthy", gin.H{
 				"status":    "ok",

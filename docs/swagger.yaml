@@ -1,0 +1,75 @@
+basePath: /api/v1
+definitions:
+  dto.LoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        minLength: 6
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  response.Envelope:
+    properties:
+      data: {}
+      error: {}
+      message:
+        type: string
+      meta: {}
+      success:
+        type: boolean
+    type: object
+info:
+  contact: {}
+  description: Backend API Service untuk platform SaaS POS & Self-Order UMKM kuliner.
+  title: saas_gangsta Backend API
+  version: "1.0"
+paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Login untuk semua role (customer, merchant, admin)
+      parameters:
+      - description: Login payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Envelope'
+      summary: Login user
+      tags:
+      - Auth
+schemes:
+- http
+- https
+swagger: "2.0"

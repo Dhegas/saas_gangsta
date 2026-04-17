@@ -20,6 +20,20 @@ func NewAuthHandler(usecase usecase.AuthUsecase) *AuthHandler {
 	return &AuthHandler{usecase: usecase}
 }
 
+// Login godoc
+// @Summary Login user
+// @Description Login untuk semua role (customer, merchant, admin)
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param request body dto.LoginRequest true "Login payload"
+// @Success 200 {object} response.Envelope
+// @Failure 400 {object} response.Envelope
+// @Failure 401 {object} response.Envelope
+// @Failure 403 {object} response.Envelope
+// @Failure 404 {object} response.Envelope
+// @Failure 500 {object} response.Envelope
+// @Router /auth/login [post]
 func (h *AuthHandler) Login(c *gin.Context) {
 	var req dto.LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {

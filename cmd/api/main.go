@@ -12,6 +12,12 @@ import (
 	"github.com/dhegas/saas_gangsta/internal/bootstrap"
 )
 
+// @title saas_gangsta Backend API
+// @version 1.0
+// @description Backend API Service untuk platform SaaS POS & Self-Order UMKM kuliner.
+// @BasePath /api/v1
+// @schemes http https
+
 func main() {
 	app, err := bootstrap.New()
 	if err != nil {

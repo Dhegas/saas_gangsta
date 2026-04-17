@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	_ "github.com/dhegas/saas_gangsta/docs"
 	"github.com/dhegas/saas_gangsta/internal/common/config"
 	apperrors "github.com/dhegas/saas_gangsta/internal/common/errors"
 	"github.com/dhegas/saas_gangsta/internal/common/middleware"
@@ -18,6 +19,8 @@ import (
 	logpkg "github.com/dhegas/saas_gangsta/pkg/logger"
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 	"gorm.io/gorm"
 )
 
@@ -72,13 +75,7 @@ func New() (*App, error) {
 }
 
 func registerRoutes(router *gin.Engine, cfg *config.Config, db *gorm.DB, redisClient *redis.Client) {
-	router.GET("/openapi.yaml", func(c *gin.Context) {
-		c.File("./docs/openapi.yaml")
-	})
-
-	router.GET("/swagger", func(c *gin.Context) {
-		c.File("./docs/swagger.html")
-	})
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	router.GET("/health", func(c *gin.Context) {
 		response.Success(c, http.StatusOK, "Service is healthy", gin.H{

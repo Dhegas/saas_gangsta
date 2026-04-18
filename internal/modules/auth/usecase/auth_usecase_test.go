@@ -9,15 +9,22 @@ import (
 	"github.com/dhegas/saas_gangsta/internal/common/config"
 	"github.com/dhegas/saas_gangsta/internal/modules/auth/domain"
 	"github.com/dhegas/saas_gangsta/internal/modules/auth/dto"
+	"github.com/dhegas/saas_gangsta/internal/modules/auth/repository"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type mockAuthRepo struct {
-	userByEmail *domain.User
-	userByID    *domain.User
-	createErr   error
-	errEmail    error
-	errUserID   error
+	userByEmail     *domain.User
+	userByID        *domain.User
+	upgradedUser    *domain.User
+	createdTenant   *domain.MerchantTenant
+	merchantTenants []domain.MerchantTenant
+	createErr       error
+	subscribeErr    error
+	createTenantErr error
+	listTenantsErr  error
+	errEmail        error
+	errUserID       error
 }
 
 func (m *mockAuthRepo) FindByEmail(_ context.Context, _ string) (*domain.User, error) {
@@ -36,6 +43,27 @@ func (m *mockAuthRepo) CreateUser(_ context.Context, user *domain.User) error {
 		user.ID = "created-user-id"
 	}
 	return nil
+}
+
+func (m *mockAuthRepo) SubscribeAndUpgradeCustomer(_ context.Context, _ repository.SubscribeUpgradeInput) (*domain.User, error) {
+	if m.subscribeErr != nil {
+		return nil, m.subscribeErr
+	}
+	return m.upgradedUser, nil
+}
+
+func (m *mockAuthRepo) CreateTenantForMerchant(_ context.Context, _ repository.CreateMerchantTenantInput) (*domain.MerchantTenant, error) {
+	if m.createTenantErr != nil {
+		return nil, m.createTenantErr
+	}
+	return m.createdTenant, nil
+}
+
+func (m *mockAuthRepo) ListTenantsByMerchant(_ context.Context, _ string) ([]domain.MerchantTenant, error) {
+	if m.listTenantsErr != nil {
+		return nil, m.listTenantsErr
+	}
+	return m.merchantTenants, nil
 }
 
 func mustHash(t *testing.T, plain string) string {
@@ -211,5 +239,82 @@ func TestLogoutSuccess(t *testing.T) {
 	uc := newAuthUsecaseForTest(&mockAuthRepo{})
 	if err := uc.Logout(context.Background(), "u-1", dto.LogoutRequest{}); err != nil {
 		t.Fatalf("expected nil error, got %v", err)
+	}
+}
+
+func TestSubscribeSuccess(t *testing.T) {
+	repo := &mockAuthRepo{
+		upgradedUser: &domain.User{
+			ID:           "u-1",
+			TenantID:     "",
+			Email:        "user@test.local",
+			Role:         "merchant",
+			IsActive:     true,
+			TenantStatus: "active",
+		},
+	}
+
+	uc := newAuthUsecaseForTest(repo)
+	res, err := uc.Subscribe(context.Background(), "u-1", dto.SubscribeRequest{PlanID: "11111111-1111-1111-1111-111111111111"})
+	if err != nil {
+		t.Fatalf("expected nil error, got %v", err)
+	}
+	if res.User.Role != "merchant" {
+		t.Fatalf("expected merchant after subscribe")
+	}
+	if res.User.TenantID != "" {
+		t.Fatalf("expected empty tenant after subscribe, got %s", res.User.TenantID)
+	}
+	if res.AccessToken == "" || res.RefreshToken == "" {
+		t.Fatalf("expected tokens after subscribe")
+	}
+}
+
+func TestSubscribeForbiddenWhenNotCustomer(t *testing.T) {
+	repo := &mockAuthRepo{subscribeErr: repository.ErrUserNotCustomer}
+	uc := newAuthUsecaseForTest(repo)
+
+	if _, err := uc.Subscribe(context.Background(), "u-1", dto.SubscribeRequest{PlanID: "11111111-1111-1111-1111-111111111111"}); err == nil {
+		t.Fatalf("expected forbidden error")
+	}
+}
+
+func TestSubscribeConflictWhenAlreadySubscribed(t *testing.T) {
+	repo := &mockAuthRepo{subscribeErr: repository.ErrSubscriptionAlreadyExists}
+	uc := newAuthUsecaseForTest(repo)
+
+	if _, err := uc.Subscribe(context.Background(), "u-1", dto.SubscribeRequest{PlanID: "11111111-1111-1111-1111-111111111111"}); err == nil {
+		t.Fatalf("expected conflict error")
+	}
+}
+
+func TestCreateMerchantTenantSuccess(t *testing.T) {
+	repo := &mockAuthRepo{
+		createdTenant: &domain.MerchantTenant{ID: "t-1", Name: "Warung A", Slug: "warung-a", Status: "active", IsOwner: true},
+	}
+	uc := newAuthUsecaseForTest(repo)
+
+	res, err := uc.CreateMerchantTenant(context.Background(), "u-1", dto.CreateMerchantTenantRequest{Name: "Warung A"})
+	if err != nil {
+		t.Fatalf("expected nil error, got %v", err)
+	}
+	if res.Tenant.ID == "" || !res.Tenant.IsOwner {
+		t.Fatalf("expected created tenant with owner flag")
+	}
+}
+
+func TestListMerchantTenantsSuccess(t *testing.T) {
+	repo := &mockAuthRepo{
+		userByID:        &domain.User{ID: "u-1", Role: "merchant", IsActive: true},
+		merchantTenants: []domain.MerchantTenant{{ID: "t-1", Name: "Warung A", Slug: "warung-a", Status: "active", IsOwner: true}},
+	}
+	uc := newAuthUsecaseForTest(repo)
+
+	res, err := uc.ListMerchantTenants(context.Background(), "u-1")
+	if err != nil {
+		t.Fatalf("expected nil error, got %v", err)
+	}
+	if len(res.Tenants) != 1 {
+		t.Fatalf("expected 1 tenant, got %d", len(res.Tenants))
 	}
 }

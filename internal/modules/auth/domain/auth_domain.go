@@ -10,3 +10,11 @@ type User struct {
 	IsActive     bool
 	TenantStatus string
 }
+
+type MerchantTenant struct {
+	ID      string
+	Name    string
+	Slug    string
+	Status  string
+	IsOwner bool
+}

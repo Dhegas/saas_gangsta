@@ -14,15 +14,21 @@ import (
 )
 
 type mockAuthUsecase struct {
-	registerRes *dto.RegisterResponse
-	loginRes    *dto.LoginResponse
-	refreshRes  *dto.LoginResponse
-	meRes       *dto.MeResponse
-	registerErr error
-	loginErr    error
-	refreshErr  error
-	logoutErr   error
-	meErr       error
+	registerRes     *dto.RegisterResponse
+	loginRes        *dto.LoginResponse
+	subscribeRes    *dto.SubscribeResponse
+	createTenantRes *dto.CreateMerchantTenantResponse
+	listTenantsRes  *dto.ListMerchantTenantsResponse
+	refreshRes      *dto.LoginResponse
+	meRes           *dto.MeResponse
+	registerErr     error
+	loginErr        error
+	subscribeErr    error
+	createTenantErr error
+	listTenantsErr  error
+	refreshErr      error
+	logoutErr       error
+	meErr           error
 }
 
 func (m *mockAuthUsecase) Register(_ context.Context, _ dto.RegisterRequest) (*dto.RegisterResponse, error) {
@@ -31,6 +37,18 @@ func (m *mockAuthUsecase) Register(_ context.Context, _ dto.RegisterRequest) (*d
 
 func (m *mockAuthUsecase) Login(_ context.Context, _ dto.LoginRequest) (*dto.LoginResponse, error) {
 	return m.loginRes, m.loginErr
+}
+
+func (m *mockAuthUsecase) Subscribe(_ context.Context, _ string, _ dto.SubscribeRequest) (*dto.SubscribeResponse, error) {
+	return m.subscribeRes, m.subscribeErr
+}
+
+func (m *mockAuthUsecase) CreateMerchantTenant(_ context.Context, _ string, _ dto.CreateMerchantTenantRequest) (*dto.CreateMerchantTenantResponse, error) {
+	return m.createTenantRes, m.createTenantErr
+}
+
+func (m *mockAuthUsecase) ListMerchantTenants(_ context.Context, _ string) (*dto.ListMerchantTenantsResponse, error) {
+	return m.listTenantsRes, m.listTenantsErr
 }
 
 func (m *mockAuthUsecase) Refresh(_ context.Context, _ dto.RefreshTokenRequest) (*dto.LoginResponse, error) {
@@ -163,5 +181,63 @@ func TestMeHandlerUnauthorizedWhenUsecaseFails(t *testing.T) {
 	r.ServeHTTP(w, req)
 	if w.Code != http.StatusInternalServerError {
 		t.Fatalf("expected 500 for non-app error mapping, got %d", w.Code)
+	}
+}
+
+func TestSubscribeHandlerSuccess(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	h := NewAuthHandler(&mockAuthUsecase{subscribeRes: &dto.SubscribeResponse{User: dto.UserResponse{ID: "u-1", Role: "merchant"}, AccessToken: "a", RefreshToken: "r"}})
+	r.POST("/subscribe", func(c *gin.Context) {
+		c.Set("userId", "u-1")
+		h.Subscribe(c)
+	})
+
+	payload, _ := json.Marshal(dto.SubscribeRequest{PlanID: "11111111-1111-1111-1111-111111111111"})
+	req := httptest.NewRequest(http.MethodPost, "/subscribe", bytes.NewBuffer(payload))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	r.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", w.Code)
+	}
+}
+
+func TestCreateMerchantTenantHandlerSuccess(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	h := NewAuthHandler(&mockAuthUsecase{createTenantRes: &dto.CreateMerchantTenantResponse{Tenant: dto.MerchantTenantResponse{ID: "t-1", Name: "Warung A", Slug: "warung-a", Status: "active", IsOwner: true}}})
+	r.POST("/merchant/tenants", func(c *gin.Context) {
+		c.Set("userId", "u-1")
+		h.CreateMerchantTenant(c)
+	})
+
+	payload, _ := json.Marshal(dto.CreateMerchantTenantRequest{Name: "Warung A"})
+	req := httptest.NewRequest(http.MethodPost, "/merchant/tenants", bytes.NewBuffer(payload))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	r.ServeHTTP(w, req)
+	if w.Code != http.StatusCreated {
+		t.Fatalf("expected 201, got %d", w.Code)
+	}
+}
+
+func TestListMerchantTenantsHandlerSuccess(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	h := NewAuthHandler(&mockAuthUsecase{listTenantsRes: &dto.ListMerchantTenantsResponse{Tenants: []dto.MerchantTenantResponse{{ID: "t-1", Name: "Warung A", Slug: "warung-a", Status: "active", IsOwner: true}}}})
+	r.GET("/merchant/tenants", func(c *gin.Context) {
+		c.Set("userId", "u-1")
+		h.ListMerchantTenants(c)
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/merchant/tenants", nil)
+	w := httptest.NewRecorder()
+
+	r.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", w.Code)
 	}
 }

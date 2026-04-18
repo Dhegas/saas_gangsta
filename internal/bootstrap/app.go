@@ -128,6 +128,7 @@ func registerRoutes(router *gin.Engine, cfg *config.Config, db *gorm.DB, redisCl
 			authProtected := authRoutes.Group("")
 			authProtected.Use(middleware.JWTAuth(cfg))
 			{
+				authProtected.POST("/subscribe", middleware.RoleGuard("customer"), authHandler.Subscribe)
 				authProtected.POST("/logout", authHandler.Logout)
 				authProtected.GET("/me", authHandler.Me)
 			}
@@ -152,10 +153,14 @@ func registerRoutes(router *gin.Engine, cfg *config.Config, db *gorm.DB, redisCl
 		merchantRoutes.Use(
 			middleware.JWTAuth(cfg),
 			middleware.RoleGuard("merchant"),
-			middleware.TenantGuard(),
 		)
 		{
-			merchantRoutes.GET("/me", func(c *gin.Context) {
+			merchantRoutes.POST("/tenants", authHandler.CreateMerchantTenant)
+			merchantRoutes.GET("/tenants", authHandler.ListMerchantTenants)
+
+			merchantTenantScoped := merchantRoutes.Group("")
+			merchantTenantScoped.Use(middleware.TenantGuard())
+			merchantTenantScoped.GET("/me", func(c *gin.Context) {
 				response.Success(c, http.StatusOK, "Merchant context valid", gin.H{
 					"role":     "merchant",
 					"tenantId": c.GetString("tenantId"),

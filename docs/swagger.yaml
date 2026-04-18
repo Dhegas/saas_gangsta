@@ -1,5 +1,14 @@
 basePath: /api/v1
 definitions:
+  dto.CreateMerchantTenantRequest:
+    properties:
+      name:
+        maxLength: 150
+        minLength: 2
+        type: string
+    required:
+    - name
+    type: object
   dto.LoginRequest:
     properties:
       email:
@@ -38,6 +47,13 @@ definitions:
     - email
     - fullName
     - password
+    type: object
+  dto.SubscribeRequest:
+    properties:
+      planId:
+        type: string
+    required:
+    - planId
     type: object
   response.Envelope:
     properties:
@@ -219,6 +235,121 @@ paths:
       summary: Register user account
       tags:
       - Auth
+  /auth/subscribe:
+    post:
+      consumes:
+      - application/json
+      description: Customer subscribe paket untuk upgrade akun menjadi merchant; tenant
+        dibuat kemudian di dashboard merchant
+      parameters:
+      - description: Subscribe payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.SubscribeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Envelope'
+      security:
+      - BearerAuth: []
+      summary: Subscribe customer to merchant plan
+      tags:
+      - Auth
+  /merchant/tenants:
+    get:
+      description: Ambil daftar tenant milik merchant login
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Envelope'
+      security:
+      - BearerAuth: []
+      summary: List merchant tenants
+      tags:
+      - Merchant
+    post:
+      consumes:
+      - application/json
+      description: Merchant membuat tenant baru miliknya sesuai limit paket subscription
+      parameters:
+      - description: Create merchant tenant payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateMerchantTenantRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Envelope'
+      security:
+      - BearerAuth: []
+      summary: Create merchant tenant
+      tags:
+      - Merchant
 schemes:
 - http
 - https

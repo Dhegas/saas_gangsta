@@ -18,3 +18,11 @@ type RefreshTokenRequest struct {
 type LogoutRequest struct {
 	RefreshToken string `json:"refreshToken"`
 }
+
+type SubscribeRequest struct {
+	PlanID string `json:"planId" binding:"required,uuid"`
+}
+
+type CreateMerchantTenantRequest struct {
+	Name string `json:"name" binding:"required,min=2,max=150"`
+}

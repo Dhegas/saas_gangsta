@@ -1,5 +1,37 @@
 basePath: /api/v1
 definitions:
+  dto.CreateSubscriptionPlanRequest:
+    properties:
+      billingCycle:
+        description: 'contoh: monthly, yearly'
+        type: string
+      description:
+        type: string
+      isActive:
+        type: boolean
+      name:
+        type: string
+      price:
+        type: number
+    required:
+    - billingCycle
+    - description
+    - name
+    - price
+    type: object
+  dto.UpdateSubscriptionPlanRequest:
+    properties:
+      billingCycle:
+        type: string
+      description:
+        type: string
+      isActive:
+        type: boolean
+      name:
+        type: string
+      price:
+        type: number
+    type: object
   dto.UpdateTenantStatusRequest:
     properties:
       status:
@@ -58,6 +90,77 @@ paths:
             additionalProperties: true
             type: object
       summary: Get All Subscription Plans
+      tags:
+      - Admin Subscription
+    post:
+      consumes:
+      - application/json
+      description: Membuat paket langganan baru
+      parameters:
+      - description: Payload Data Paket
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateSubscriptionPlanRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Create Subscription Plan
+      tags:
+      - Admin Subscription
+  /admin/subscriptions/plans/{id}:
+    patch:
+      consumes:
+      - application/json
+      description: 'Mengubah data paket langganan (termasuk menonaktifkan dengan isActive:
+        false)'
+      parameters:
+      - description: Plan ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Payload Data Update
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateSubscriptionPlanRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Update Subscription Plan
       tags:
       - Admin Subscription
   /admin/tenants:

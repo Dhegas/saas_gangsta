@@ -7,6 +7,7 @@ import (
 
 	// Sesuaikan path import jika perlu
 	"github.com/dhegas/saas_gangsta/internal/modules/adminSubscription/domain"
+	"github.com/dhegas/saas_gangsta/internal/modules/adminSubscription/dto"
 )
 
 type SubscriptionHandler struct {
@@ -49,11 +50,73 @@ func (h *SubscriptionHandler) GetAllPlans(c *gin.Context) {
 	})
 }
 
+// CreatePlan godoc
+// @Summary      Create Subscription Plan
+// @Description  Membuat paket langganan baru
+// @Tags         Admin Subscription
+// @Accept       json
+// @Produce      json
+// @Param        request  body      dto.CreateSubscriptionPlanRequest  true  "Payload Data Paket"
+// @Success      201      {object}  map[string]interface{}
+// @Failure      400      {object}  map[string]interface{}
+// @Failure      500      {object}  map[string]interface{}
+// @Router       /admin/subscriptions/plans [post]
+func (h *SubscriptionHandler) CreatePlan(c *gin.Context) {
+	ctx := c.Request.Context()
+	var req dto.CreateSubscriptionPlanRequest
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "Input tidak valid", "error": err.Error()})
+		return
+	}
+
+	if err := h.usecase.CreatePlan(ctx, req); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Gagal membuat paket", "error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusCreated, gin.H{"success": true, "message": "Paket berhasil dibuat"})
+}
+
+// UpdatePlan godoc
+// @Summary      Update Subscription Plan
+// @Description  Mengubah data paket langganan (termasuk menonaktifkan dengan isActive: false)
+// @Tags         Admin Subscription
+// @Accept       json
+// @Produce      json
+// @Param        id       path      string                             true  "Plan ID"
+// @Param        request  body      dto.UpdateSubscriptionPlanRequest  true  "Payload Data Update"
+// @Success      200      {object}  map[string]interface{}
+// @Failure      400      {object}  map[string]interface{}
+// @Failure      500      {object}  map[string]interface{}
+// @Router       /admin/subscriptions/plans/{id} [patch]
+func (h *SubscriptionHandler) UpdatePlan(c *gin.Context) {
+	ctx := c.Request.Context()
+	planID := c.Param("id")
+	var req dto.UpdateSubscriptionPlanRequest
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "Input tidak valid", "error": err.Error()})
+		return
+	}
+
+	if err := h.usecase.UpdatePlan(ctx, planID, req); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Gagal update paket", "error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"success": true, "message": "Paket berhasil diupdate"})
+}
+
 // RegisterRoutes mendaftarkan endpoint ke router Gin
 func (h *SubscriptionHandler) RegisterRoutes(router *gin.RouterGroup) {
 	adminRoute := router.Group("/admin")
 	{
 		// Endpoint: GET /api/v1/admin/subscriptions/plans
 		adminRoute.GET("/subscriptions/plans", h.GetAllPlans)
+
+		// Endpoint BARU
+		adminRoute.POST("/subscriptions/plans", h.CreatePlan)
+		adminRoute.PATCH("/subscriptions/plans/:id", h.UpdatePlan)
 	}
 }

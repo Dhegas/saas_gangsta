@@ -72,6 +72,109 @@ const docTemplate = `{
                         }
                     }
                 }
+            },
+            "post": {
+                "description": "Membuat paket langganan baru",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin Subscription"
+                ],
+                "summary": "Create Subscription Plan",
+                "parameters": [
+                    {
+                        "description": "Payload Data Paket",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.CreateSubscriptionPlanRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/subscriptions/plans/{id}": {
+            "patch": {
+                "description": "Mengubah data paket langganan (termasuk menonaktifkan dengan isActive: false)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin Subscription"
+                ],
+                "summary": "Update Subscription Plan",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Plan ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Payload Data Update",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.UpdateSubscriptionPlanRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
             }
         },
         "/admin/tenants": {
@@ -160,6 +263,53 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "dto.CreateSubscriptionPlanRequest": {
+            "type": "object",
+            "required": [
+                "billingCycle",
+                "description",
+                "name",
+                "price"
+            ],
+            "properties": {
+                "billingCycle": {
+                    "description": "contoh: monthly, yearly",
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "isActive": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "price": {
+                    "type": "number"
+                }
+            }
+        },
+        "dto.UpdateSubscriptionPlanRequest": {
+            "type": "object",
+            "properties": {
+                "billingCycle": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "isActive": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "price": {
+                    "type": "number"
+                }
+            }
+        },
         "dto.UpdateTenantStatusRequest": {
             "type": "object",
             "required": [

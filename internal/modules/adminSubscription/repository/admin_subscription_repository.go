@@ -29,3 +29,11 @@ func (r *adminSubscriptionRepository) GetAllPlans(ctx context.Context) ([]domain
 
 	return plans, nil
 }
+
+func (r *adminSubscriptionRepository) CreatePlan(ctx context.Context, plan *domain.SubscriptionPlanEntity) error {
+	return r.db.WithContext(ctx).Table("subscription_plans").Create(plan).Error
+}
+
+func (r *adminSubscriptionRepository) UpdatePlan(ctx context.Context, id string, updateData map[string]interface{}) error {
+	return r.db.WithContext(ctx).Table("subscription_plans").Where("id = ?", id).Updates(updateData).Error
+}

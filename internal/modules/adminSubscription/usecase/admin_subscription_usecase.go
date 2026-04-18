@@ -44,3 +44,36 @@ func (u *adminSubscriptionUsecase) GetAllPlans(ctx context.Context) ([]dto.Subsc
 
 	return response, nil
 }
+
+func (u *adminSubscriptionUsecase) CreatePlan(ctx context.Context, req dto.CreateSubscriptionPlanRequest) error {
+	entity := &domain.SubscriptionPlanEntity{
+		Name:         req.Name,
+		Description:  req.Description,
+		Price:        req.Price,
+		BillingCycle: req.BillingCycle,
+		IsActive:     req.IsActive,
+	}
+	return u.repo.CreatePlan(ctx, entity)
+}
+
+func (u *adminSubscriptionUsecase) UpdatePlan(ctx context.Context, id string, req dto.UpdateSubscriptionPlanRequest) error {
+	updateData := make(map[string]interface{})
+
+	if req.Name != nil {
+		updateData["name"] = *req.Name
+	}
+	if req.Description != nil {
+		updateData["description"] = *req.Description
+	}
+	if req.Price != nil {
+		updateData["price"] = *req.Price
+	}
+	if req.BillingCycle != nil {
+		updateData["billing_cycle"] = *req.BillingCycle
+	}
+	if req.IsActive != nil {
+		updateData["is_active"] = *req.IsActive
+	}
+
+	return u.repo.UpdatePlan(ctx, id, updateData)
+}

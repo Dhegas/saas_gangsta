@@ -121,7 +121,51 @@ func registerRoutes(router *gin.Engine, cfg *config.Config, db *gorm.DB, redisCl
 
 		authRoutes := api.Group("/auth")
 		{
+			authRoutes.POST("/register", authHandler.Register)
 			authRoutes.POST("/login", authHandler.Login)
+			authRoutes.POST("/refresh", authHandler.Refresh)
+
+			authProtected := authRoutes.Group("")
+			authProtected.Use(middleware.JWTAuth(cfg))
+			{
+				authProtected.POST("/subscribe", middleware.RoleGuard("customer"), authHandler.Subscribe)
+				authProtected.POST("/logout", authHandler.Logout)
+				authProtected.GET("/me", authHandler.Me)
+			}
+		}
+
+		customerRoutes := api.Group("/customer")
+		customerRoutes.Use(
+			middleware.JWTAuth(cfg),
+			middleware.RoleGuard("customer"),
+			middleware.TenantGuard(),
+		)
+		{
+			customerRoutes.GET("/me", func(c *gin.Context) {
+				response.Success(c, http.StatusOK, "Customer context valid", gin.H{
+					"role":     "customer",
+					"tenantId": c.GetString("tenantId"),
+				})
+			})
+		}
+
+		merchantRoutes := api.Group("/merchant")
+		merchantRoutes.Use(
+			middleware.JWTAuth(cfg),
+			middleware.RoleGuard("merchant"),
+		)
+		{
+			merchantRoutes.POST("/tenants", authHandler.CreateMerchantTenant)
+			merchantRoutes.GET("/tenants", authHandler.ListMerchantTenants)
+
+			merchantTenantScoped := merchantRoutes.Group("")
+			merchantTenantScoped.Use(middleware.TenantGuard())
+			merchantTenantScoped.GET("/me", func(c *gin.Context) {
+				response.Success(c, http.StatusOK, "Merchant context valid", gin.H{
+					"role":     "merchant",
+					"tenantId": c.GetString("tenantId"),
+				})
+			})
 		}
 
 		RegisterAdminRoutes(api, db)

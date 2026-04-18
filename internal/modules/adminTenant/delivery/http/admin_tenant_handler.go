@@ -3,27 +3,35 @@ package http
 import (
 	"net/http"
 
+	"github.com/gin-gonic/gin"
+
+	// Pastikan path ini sesuai dengan folder kamu yang menggunakan 'adminTenant'
 	"github.com/dhegas/saas_gangsta/internal/modules/adminTenant/domain"
 	"github.com/dhegas/saas_gangsta/internal/modules/adminTenant/dto"
-	"github.com/gin-gonic/gin"
 )
 
 type TenantHandler struct {
 	usecase domain.AdminTenantUsecase
 }
 
-// Constructor
+// NewTenantHandler adalah constructor untuk handler ini
 func NewTenantHandler(usecase domain.AdminTenantUsecase) *TenantHandler {
 	return &TenantHandler{usecase: usecase}
 }
 
-// API: GET /api/v1/admin/tenants
+// GetAllTenants godoc
+// @Summary      Get All Tenants
+// @Description  Mengambil daftar seluruh toko/merchant (tenant) yang terdaftar di platform
+// @Tags         Admin Tenant
+// @Produce      json
+// @Success      200  {object}  map[string]interface{}
+// @Failure      500  {object}  map[string]interface{}
+// @Router       /admin/tenants [get]
 func (h *TenantHandler) GetAllTenants(c *gin.Context) {
 	ctx := c.Request.Context()
 
 	tenants, err := h.usecase.GetAllTenants(ctx)
 	if err != nil {
-		// Asumsi kamu akan membuat helper standard error response nanti
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
 			"message": "Gagal mengambil data tenant",
@@ -32,7 +40,6 @@ func (h *TenantHandler) GetAllTenants(c *gin.Context) {
 		return
 	}
 
-	// Menggunakan Standard Response Envelope sesuai README
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "Data tenant berhasil diambil",
@@ -40,14 +47,22 @@ func (h *TenantHandler) GetAllTenants(c *gin.Context) {
 	})
 }
 
-// API: PATCH /api/v1/admin/tenants/:id/status
+// UpdateTenantStatus godoc
+// @Summary      Update Tenant Status
+// @Description  Mengubah status operasional tenant (active, inactive, atau suspended)
+// @Tags         Admin Tenant
+// @Accept       json
+// @Produce      json
+// @Param        id       path      string                             true  "Tenant ID"
+// @Param        request  body      dto.UpdateTenantStatusRequest      true  "Payload Status Baru"
+// @Success      200      {object}  map[string]interface{}
+// @Failure      400      {object}  map[string]interface{}
+// @Failure      500      {object}  map[string]interface{}
+// @Router       /admin/tenants/{id}/status [patch]
 func (h *TenantHandler) UpdateTenantStatus(c *gin.Context) {
 	ctx := c.Request.Context()
-
-	// Mengambil ID tenant dari parameter URL (misal: /tenants/123e4567-e89b-12d3-a456-426614174000/status)
 	tenantID := c.Param("id")
 
-	// 1. Validasi Payload Request
 	var req dto.UpdateTenantStatusRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -61,7 +76,6 @@ func (h *TenantHandler) UpdateTenantStatus(c *gin.Context) {
 		return
 	}
 
-	// 2. Panggil Usecase untuk mengeksekusi logika bisnis
 	err := h.usecase.UpdateTenantStatus(ctx, tenantID, req.Status)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -75,17 +89,15 @@ func (h *TenantHandler) UpdateTenantStatus(c *gin.Context) {
 		return
 	}
 
-	// 3. Kembalikan Response Sukses
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "Status tenant berhasil diperbarui",
-		"data":    nil, // Sesuai standar, data bisa null jika tidak ada objek yang perlu dikembalikan
+		"data":    nil,
 	})
 }
 
 // RegisterRoutes digunakan untuk mendaftarkan endpoint ke dalam router Gin
 func (h *TenantHandler) RegisterRoutes(router *gin.RouterGroup) {
-	// Endpoint ini asumsikan sudah dilewati middleware JWT dan RoleGuard("admin") di level bootstrap
 	adminRoute := router.Group("/admin")
 	{
 		adminRoute.GET("/tenants", h.GetAllTenants)

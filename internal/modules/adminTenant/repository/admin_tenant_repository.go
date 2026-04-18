@@ -18,11 +18,13 @@ func NewAdminTenantRepository(db *gorm.DB) domain.AdminTenantRepository {
 
 func (r *adminTenantRepository) FindAll(ctx context.Context) ([]domain.TenantEntity, error) {
 	var tenants []domain.TenantEntity
-	// Sesuai konvensi, GORM akan mencari tabel "tenants"
-	err := r.db.WithContext(ctx).Find(&tenants).Error
+
+	// Kita paksa GORM untuk langsung membaca tabel "tenants"
+	err := r.db.WithContext(ctx).Table("tenants").Find(&tenants).Error
 	if err != nil {
 		return nil, err
 	}
+
 	return tenants, nil
 }
 

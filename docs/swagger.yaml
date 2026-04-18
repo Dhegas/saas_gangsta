@@ -1,25 +1,17 @@
 basePath: /api/v1
 definitions:
-  dto.LoginRequest:
+  dto.UpdateTenantStatusRequest:
     properties:
-      email:
-        type: string
-      password:
-        minLength: 6
+      status:
+        description: validator.v10 akan memastikan status tidak kosong dan hanya berisi
+          nilai tertentu
+        enum:
+        - active
+        - inactive
+        - suspended
         type: string
     required:
-    - email
-    - password
-    type: object
-  response.Envelope:
-    properties:
-      data: {}
-      error: {}
-      message:
-        type: string
-      meta: {}
-      success:
-        type: boolean
+    - status
     type: object
 info:
   contact: {}
@@ -27,48 +19,105 @@ info:
   title: saas_gangsta Backend API
   version: "1.0"
 paths:
-  /auth/login:
-    post:
+  /admin/dashboard:
+    get:
       consumes:
       - application/json
-      description: Login untuk semua role (customer, merchant, admin)
-      parameters:
-      - description: Login payload
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/dto.LoginRequest'
+      description: Mengambil overview metrik platform (total tenant, active subscriptions,
+        monthly revenue)
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/response.Envelope'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/response.Envelope'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/response.Envelope'
-        "403":
-          description: Forbidden
-          schema:
-            $ref: '#/definitions/response.Envelope'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/response.Envelope'
+            additionalProperties: true
+            type: object
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.Envelope'
-      summary: Login user
+            additionalProperties: true
+            type: object
+      summary: Get Admin Dashboard Stats
       tags:
-      - Auth
+      - Admin Dashboard
+  /admin/subscriptions/plans:
+    get:
+      description: 'Mengambil daftar semua paket langganan (misal: Basic, Pro, Enterprise)'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get All Subscription Plans
+      tags:
+      - Admin Subscription
+  /admin/tenants:
+    get:
+      description: Mengambil daftar seluruh toko/merchant (tenant) yang terdaftar
+        di platform
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get All Tenants
+      tags:
+      - Admin Tenant
+  /admin/tenants/{id}/status:
+    patch:
+      consumes:
+      - application/json
+      description: Mengubah status operasional tenant (active, inactive, atau suspended)
+      parameters:
+      - description: Tenant ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Payload Status Baru
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateTenantStatusRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Update Tenant Status
+      tags:
+      - Admin Tenant
 schemes:
 - http
 - https

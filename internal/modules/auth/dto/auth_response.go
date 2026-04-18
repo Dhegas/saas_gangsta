@@ -12,3 +12,11 @@ type LoginResponse struct {
 	RefreshToken string       `json:"refreshToken"`
 	User         UserResponse `json:"user"`
 }
+
+type RegisterResponse struct {
+	User UserResponse `json:"user"`
+}
+
+type MeResponse struct {
+	User UserResponse `json:"user"`
+}

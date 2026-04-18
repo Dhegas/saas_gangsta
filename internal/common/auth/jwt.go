@@ -46,6 +46,10 @@ func ParseAccessToken(tokenString, secret string) (*Claims, error) {
 	return claims, nil
 }
 
+func ParseRefreshToken(tokenString, secret string) (*Claims, error) {
+	return ParseAccessToken(tokenString, secret)
+}
+
 func generateToken(userID, role, tenantID string, expiry time.Duration, secret string) (string, error) {
 	if userID == "" {
 		return "", errors.New("user id is required")

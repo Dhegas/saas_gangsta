@@ -1,5 +1,13 @@
-basePath: /api/v1
 definitions:
+  dto.CreateMerchantTenantRequest:
+    properties:
+      name:
+        maxLength: 150
+        minLength: 2
+        type: string
+    required:
+    - name
+    type: object
   dto.CreateSubscriptionPlanRequest:
     properties:
       billingCycle:
@@ -19,41 +27,14 @@ definitions:
     - name
     - price
     type: object
-  dto.UpdateSubscriptionPlanRequest:
-    properties:
-      billingCycle:
-        type: string
-      description:
-        type: string
-      isActive:
-        type: boolean
-      name:
-        type: string
-      price:
-        type: number
-    type: object
-  dto.UpdateTenantStatusRequest:
-  dto.CreateMerchantTenantRequest:
-    properties:
-      name:
-        maxLength: 150
-        minLength: 2
-        type: string
-    required:
-    - name
-    type: object
   dto.LoginRequest:
     properties:
-      status:
-        description: validator.v10 akan memastikan status tidak kosong dan hanya berisi
-          nilai tertentu
-        enum:
-        - active
-        - inactive
-        - suspended
+      email:
+        type: string
+      password:
+        minLength: 6
         type: string
     required:
-    - status
     - email
     - password
     type: object
@@ -92,6 +73,32 @@ definitions:
     required:
     - planId
     type: object
+  dto.UpdateSubscriptionPlanRequest:
+    properties:
+      billingCycle:
+        type: string
+      description:
+        type: string
+      isActive:
+        type: boolean
+      name:
+        type: string
+      price:
+        type: number
+    type: object
+  dto.UpdateTenantStatusRequest:
+    properties:
+      status:
+        description: validator.v10 akan memastikan status tidak kosong dan hanya berisi
+          nilai tertentu
+        enum:
+        - active
+        - inactive
+        - suspended
+        type: string
+    required:
+    - status
+    type: object
   response.Envelope:
     properties:
       data: {}
@@ -104,9 +111,6 @@ definitions:
     type: object
 info:
   contact: {}
-  description: Backend API Service untuk platform SaaS POS & Self-Order UMKM kuliner.
-  title: saas_gangsta Backend API
-  version: "1.0"
 paths:
   /admin/dashboard:
     get:
@@ -278,6 +282,47 @@ paths:
       summary: Update Tenant Status
       tags:
       - Admin Tenant
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Login untuk semua role (customer, merchant, admin)
+      parameters:
+      - description: Login payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Envelope'
+      summary: Login user
+      tags:
       - Auth
   /auth/logout:
     post:
@@ -516,7 +561,4 @@ paths:
       summary: Create merchant tenant
       tags:
       - Merchant
-schemes:
-- http
-- https
 swagger: "2.0"

@@ -251,70 +251,19 @@ const docTemplate = `{
                             "additionalProperties": true
                         }
                     },
-                    "409": {
-                        "description": "Conflict",
-                        "schema": {
-                            "$ref": "#/definitions/response.Envelope"
-                        }
-                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/response.Envelope"
+                            "type": "object",
+                            "additionalProperties": true
                         }
                     }
                 }
             }
         },
-        "/merchant/tenants": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Ambil daftar tenant milik merchant login",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Merchant"
-                ],
-                "summary": "List merchant tenants",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/response.Envelope"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/response.Envelope"
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden",
-                        "schema": {
-                            "$ref": "#/definitions/response.Envelope"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/response.Envelope"
-                        }
-                    }
-                }
-            },
+        "/auth/login": {
             "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Merchant membuat tenant baru miliknya sesuai limit paket subscription",
+                "description": "Login untuk semua role (customer, merchant, admin)",
                 "consumes": [
                     "application/json"
                 ],
@@ -322,23 +271,23 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Merchant"
+                    "Auth"
                 ],
-                "summary": "Create merchant tenant",
+                "summary": "Login user",
                 "parameters": [
                     {
-                        "description": "Create merchant tenant payload",
+                        "description": "Login payload",
                         "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.CreateMerchantTenantRequest"
+                            "$ref": "#/definitions/dto.LoginRequest"
                         }
                     }
                 ],
                 "responses": {
-                    "201": {
-                        "description": "Created",
+                    "200": {
+                        "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/response.Envelope"
                         }
@@ -361,11 +310,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/response.Envelope"
                         }
                     },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/response.Envelope"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/response.Envelope"
                         }
                     }
                 }
@@ -743,6 +697,19 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "dto.CreateMerchantTenantRequest": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "maxLength": 150,
+                    "minLength": 2
+                }
+            }
+        },
         "dto.CreateSubscriptionPlanRequest": {
             "type": "object",
             "required": [
@@ -770,54 +737,18 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.UpdateSubscriptionPlanRequest": {
-            "type": "object",
-            "properties": {
-                "billingCycle": {
-                    "type": "string"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "isActive": {
-                    "type": "boolean"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "price": {
-                    "type": "number"
-                }
-            }
-        },
-        "dto.UpdateTenantStatusRequest": {
-        "dto.CreateMerchantTenantRequest": {
-            "type": "object",
-            "required": [
-                "name"
-            ],
-            "properties": {
-                "name": {
-                    "type": "string",
-                    "maxLength": 150,
-                    "minLength": 2
-                }
-            }
-        },
         "dto.LoginRequest": {
             "type": "object",
             "required": [
-                "status"
+                "email",
+                "password"
             ],
             "properties": {
-                "status": {
-                    "description": "validator.v10 akan memastikan status tidak kosong dan hanya berisi nilai tertentu",
+                "email": {
+                    "type": "string"
+                },
+                "password": {
                     "type": "string",
-                    "enum": [
-                        "active",
-                        "inactive",
-                        "suspended"
-                    ]
                     "minLength": 6
                 }
             }
@@ -874,6 +805,43 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.UpdateSubscriptionPlanRequest": {
+            "type": "object",
+            "properties": {
+                "billingCycle": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "isActive": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "price": {
+                    "type": "number"
+                }
+            }
+        },
+        "dto.UpdateTenantStatusRequest": {
+            "type": "object",
+            "required": [
+                "status"
+            ],
+            "properties": {
+                "status": {
+                    "description": "validator.v10 akan memastikan status tidak kosong dan hanya berisi nilai tertentu",
+                    "type": "string",
+                    "enum": [
+                        "active",
+                        "inactive",
+                        "suspended"
+                    ]
+                }
+            }
+        },
         "response.Envelope": {
             "type": "object",
             "properties": {
@@ -893,12 +861,12 @@ const docTemplate = `{
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "1.0",
+	Version:          "",
 	Host:             "",
-	BasePath:         "/api/v1",
-	Schemes:          []string{"http", "https"},
-	Title:            "saas_gangsta Backend API",
-	Description:      "Backend API Service untuk platform SaaS POS & Self-Order UMKM kuliner.",
+	BasePath:         "",
+	Schemes:          []string{},
+	Title:            "",
+	Description:      "",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

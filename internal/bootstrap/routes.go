@@ -6,14 +6,14 @@ import (
 	"time"
 
 	_ "github.com/dhegas/saas_gangsta/docs"
-	"github.com/dhegas/saas_gangsta/internal/config"
 	apperrors "github.com/dhegas/saas_gangsta/internal/common/errors"
-	"github.com/dhegas/saas_gangsta/internal/middleware"
 	"github.com/dhegas/saas_gangsta/internal/common/response"
-	"github.com/dhegas/saas_gangsta/internal/infrastructure/database"
+	"github.com/dhegas/saas_gangsta/internal/config"
 	authhttp "github.com/dhegas/saas_gangsta/internal/domains/user/auth/delivery/http"
 	authrepo "github.com/dhegas/saas_gangsta/internal/domains/user/auth/repository"
 	authusecase "github.com/dhegas/saas_gangsta/internal/domains/user/auth/usecase"
+	"github.com/dhegas/saas_gangsta/internal/infrastructure/database"
+	"github.com/dhegas/saas_gangsta/internal/middleware"
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
 	swaggerFiles "github.com/swaggo/files"
@@ -63,6 +63,11 @@ func registerRoutes(router *gin.Engine, cfg *config.Config, db *gorm.DB, redisCl
 	authRepository := authrepo.NewAuthRepository(db)
 	authUC := authusecase.NewAuthUsecase(authRepository, cfg)
 	authHandler := authhttp.NewAuthHandler(authUC)
+
+	apiLegacy := router.Group("/api")
+	{
+		registerAuthRoutes(apiLegacy, cfg, authHandler)
+	}
 
 	api := router.Group("/api/v1")
 	{

@@ -273,12 +273,12 @@ saas_gangsta/
 └── README.md
 ```
 
-### Struktur Per Module (Wajib Konsisten)
+### Struktur Per Domain (Wajib Konsisten)
 
-Setiap module di dalam `internal/modules/<module_name>/` **wajib** mengikuti struktur berikut:
+Setiap domain di dalam `internal/domains/<domain_name>/` **wajib** mengikuti struktur berikut:
 
 ```
-internal/modules/<module_name>/
+internal/domains/<domain_name>/
 ├── delivery/
 │   └── http/
 │       └── <module>_handler.go       # HTTP handler: bind request, call usecase, return response
@@ -841,7 +841,7 @@ Semua endpoint menggunakan prefix `/api/v1/`.
 
 ## 10. CORS Configuration
 
-CORS dikonfigurasi di middleware `internal/common/middleware/cors.go`.
+CORS dikonfigurasi di middleware `internal/middleware/cors.go`.
 
 ```go
 // Contoh implementasi CORS middleware
@@ -1135,7 +1135,7 @@ func (r *menuRepository) FindAll(ctx context.Context, tenantID string, filter Me
 TenantId selalu diambil dari JWT claim yang sudah divalidasi middleware, **bukan dari parameter request user**:
 
 ```go
-// internal/common/tenant/context.go
+// internal/domains/tenant/context.go
 func GetTenantID(c *gin.Context) (string, error) {
     tenantID, exists := c.Get("tenantId")
     if !exists {
@@ -1147,12 +1147,12 @@ func GetTenantID(c *gin.Context) (string, error) {
 
 ---
 
-## 15. Module Structure per Feature
+## 15. Domain Structure per Feature
 
-### Contoh Detail: Modul `merchant_menu`
+### Contoh Detail: Domain `menu`
 
 ```
-internal/modules/merchant_menu/
+internal/domains/menu/
 ├── delivery/http/
 │   └── menu_handler.go
 │       - GetMenuListHandler(c *gin.Context)
@@ -1203,8 +1203,8 @@ internal/modules/merchant_menu/
 ### Fase 0 — Foundation (Week 1)
 
 - [ ] Bootstrap project structure sesuai folder layout ini
-- [ ] Setup config env loader (`internal/common/config/config.go`)
-- [ ] Setup GORM connection ke Supabase (`internal/database/db.go`)
+- [ ] Setup config env loader (`internal/config/config.go`)
+- [ ] Setup GORM connection ke Supabase (`internal/infrastructure/database/db.go`)
 - [ ] Setup base middleware: logger, recovery, CORS
 - [ ] Setup Gin router dengan prefix `/api/v1/`
 - [ ] Implement `GET /health` dan `GET /ready`
@@ -1213,7 +1213,7 @@ internal/modules/merchant_menu/
 
 ### Fase 1 — Auth & Multi-Tenant Core (Week 2)
 
-- [ ] Implement JWT generate & parse (`internal/common/auth/jwt.go`)
+- [ ] Implement JWT generate & parse (`internal/domains/user/auth/jwt.go`)
 - [ ] Implement `POST /auth/login`, `POST /auth/refresh`, `POST /auth/logout`
 - [ ] Implement JWT auth middleware
 - [ ] Implement role guard middleware (`RoleGuard("merchant")`)

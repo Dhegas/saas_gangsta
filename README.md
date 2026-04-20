@@ -7,7 +7,7 @@ SaaS Gangsta adalah layanan backend API skala industri yang dirancang khusus unt
 
 ## 🏗 Architecture & Design Patterns
 
-Sistem ini dibangun menggunakan standar **Clean Architecture** yang dikombinasikan dengan pendekatan **Modular Monolith**.
+Sistem ini dibangun menggunakan standar **Clean Architecture** yang dikombinasikan dengan pendekatan **Modular Monolith (Domain-Oriented)**.
 
 ### Architecture Diagram
 ```mermaid
@@ -15,7 +15,7 @@ graph TD
     Client[Web/Mobile/Flutter] -->|HTTPS| Nginx[Nginx API Gateway]
     Nginx -->|Reverse Proxy| GoServer[Go + Gin HTTP Server]
     
-    subgraph "Go Internal (Per Module)"
+   subgraph "Go Internal (Per Domain)"
         GoServer --> Delivery[Delivery Layer / HTTP Handler]
         Delivery --> Usecase[Usecase Layer / Business Logic]
         Usecase --> Domain[Domain Layer / Models & Interfaces]
@@ -31,6 +31,12 @@ graph TD
 - **Usecase**: Jantung bisnis aplikasi. Menjalankan logika bisnis dan orkestrasi repository.
 - **Domain**: Definisi entitas bisnis (Struct) dan kontrak interface.
 - **Repository**: Abstraksi data akses. Menggunakan GORM dan Redis.
+
+### Current Internal Structure
+- **Routing Bootstrap**: dipisah ke `internal/bootstrap/routes.go`, `internal/bootstrap/customer_routes.go`, `internal/bootstrap/merchant_routes.go`, dan `internal/bootstrap/admin_routes.go`.
+- **Cross-cutting Infra**: `internal/config`, `internal/middleware`, `internal/infrastructure/database`.
+- **Business Domains**: `internal/domains/{menu,order,payment,report,subscription,table,tenant,user}`.
+- **Shared Utilities**: `internal/common/errors` dan `internal/common/response`.
 
 ---
 
@@ -64,8 +70,8 @@ Selamat bergabung di tim pengembang! Ikuti panduan ini untuk mulai berkontribusi
    go run cmd/api/main.go
    ```
 
-### 2. Workflow Pengembangan Modul
-Setiap penambahan fitur baru harus mengikuti struktur modul berikut di `internal/modules/<nama_modul>/`:
+### 2. Workflow Pengembangan Domain
+Setiap penambahan fitur baru harus mengikuti struktur domain berikut di `internal/domains/<nama_domain>/`:
 - **dto/**: Request & Response object untuk mapping data luar.
 - **delivery/http/**: Handler Gin untuk menangani request masuk.
 - **usecase/**: Logika bisnis murni.
@@ -86,7 +92,7 @@ Setiap penambahan fitur baru harus mengikuti struktur modul berikut di `internal
 ## 📋 Operational Guide
 
 ### Database & Migrasi
-- **Update Schema**: Tambahkan file `.sql` baru di folder `migrations/`.
+- **Update Schema**: Tambahkan file `.sql` baru di folder `supabase/migrations/` dengan format timestamp berurutan.
 - **Seed Data**: Gunakan `scripts/seed.sql` untuk mengisi data awal di lingkungan development.
 
 ### API Documentation (Swagger)

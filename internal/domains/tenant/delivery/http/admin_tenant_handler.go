@@ -43,7 +43,7 @@ func errorResponse(c *gin.Context, status int, code, message string, detail inte
 // @Produce      json
 // @Success      200  {object}  map[string]interface{}
 // @Failure      500  {object}  map[string]interface{}
-// @Router       /api/v1/admin/tenants [get]
+// @Router       /admin/tenants [get]
 func (h *TenantHandler) GetAllTenants(c *gin.Context) {
 	ctx := c.Request.Context()
 
@@ -69,7 +69,7 @@ func (h *TenantHandler) GetAllTenants(c *gin.Context) {
 // @Success      200  {object}  map[string]interface{}
 // @Failure      404  {object}  map[string]interface{}
 // @Failure      500  {object}  map[string]interface{}
-// @Router       /api/v1/admin/tenants/{id} [get]
+// @Router       /admin/tenants/{id} [get]
 func (h *TenantHandler) GetTenantByID(c *gin.Context) {
 	ctx := c.Request.Context()
 	tenantID := c.Param("id")
@@ -101,7 +101,7 @@ func (h *TenantHandler) GetTenantByID(c *gin.Context) {
 // @Success      201      {object}  map[string]interface{}
 // @Failure      400      {object}  map[string]interface{}
 // @Failure      500      {object}  map[string]interface{}
-// @Router       /api/v1/admin/tenants [post]
+// @Router       /admin/tenants [post]
 func (h *TenantHandler) CreateTenant(c *gin.Context) {
 	ctx := c.Request.Context()
 
@@ -136,7 +136,7 @@ func (h *TenantHandler) CreateTenant(c *gin.Context) {
 // @Failure      400      {object}  map[string]interface{}
 // @Failure      404      {object}  map[string]interface{}
 // @Failure      500      {object}  map[string]interface{}
-// @Router       /api/v1/admin/tenants/{id} [put]
+// @Router       /admin/tenants/{id} [put]
 func (h *TenantHandler) UpdateTenant(c *gin.Context) {
 	ctx := c.Request.Context()
 	tenantID := c.Param("id")
@@ -173,7 +173,7 @@ func (h *TenantHandler) UpdateTenant(c *gin.Context) {
 // @Success      200  {object}  map[string]interface{}
 // @Failure      404  {object}  map[string]interface{}
 // @Failure      500  {object}  map[string]interface{}
-// @Router       /api/v1/admin/tenants/{id} [delete]
+// @Router       /admin/tenants/{id} [delete]
 func (h *TenantHandler) SoftDeleteTenant(c *gin.Context) {
 	ctx := c.Request.Context()
 	tenantID := c.Param("id")
@@ -205,7 +205,7 @@ func (h *TenantHandler) SoftDeleteTenant(c *gin.Context) {
 // @Success      200      {object}  map[string]interface{}
 // @Failure      400      {object}  map[string]interface{}
 // @Failure      500      {object}  map[string]interface{}
-// @Router       /api/v1/admin/tenants/{id}/status [patch]
+// @Router       /admin/tenants/{id}/status [patch]
 func (h *TenantHandler) UpdateTenantStatus(c *gin.Context) {
 	ctx := c.Request.Context()
 	tenantID := c.Param("id")

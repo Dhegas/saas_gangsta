@@ -1,60 +1,60 @@
 version: "3.9"
 
 services:
-	nginx:
-		image: nginx:alpine
-		ports:
-			- "80:80"
-		volumes:
-			- ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-		depends_on:
-			- api
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - api
 
-	api:
-		build:
-			context: ..
-			dockerfile: deployments/Dockerfile
-		env_file:
-			- ../.env
-		ports:
-			- "8080:8080"
-		restart: unless-stopped
-		depends_on:
-			redis:
-				condition: service_healthy
-			db:
-				condition: service_healthy
+  api:
+    build:
+      context: ..
+      dockerfile: deployments/Dockerfile
+    env_file:
+      - ../.env
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+      db:
+        condition: service_healthy
 
-	redis:
-		image: redis:7-alpine
-		command: ["redis-server", "--appendonly", "yes"]
-		ports:
-			- "6379:6379"
-		volumes:
-			- redisdata:/data
-		healthcheck:
-			test: ["CMD", "redis-cli", "ping"]
-			interval: 5s
-			timeout: 3s
-			retries: 10
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
 
-	# Local PostgreSQL for development. For Supabase production, point DATABASE_URL to Supabase.
-	db:
-		image: postgres:16-alpine
-		environment:
-			POSTGRES_DB: saas_gangsta_dev
-			POSTGRES_USER: postgres
-			POSTGRES_PASSWORD: postgres
-		ports:
-			- "5432:5432"
-		volumes:
-			- pgdata:/var/lib/postgresql/data
-		healthcheck:
-			test: ["CMD-SHELL", "pg_isready -U postgres -d saas_gangsta_dev"]
-			interval: 5s
-			timeout: 3s
-			retries: 10
+  # Local PostgreSQL for development. For Supabase production, point DATABASE_URL to Supabase.
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: saas_gangsta_dev
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d saas_gangsta_dev"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
 
 volumes:
-	pgdata:
-	redisdata:
+  pgdata:
+  redisdata:

@@ -8,6 +8,15 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
+// @title saas_gangsta Backend API
+// @version 1.0
+// @description Backend API Service untuk platform SaaS POS & Self-Order UMKM kuliner.
+// @BasePath /api/v1
+// @schemes http https
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+
 func main() {
 	conn, err := pgx.Connect(context.Background(), os.Getenv("DATABASE_URL"))
 	if err != nil {

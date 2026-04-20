@@ -1,8 +1,16 @@
 {
+    "schemes": [
+        "http",
+        "https"
+    ],
     "swagger": "2.0",
     "info": {
-        "contact": {}
+        "description": "Backend API Service untuk platform SaaS POS \u0026 Self-Order UMKM kuliner.",
+        "title": "saas_gangsta Backend API",
+        "contact": {},
+        "version": "1.0"
     },
+    "basePath": "/api/v1",
     "paths": {
         "/admin/dashboard": {
             "get": {
@@ -758,6 +766,13 @@
                     "type": "boolean"
                 }
             }
+        }
+    },
+    "securityDefinitions": {
+        "BearerAuth": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
         }
     }
 }

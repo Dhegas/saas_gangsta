@@ -12,6 +12,9 @@ import (
 	authhttp "github.com/dhegas/saas_gangsta/internal/domains/user/auth/delivery/http"
 	authrepo "github.com/dhegas/saas_gangsta/internal/domains/user/auth/repository"
 	authusecase "github.com/dhegas/saas_gangsta/internal/domains/user/auth/usecase"
+	userhttp "github.com/dhegas/saas_gangsta/internal/domains/user/management/delivery/http"
+	userrepo "github.com/dhegas/saas_gangsta/internal/domains/user/management/repository"
+	userusecase "github.com/dhegas/saas_gangsta/internal/domains/user/management/usecase"
 	"github.com/dhegas/saas_gangsta/internal/infrastructure/database"
 	"github.com/dhegas/saas_gangsta/internal/middleware"
 	"github.com/gin-gonic/gin"
@@ -63,15 +66,20 @@ func registerRoutes(router *gin.Engine, cfg *config.Config, db *gorm.DB, redisCl
 	authRepository := authrepo.NewAuthRepository(db)
 	authUC := authusecase.NewAuthUsecase(authRepository, cfg)
 	authHandler := authhttp.NewAuthHandler(authUC)
+	userRepository := userrepo.NewUserRepository(db)
+	userUC := userusecase.NewUserUsecase(userRepository)
+	userHandler := userhttp.NewUserHandler(userUC)
 
 	apiLegacy := router.Group("/api")
 	{
 		registerAuthRoutes(apiLegacy, cfg, authHandler)
+		registerUserRoutes(apiLegacy, cfg, userHandler)
 	}
 
 	api := router.Group("/api/v1")
 	{
 		registerAuthRoutes(api, cfg, authHandler)
+		registerUserRoutes(api, cfg, userHandler)
 		RegisterCustomerRoutes(api, cfg)
 		RegisterMerchantRoutes(api, cfg, authHandler)
 		RegisterAdminRoutes(api, db)
@@ -101,5 +109,17 @@ func registerAuthRoutes(api *gin.RouterGroup, cfg *config.Config, authHandler *a
 			authProtected.POST("/logout", authHandler.Logout)
 			authProtected.GET("/me", authHandler.Me)
 		}
+	}
+}
+
+func registerUserRoutes(api *gin.RouterGroup, cfg *config.Config, userHandler *userhttp.UserHandler) {
+	userRoutes := api.Group("/users")
+	userRoutes.Use(middleware.JWTAuth(cfg), middleware.TenantGuard(), middleware.RoleGuards("merchant", "admin"))
+	{
+		userRoutes.GET("", userHandler.ListUsers)
+		userRoutes.GET("/:id", userHandler.GetUserDetail)
+		userRoutes.PUT("/:id", userHandler.UpdateUser)
+		userRoutes.DELETE("/:id", userHandler.SoftDeleteUser)
+		userRoutes.PATCH("/:id/toggle-active", userHandler.ToggleActiveUser)
 	}
 }

@@ -247,7 +247,7 @@ func (h *AuthHandler) Logout(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Logout berhasil", gin.H{"loggedOut": true})
+	response.Success(c, http.StatusOK, "Logout berhasil", dto.LogoutResponse{LoggedOut: true})
 }
 
 // Me godoc

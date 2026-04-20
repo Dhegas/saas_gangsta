@@ -58,7 +58,7 @@ func (u *authUsecase) Register(ctx context.Context, req dto.RegisterRequest) (*d
 		Email:        email,
 		FullName:     fullName,
 		PasswordHash: string(passwordHash),
-		Role:         "customer",
+		Role:         "BASIC",
 		IsActive:     true,
 		TenantStatus: "active",
 	}
@@ -124,7 +124,7 @@ func (u *authUsecase) Subscribe(ctx context.Context, userID string, req dto.Subs
 		case errors.Is(err, repository.ErrUserNotFound):
 			return nil, apperrors.New("NOT_FOUND", "User tidak ditemukan", http.StatusNotFound, nil)
 		case errors.Is(err, repository.ErrUserNotCustomer):
-			return nil, apperrors.New("FORBIDDEN", "Hanya customer yang dapat subscribe menjadi merchant", http.StatusForbidden, nil)
+			return nil, apperrors.New("FORBIDDEN", "Hanya BASIC yang dapat subscribe menjadi MITRA", http.StatusForbidden, nil)
 		case errors.Is(err, repository.ErrSubscriptionPlanNotFound):
 			return nil, apperrors.New("NOT_FOUND", "Paket subscription tidak ditemukan atau tidak aktif", http.StatusNotFound, nil)
 		case errors.Is(err, repository.ErrSubscriptionAlreadyExists):
@@ -165,9 +165,9 @@ func (u *authUsecase) CreateMerchantTenant(ctx context.Context, userID string, r
 		case errors.Is(err, repository.ErrUserNotFound):
 			return nil, apperrors.New("NOT_FOUND", "User tidak ditemukan", http.StatusNotFound, nil)
 		case errors.Is(err, repository.ErrUserNotMerchant):
-			return nil, apperrors.New("FORBIDDEN", "Hanya merchant yang dapat membuat tenant", http.StatusForbidden, nil)
+			return nil, apperrors.New("FORBIDDEN", "Hanya MITRA yang dapat membuat tenant", http.StatusForbidden, nil)
 		case errors.Is(err, repository.ErrMerchantSubscriptionMissing):
-			return nil, apperrors.New("FORBIDDEN", "Subscription merchant tidak ditemukan", http.StatusForbidden, nil)
+			return nil, apperrors.New("FORBIDDEN", "Subscription MITRA tidak ditemukan", http.StatusForbidden, nil)
 		case errors.Is(err, repository.ErrTenantLimitReached):
 			return nil, apperrors.New("FORBIDDEN", "Batas jumlah tenant pada paket subscription sudah tercapai", http.StatusForbidden, nil)
 		default:
@@ -198,8 +198,8 @@ func (u *authUsecase) ListMerchantTenants(ctx context.Context, userID string) (*
 	if merchant == nil {
 		return nil, apperrors.New("UNAUTHORIZED", "User tidak ditemukan", http.StatusUnauthorized, nil)
 	}
-	if merchant.Role != "merchant" {
-		return nil, apperrors.New("FORBIDDEN", "Hanya merchant yang dapat melihat tenant", http.StatusForbidden, nil)
+	if merchant.Role != "MITRA" {
+		return nil, apperrors.New("FORBIDDEN", "Hanya MITRA yang dapat melihat tenant", http.StatusForbidden, nil)
 	}
 
 	tenants, err := u.repo.ListTenantsByMerchant(ctx, userID)
@@ -284,7 +284,7 @@ func (u *authUsecase) Me(ctx context.Context, userID string) (*dto.MeResponse, e
 }
 
 func validateTenantState(user *domain.User) error {
-	if user.Role == "merchant" {
+	if user.Role == "MITRA" {
 		if user.TenantID != "" && strings.TrimSpace(user.TenantStatus) != "active" {
 			return apperrors.New("TENANT_INACTIVE", "Tenant tidak aktif", http.StatusForbidden, nil)
 		}

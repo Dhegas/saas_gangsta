@@ -57,6 +57,25 @@ type CreateMerchantTenantInput struct {
 	Name   string
 }
 
+func decodeRole(role string) string {
+	trimmed := strings.TrimSpace(role)
+	if strings.EqualFold(trimmed, "basic") || strings.EqualFold(trimmed, "customer") {
+		return "BASIC"
+	}
+	if strings.EqualFold(trimmed, "mitra") || strings.EqualFold(trimmed, "merchant") {
+		return "MITRA"
+	}
+	if strings.EqualFold(trimmed, "admin") {
+		return "ADMIN"
+	}
+
+	return strings.ToUpper(trimmed)
+}
+
+func encodeRole(role string) string {
+	return decodeRole(role)
+}
+
 func NewAuthRepository(db *gorm.DB) AuthRepository {
 	return &authRepository{db: db}
 }
@@ -88,7 +107,7 @@ func (r *authRepository) FindByEmail(ctx context.Context, email string) (*domain
 		TenantID:     row.TenantID,
 		Email:        row.Email,
 		PasswordHash: row.PasswordHash,
-		Role:         row.Role,
+		Role:         decodeRole(row.Role),
 		IsActive:     row.IsActive,
 		TenantStatus: row.TenantStatus,
 	}, nil
@@ -122,7 +141,7 @@ func (r *authRepository) FindByID(ctx context.Context, id string) (*domain.User,
 		Email:        row.Email,
 		FullName:     "",
 		PasswordHash: row.PasswordHash,
-		Role:         row.Role,
+		Role:         decodeRole(row.Role),
 		IsActive:     row.IsActive,
 		TenantStatus: row.TenantStatus,
 	}, nil
@@ -145,7 +164,7 @@ func (r *authRepository) CreateUser(ctx context.Context, user *domain.User) erro
 		user.Email,
 		user.PasswordHash,
 		user.FullName,
-		user.Role,
+		encodeRole(user.Role),
 	).Scan(&row).Error
 	if err != nil {
 		var pgErr *pgconn.PgError
@@ -185,7 +204,7 @@ func (r *authRepository) SubscribeAndUpgradeCustomer(ctx context.Context, input 
 		if userRow.ID == "" || !userRow.IsActive {
 			return ErrUserNotFound
 		}
-		if userRow.Role != "customer" {
+		if decodeRole(userRow.Role) != "BASIC" {
 			return ErrUserNotCustomer
 		}
 
@@ -243,8 +262,9 @@ func (r *authRepository) SubscribeAndUpgradeCustomer(ctx context.Context, input 
 
 		if err := tx.Exec(
 			`UPDATE users
-			 SET role = 'merchant', updated_at = NOW()
+			 SET role = ?, updated_at = NOW()
 			 WHERE id = NULLIF(?, '')::uuid`,
+			encodeRole("MITRA"),
 			input.UserID,
 		).Error; err != nil {
 			return fmt.Errorf("upgrade user to merchant: %w", err)
@@ -295,7 +315,7 @@ func (r *authRepository) CreateTenantForMerchant(ctx context.Context, input Crea
 		if userRow.ID == "" || !userRow.IsActive {
 			return ErrUserNotFound
 		}
-		if userRow.Role != "merchant" {
+		if decodeRole(userRow.Role) != "MITRA" {
 			return ErrUserNotMerchant
 		}
 

@@ -107,7 +107,7 @@ func registerAuthRoutes(api *gin.RouterGroup, cfg *config.Config, authHandler *a
 		authProtected := authRoutes.Group("")
 		authProtected.Use(middleware.JWTAuth(cfg))
 		{
-			authProtected.POST("/subscribe", middleware.RoleGuard("customer"), authHandler.Subscribe)
+			authProtected.POST("/subscribe", middleware.RoleGuard("BASIC"), authHandler.Subscribe)
 			authProtected.POST("/logout", authHandler.Logout)
 			authProtected.GET("/me", authHandler.Me)
 		}
@@ -116,7 +116,7 @@ func registerAuthRoutes(api *gin.RouterGroup, cfg *config.Config, authHandler *a
 
 func registerUserRoutes(api *gin.RouterGroup, cfg *config.Config, userHandler *userhttp.UserHandler) {
 	userRoutes := api.Group("/users")
-	userRoutes.Use(middleware.JWTAuth(cfg), middleware.TenantGuard(), middleware.RoleGuards("merchant", "admin"))
+	userRoutes.Use(middleware.JWTAuth(cfg), middleware.TenantGuard(), middleware.RoleGuards("MITRA", "ADMIN"))
 	{
 		userRoutes.GET("", userHandler.ListUsers)
 		userRoutes.GET("/:id", userHandler.GetUserDetail)

@@ -14,7 +14,7 @@ func RegisterMerchantRoutes(api *gin.RouterGroup, cfg *config.Config, authHandle
 	merchantRoutes := api.Group("/merchant")
 	merchantRoutes.Use(
 		middleware.JWTAuth(cfg),
-		middleware.RoleGuard("merchant"),
+		middleware.RoleGuard("MITRA"),
 	)
 
 	merchantRoutes.POST("/tenants", authHandler.CreateMerchantTenant)
@@ -24,7 +24,7 @@ func RegisterMerchantRoutes(api *gin.RouterGroup, cfg *config.Config, authHandle
 	merchantTenantScoped.Use(middleware.TenantGuard())
 	merchantTenantScoped.GET("/me", func(c *gin.Context) {
 		response.Success(c, http.StatusOK, "Merchant context valid", gin.H{
-			"role":     "merchant",
+			"role":     "MITRA",
 			"tenantId": c.GetString("tenantId"),
 		})
 	})

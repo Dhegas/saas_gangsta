@@ -46,6 +46,25 @@ type userRow struct {
 	UpdatedAt string `gorm:"column:updated_at"`
 }
 
+func decodeRole(role string) string {
+	trimmed := strings.TrimSpace(role)
+	if strings.EqualFold(trimmed, "basic") || strings.EqualFold(trimmed, "customer") {
+		return "BASIC"
+	}
+	if strings.EqualFold(trimmed, "mitra") || strings.EqualFold(trimmed, "merchant") {
+		return "MITRA"
+	}
+	if strings.EqualFold(trimmed, "admin") {
+		return "ADMIN"
+	}
+
+	return strings.ToUpper(trimmed)
+}
+
+func encodeRole(role string) string {
+	return decodeRole(role)
+}
+
 func NewUserRepository(db *gorm.DB) UserRepository {
 	return &userRepository{db: db}
 }
@@ -88,7 +107,7 @@ func (r *userRepository) ListByTenant(ctx context.Context, tenantID string) ([]d
 			TenantID: row.TenantID,
 			Email:    row.Email,
 			FullName: row.FullName,
-			Role:     row.Role,
+			Role:     decodeRole(row.Role),
 			IsActive: row.IsActive,
 		})
 	}
@@ -137,7 +156,7 @@ func (r *userRepository) FindByIDAndTenant(ctx context.Context, tenantID, userID
 		TenantID: row.TenantID,
 		Email:    row.Email,
 		FullName: row.FullName,
-		Role:     row.Role,
+		Role:     decodeRole(row.Role),
 		IsActive: row.IsActive,
 	}, nil
 }
@@ -155,7 +174,7 @@ func (r *userRepository) UpdateByIDAndTenant(ctx context.Context, tenantID, user
 		updates["full_name"] = strings.TrimSpace(*input.FullName)
 	}
 	if input.Role != nil {
-		updates["role"] = strings.TrimSpace(*input.Role)
+		updates["role"] = encodeRole(*input.Role)
 	}
 	if len(updates) == 0 {
 		return nil, ErrNoFieldsToUpdate
@@ -248,7 +267,7 @@ func (r *userRepository) ToggleActiveByIDAndTenant(ctx context.Context, tenantID
 		TenantID: row.TenantID,
 		Email:    row.Email,
 		FullName: row.FullName,
-		Role:     row.Role,
+		Role:     decodeRole(row.Role),
 		IsActive: row.IsActive,
 	}, nil
 }

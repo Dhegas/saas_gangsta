@@ -187,7 +187,7 @@ func TestMeHandlerUnauthorizedWhenUsecaseFails(t *testing.T) {
 func TestSubscribeHandlerSuccess(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
-	h := NewAuthHandler(&mockAuthUsecase{subscribeRes: &dto.SubscribeResponse{User: dto.UserResponse{ID: "u-1", Role: "merchant"}, AccessToken: "a", RefreshToken: "r"}})
+	h := NewAuthHandler(&mockAuthUsecase{subscribeRes: &dto.SubscribeResponse{User: dto.UserResponse{ID: "u-1", Role: "MITRA"}, AccessToken: "a", RefreshToken: "r"}})
 	r.POST("/subscribe", func(c *gin.Context) {
 		c.Set("userId", "u-1")
 		h.Subscribe(c)
@@ -241,3 +241,4 @@ func TestListMerchantTenantsHandlerSuccess(t *testing.T) {
 		t.Fatalf("expected 200, got %d", w.Code)
 	}
 }
+

@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dhegas/saas_gangsta/internal/domains/user/auth"
 	"github.com/dhegas/saas_gangsta/internal/config"
+	"github.com/dhegas/saas_gangsta/internal/domains/user/auth"
 	"github.com/dhegas/saas_gangsta/internal/domains/user/auth/domain"
 	"github.com/dhegas/saas_gangsta/internal/domains/user/auth/dto"
 	"github.com/dhegas/saas_gangsta/internal/domains/user/auth/repository"
@@ -91,7 +91,7 @@ func TestLoginSuccess(t *testing.T) {
 			TenantID:     "t-1",
 			Email:        "merchant@test.local",
 			PasswordHash: mustHash(t, "secret123"),
-			Role:         "merchant",
+			Role:         "MITRA",
 			IsActive:     true,
 			TenantStatus: "active",
 		},
@@ -105,8 +105,8 @@ func TestLoginSuccess(t *testing.T) {
 	if res.AccessToken == "" || res.RefreshToken == "" {
 		t.Fatalf("expected tokens to be generated")
 	}
-	if res.User.Role != "merchant" {
-		t.Fatalf("expected role merchant, got %s", res.User.Role)
+	if res.User.Role != "MITRA" {
+		t.Fatalf("expected role MITRA, got %s", res.User.Role)
 	}
 }
 
@@ -149,7 +149,7 @@ func TestLoginUnauthorizedInvalidPassword(t *testing.T) {
 			TenantID:     "t-1",
 			Email:        "merchant@test.local",
 			PasswordHash: mustHash(t, "secret123"),
-			Role:         "merchant",
+			Role:         "MITRA",
 			IsActive:     true,
 			TenantStatus: "active",
 		},
@@ -168,7 +168,7 @@ func TestLoginTenantInactive(t *testing.T) {
 			TenantID:     "t-1",
 			Email:        "merchant@test.local",
 			PasswordHash: mustHash(t, "secret123"),
-			Role:         "merchant",
+			Role:         "MITRA",
 			IsActive:     true,
 			TenantStatus: "inactive",
 		},
@@ -186,7 +186,7 @@ func TestRefreshSuccess(t *testing.T) {
 			ID:           "u-1",
 			TenantID:     "t-1",
 			Email:        "merchant@test.local",
-			Role:         "merchant",
+			Role:         "MITRA",
 			IsActive:     true,
 			TenantStatus: "active",
 		},
@@ -195,7 +195,7 @@ func TestRefreshSuccess(t *testing.T) {
 	uc := newAuthUsecaseForTest(repo)
 	refreshToken, err := auth.GenerateRefreshToken(
 		"u-1",
-		"merchant",
+		"MITRA",
 		"t-1",
 		7*24*time.Hour,
 		"12345678901234567890123456789012",
@@ -219,7 +219,7 @@ func TestMeSuccess(t *testing.T) {
 			ID:           "u-1",
 			TenantID:     "t-1",
 			Email:        "merchant@test.local",
-			Role:         "merchant",
+			Role:         "MITRA",
 			IsActive:     true,
 			TenantStatus: "active",
 		},
@@ -248,7 +248,7 @@ func TestSubscribeSuccess(t *testing.T) {
 			ID:           "u-1",
 			TenantID:     "",
 			Email:        "user@test.local",
-			Role:         "merchant",
+			Role:         "MITRA",
 			IsActive:     true,
 			TenantStatus: "active",
 		},
@@ -259,8 +259,8 @@ func TestSubscribeSuccess(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected nil error, got %v", err)
 	}
-	if res.User.Role != "merchant" {
-		t.Fatalf("expected merchant after subscribe")
+	if res.User.Role != "MITRA" {
+		t.Fatalf("expected MITRA after subscribe")
 	}
 	if res.User.TenantID != "" {
 		t.Fatalf("expected empty tenant after subscribe, got %s", res.User.TenantID)
@@ -305,7 +305,7 @@ func TestCreateMerchantTenantSuccess(t *testing.T) {
 
 func TestListMerchantTenantsSuccess(t *testing.T) {
 	repo := &mockAuthRepo{
-		userByID:        &domain.User{ID: "u-1", Role: "merchant", IsActive: true},
+		userByID:        &domain.User{ID: "u-1", Role: "MITRA", IsActive: true},
 		merchantTenants: []domain.MerchantTenant{{ID: "t-1", Name: "Warung A", Slug: "warung-a", Status: "active", IsOwner: true}},
 	}
 	uc := newAuthUsecaseForTest(repo)

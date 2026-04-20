@@ -45,7 +45,7 @@ func RegisterAdminRoutes(apiV1 *gin.RouterGroup, cfg *config.Config, db *gorm.DB
 	adminGroup := apiV1.Group("/admin")
 	adminGroup.Use(
 		middleware.JWTAuth(cfg),
-		middleware.RoleGuard("admin"),
+		middleware.RoleGuard("ADMIN"),
 	)
 
 	// ══════════════════════════════════════════════════════════════════

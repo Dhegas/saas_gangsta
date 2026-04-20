@@ -41,6 +41,7 @@ func errorResponse(c *gin.Context, status int, code, message string, detail inte
 // @Description  Mengambil daftar seluruh tenant yang terdaftar di platform
 // @Tags         Admin Tenant
 // @Produce      json
+// @Security     BearerAuth
 // @Success      200  {object}  map[string]interface{}
 // @Failure      500  {object}  map[string]interface{}
 // @Router       /admin/tenants [get]
@@ -65,6 +66,7 @@ func (h *TenantHandler) GetAllTenants(c *gin.Context) {
 // @Description  Mengambil detail satu tenant berdasarkan ID
 // @Tags         Admin Tenant
 // @Produce      json
+// @Security     BearerAuth
 // @Param        id  path      string  true  "Tenant ID"
 // @Success      200  {object}  map[string]interface{}
 // @Failure      404  {object}  map[string]interface{}
@@ -97,6 +99,7 @@ func (h *TenantHandler) GetTenantByID(c *gin.Context) {
 // @Tags         Admin Tenant
 // @Accept       json
 // @Produce      json
+// @Security     BearerAuth
 // @Param        request  body      dto.CreateTenantRequest  true  "Payload Tenant Baru"
 // @Success      201      {object}  map[string]interface{}
 // @Failure      400      {object}  map[string]interface{}
@@ -130,6 +133,7 @@ func (h *TenantHandler) CreateTenant(c *gin.Context) {
 // @Tags         Admin Tenant
 // @Accept       json
 // @Produce      json
+// @Security     BearerAuth
 // @Param        id       path      string                   true  "Tenant ID"
 // @Param        request  body      dto.UpdateTenantRequest  true  "Payload Update Tenant"
 // @Success      200      {object}  map[string]interface{}
@@ -169,6 +173,7 @@ func (h *TenantHandler) UpdateTenant(c *gin.Context) {
 // @Description  Menghapus tenant secara soft delete (mengisi deleted_at, data tetap ada di DB)
 // @Tags         Admin Tenant
 // @Produce      json
+// @Security     BearerAuth
 // @Param        id  path      string  true  "Tenant ID"
 // @Success      200  {object}  map[string]interface{}
 // @Failure      404  {object}  map[string]interface{}
@@ -200,6 +205,7 @@ func (h *TenantHandler) SoftDeleteTenant(c *gin.Context) {
 // @Tags         Admin Tenant
 // @Accept       json
 // @Produce      json
+// @Security     BearerAuth
 // @Param        id       path      string                             true  "Tenant ID"
 // @Param        request  body      dto.UpdateTenantStatusRequest      true  "Payload Status Baru"
 // @Success      200      {object}  map[string]interface{}

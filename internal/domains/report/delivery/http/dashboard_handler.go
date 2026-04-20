@@ -23,6 +23,7 @@ func NewDashboardHandler(usecase domain.AdminDashboardUsecase) *DashboardHandler
 // @Tags         Admin Dashboard
 // @Accept       json
 // @Produce      json
+// @Security     BearerAuth
 // @Success      200  {object}  map[string]interface{}
 // @Failure      500  {object}  map[string]interface{}
 // @Router       /admin/dashboard [get]

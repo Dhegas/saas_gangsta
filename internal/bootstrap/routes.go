@@ -70,6 +70,7 @@ func registerRoutes(router *gin.Engine, cfg *config.Config, db *gorm.DB, redisCl
 		RegisterCustomerRoutes(api, cfg)
 		RegisterMerchantRoutes(api, cfg, authHandler)
 		RegisterAdminRoutes(api, db)
+		RegisterTenantProfileRoutes(api, cfg, db)
 
 		api.GET("/health", func(c *gin.Context) {
 			response.Success(c, http.StatusOK, "API is healthy", gin.H{
@@ -79,6 +80,11 @@ func registerRoutes(router *gin.Engine, cfg *config.Config, db *gorm.DB, redisCl
 			})
 		})
 		api.GET("/ready", readinessHandler)
+	}
+
+	apiNoVersion := router.Group("/api")
+	{
+		RegisterTenantProfileRoutes(apiNoVersion, cfg, db)
 	}
 }
 

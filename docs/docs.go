@@ -15,7 +15,7 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/admin/dashboard": {
+        "/api/v1/admin/dashboard": {
             "get": {
                 "description": "Mengambil overview metrik platform (total tenant, active subscriptions, monthly revenue)",
                 "consumes": [
@@ -46,7 +46,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/admin/subscriptions/plans": {
+        "/api/v1/admin/subscriptions/plans": {
             "get": {
                 "description": "Mengambil daftar semua paket langganan (misal: Basic, Pro, Enterprise)",
                 "produces": [
@@ -121,7 +121,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/admin/subscriptions/plans/{id}": {
+        "/api/v1/admin/subscriptions/plans/{id}": {
             "patch": {
                 "description": "Mengubah data paket langganan (termasuk menonaktifkan dengan isActive: false)",
                 "consumes": [
@@ -177,16 +177,16 @@ const docTemplate = `{
                 }
             }
         },
-        "/admin/tenants": {
+        "/api/v1/admin/tenants": {
             "get": {
-                "description": "Mengambil daftar seluruh toko/merchant (tenant) yang terdaftar di platform",
+                "description": "Mengambil daftar seluruh tenant yang terdaftar di platform",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Admin Tenant"
                 ],
-                "summary": "Get All Tenants",
+                "summary": "List All Tenants",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -203,9 +203,203 @@ const docTemplate = `{
                         }
                     }
                 }
+            },
+            "post": {
+                "description": "Mendaftarkan tenant (merchant/toko) baru ke dalam platform",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin Tenant"
+                ],
+                "summary": "Register New Tenant",
+                "parameters": [
+                    {
+                        "description": "Payload Tenant Baru",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.CreateTenantRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
             }
         },
-        "/admin/tenants/{id}/status": {
+        "/api/v1/admin/tenants/{id}": {
+            "get": {
+                "description": "Mengambil detail satu tenant berdasarkan ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin Tenant"
+                ],
+                "summary": "Get Tenant Detail",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Tenant ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Memperbarui data tenant (name, slug, atau status)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin Tenant"
+                ],
+                "summary": "Update Tenant",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Tenant ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Payload Update Tenant",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.UpdateTenantRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Menghapus tenant secara soft delete (mengisi deleted_at, data tetap ada di DB)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin Tenant"
+                ],
+                "summary": "Soft Delete Tenant",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Tenant ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/admin/tenants/{id}/status": {
             "patch": {
                 "description": "Mengubah status operasional tenant (active, inactive, atau suspended)",
                 "consumes": [
@@ -251,70 +445,19 @@ const docTemplate = `{
                             "additionalProperties": true
                         }
                     },
-                    "409": {
-                        "description": "Conflict",
-                        "schema": {
-                            "$ref": "#/definitions/response.Envelope"
-                        }
-                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/response.Envelope"
+                            "type": "object",
+                            "additionalProperties": true
                         }
                     }
                 }
             }
         },
-        "/merchant/tenants": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Ambil daftar tenant milik merchant login",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Merchant"
-                ],
-                "summary": "List merchant tenants",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/response.Envelope"
-                        }
-                    },
-                    "401": {
-                        "description": "Unauthorized",
-                        "schema": {
-                            "$ref": "#/definitions/response.Envelope"
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden",
-                        "schema": {
-                            "$ref": "#/definitions/response.Envelope"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/response.Envelope"
-                        }
-                    }
-                }
-            },
+        "/auth/login": {
             "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Merchant membuat tenant baru miliknya sesuai limit paket subscription",
+                "description": "Login untuk semua role (customer, merchant, admin)",
                 "consumes": [
                     "application/json"
                 ],
@@ -322,23 +465,23 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Merchant"
+                    "Auth"
                 ],
-                "summary": "Create merchant tenant",
+                "summary": "Login user",
                 "parameters": [
                     {
-                        "description": "Create merchant tenant payload",
+                        "description": "Login payload",
                         "name": "request",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dto.CreateMerchantTenantRequest"
+                            "$ref": "#/definitions/dto.LoginRequest"
                         }
                     }
                 ],
                 "responses": {
-                    "201": {
-                        "description": "Created",
+                    "200": {
+                        "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/response.Envelope"
                         }
@@ -361,11 +504,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/response.Envelope"
                         }
                     },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/response.Envelope"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "$ref": "#/definitions/response.Envelope"
                         }
                     }
                 }
@@ -743,6 +891,19 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "dto.CreateMerchantTenantRequest": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "maxLength": 150,
+                    "minLength": 2
+                }
+            }
+        },
         "dto.CreateSubscriptionPlanRequest": {
             "type": "object",
             "required": [
@@ -770,54 +931,45 @@ const docTemplate = `{
                 }
             }
         },
-        "dto.UpdateSubscriptionPlanRequest": {
-            "type": "object",
-            "properties": {
-                "billingCycle": {
-                    "type": "string"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "isActive": {
-                    "type": "boolean"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "price": {
-                    "type": "number"
-                }
-            }
-        },
-        "dto.UpdateTenantStatusRequest": {
-        "dto.CreateMerchantTenantRequest": {
+        "dto.CreateTenantRequest": {
             "type": "object",
             "required": [
-                "name"
+                "name",
+                "slug"
             ],
             "properties": {
                 "name": {
                     "type": "string",
                     "maxLength": 150,
                     "minLength": 2
-                }
-            }
-        },
-        "dto.LoginRequest": {
-            "type": "object",
-            "required": [
-                "status"
-            ],
-            "properties": {
+                },
+                "slug": {
+                    "type": "string",
+                    "maxLength": 80,
+                    "minLength": 2
+                },
                 "status": {
-                    "description": "validator.v10 akan memastikan status tidak kosong dan hanya berisi nilai tertentu",
                     "type": "string",
                     "enum": [
                         "active",
                         "inactive",
                         "suspended"
                     ]
+                }
+            }
+        },
+        "dto.LoginRequest": {
+            "type": "object",
+            "required": [
+                "email",
+                "password"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string",
                     "minLength": 6
                 }
             }
@@ -874,6 +1026,65 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.UpdateSubscriptionPlanRequest": {
+            "type": "object",
+            "properties": {
+                "billingCycle": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "isActive": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "price": {
+                    "type": "number"
+                }
+            }
+        },
+        "dto.UpdateTenantRequest": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "maxLength": 150,
+                    "minLength": 2
+                },
+                "slug": {
+                    "type": "string",
+                    "maxLength": 80,
+                    "minLength": 2
+                },
+                "status": {
+                    "type": "string",
+                    "enum": [
+                        "active",
+                        "inactive",
+                        "suspended"
+                    ]
+                }
+            }
+        },
+        "dto.UpdateTenantStatusRequest": {
+            "type": "object",
+            "required": [
+                "status"
+            ],
+            "properties": {
+                "status": {
+                    "type": "string",
+                    "enum": [
+                        "active",
+                        "inactive",
+                        "suspended"
+                    ]
+                }
+            }
+        },
         "response.Envelope": {
             "type": "object",
             "properties": {
@@ -893,12 +1104,12 @@ const docTemplate = `{
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "1.0",
+	Version:          "",
 	Host:             "",
-	BasePath:         "/api/v1",
-	Schemes:          []string{"http", "https"},
-	Title:            "saas_gangsta Backend API",
-	Description:      "Backend API Service untuk platform SaaS POS & Self-Order UMKM kuliner.",
+	BasePath:         "",
+	Schemes:          []string{},
+	Title:            "",
+	Description:      "",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

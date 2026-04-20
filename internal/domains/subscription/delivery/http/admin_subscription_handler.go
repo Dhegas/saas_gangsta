@@ -26,7 +26,7 @@ func NewSubscriptionHandler(usecase domain.AdminSubscriptionUsecase) *Subscripti
 // @Produce      json
 // @Success      200  {object}  map[string]interface{}
 // @Failure      500  {object}  map[string]interface{}
-// @Router       /admin/subscriptions/plans [get]
+// @Router       /api/v1/admin/subscriptions/plans [get]
 func (h *SubscriptionHandler) GetAllPlans(c *gin.Context) {
 	ctx := c.Request.Context()
 
@@ -60,7 +60,7 @@ func (h *SubscriptionHandler) GetAllPlans(c *gin.Context) {
 // @Success      201      {object}  map[string]interface{}
 // @Failure      400      {object}  map[string]interface{}
 // @Failure      500      {object}  map[string]interface{}
-// @Router       /admin/subscriptions/plans [post]
+// @Router       /api/v1/admin/subscriptions/plans [post]
 func (h *SubscriptionHandler) CreatePlan(c *gin.Context) {
 	ctx := c.Request.Context()
 	var req dto.CreateSubscriptionPlanRequest
@@ -89,7 +89,7 @@ func (h *SubscriptionHandler) CreatePlan(c *gin.Context) {
 // @Success      200      {object}  map[string]interface{}
 // @Failure      400      {object}  map[string]interface{}
 // @Failure      500      {object}  map[string]interface{}
-// @Router       /admin/subscriptions/plans/{id} [patch]
+// @Router       /api/v1/admin/subscriptions/plans/{id} [patch]
 func (h *SubscriptionHandler) UpdatePlan(c *gin.Context) {
 	ctx := c.Request.Context()
 	planID := c.Param("id")
@@ -108,15 +108,10 @@ func (h *SubscriptionHandler) UpdatePlan(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"success": true, "message": "Paket berhasil diupdate"})
 }
 
-// RegisterRoutes mendaftarkan endpoint ke router Gin
+// RegisterRoutes mendaftarkan endpoint ke dalam group yang sudah diterima.
+// Group yang masuk sudah ber-prefix /admin (dari bootstrap/admin_routes.go).
 func (h *SubscriptionHandler) RegisterRoutes(router *gin.RouterGroup) {
-	adminRoute := router.Group("/admin")
-	{
-		// Endpoint: GET /api/v1/admin/subscriptions/plans
-		adminRoute.GET("/subscriptions/plans", h.GetAllPlans)
-
-		// Endpoint BARU
-		adminRoute.POST("/subscriptions/plans", h.CreatePlan)
-		adminRoute.PATCH("/subscriptions/plans/:id", h.UpdatePlan)
-	}
+	router.GET("/subscriptions/plans", h.GetAllPlans)
+	router.POST("/subscriptions/plans", h.CreatePlan)
+	router.PATCH("/subscriptions/plans/:id", h.UpdatePlan)
 }

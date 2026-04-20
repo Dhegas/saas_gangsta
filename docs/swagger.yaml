@@ -1,5 +1,13 @@
-basePath: /api/v1
 definitions:
+  dto.CreateMerchantTenantRequest:
+    properties:
+      name:
+        maxLength: 150
+        minLength: 2
+        type: string
+    required:
+    - name
+    type: object
   dto.CreateSubscriptionPlanRequest:
     properties:
       billingCycle:
@@ -19,41 +27,34 @@ definitions:
     - name
     - price
     type: object
-  dto.UpdateSubscriptionPlanRequest:
-    properties:
-      billingCycle:
-        type: string
-      description:
-        type: string
-      isActive:
-        type: boolean
-      name:
-        type: string
-      price:
-        type: number
-    type: object
-  dto.UpdateTenantStatusRequest:
-  dto.CreateMerchantTenantRequest:
+  dto.CreateTenantRequest:
     properties:
       name:
         maxLength: 150
         minLength: 2
         type: string
-    required:
-    - name
-    type: object
-  dto.LoginRequest:
-    properties:
+      slug:
+        maxLength: 80
+        minLength: 2
+        type: string
       status:
-        description: validator.v10 akan memastikan status tidak kosong dan hanya berisi
-          nilai tertentu
         enum:
         - active
         - inactive
         - suspended
         type: string
     required:
-    - status
+    - name
+    - slug
+    type: object
+  dto.LoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        minLength: 6
+        type: string
+    required:
     - email
     - password
     type: object
@@ -92,6 +93,47 @@ definitions:
     required:
     - planId
     type: object
+  dto.UpdateSubscriptionPlanRequest:
+    properties:
+      billingCycle:
+        type: string
+      description:
+        type: string
+      isActive:
+        type: boolean
+      name:
+        type: string
+      price:
+        type: number
+    type: object
+  dto.UpdateTenantRequest:
+    properties:
+      name:
+        maxLength: 150
+        minLength: 2
+        type: string
+      slug:
+        maxLength: 80
+        minLength: 2
+        type: string
+      status:
+        enum:
+        - active
+        - inactive
+        - suspended
+        type: string
+    type: object
+  dto.UpdateTenantStatusRequest:
+    properties:
+      status:
+        enum:
+        - active
+        - inactive
+        - suspended
+        type: string
+    required:
+    - status
+    type: object
   response.Envelope:
     properties:
       data: {}
@@ -104,11 +146,8 @@ definitions:
     type: object
 info:
   contact: {}
-  description: Backend API Service untuk platform SaaS POS & Self-Order UMKM kuliner.
-  title: saas_gangsta Backend API
-  version: "1.0"
 paths:
-  /admin/dashboard:
+  /api/v1/admin/dashboard:
     get:
       consumes:
       - application/json
@@ -130,7 +169,7 @@ paths:
       summary: Get Admin Dashboard Stats
       tags:
       - Admin Dashboard
-  /admin/subscriptions/plans:
+  /api/v1/admin/subscriptions/plans:
     get:
       description: 'Mengambil daftar semua paket langganan (misal: Basic, Pro, Enterprise)'
       produces:
@@ -181,7 +220,7 @@ paths:
       summary: Create Subscription Plan
       tags:
       - Admin Subscription
-  /admin/subscriptions/plans/{id}:
+  /api/v1/admin/subscriptions/plans/{id}:
     patch:
       consumes:
       - application/json
@@ -220,10 +259,9 @@ paths:
       summary: Update Subscription Plan
       tags:
       - Admin Subscription
-  /admin/tenants:
+  /api/v1/admin/tenants:
     get:
-      description: Mengambil daftar seluruh toko/merchant (tenant) yang terdaftar
-        di platform
+      description: Mengambil daftar seluruh tenant yang terdaftar di platform
       produces:
       - application/json
       responses:
@@ -237,10 +275,144 @@ paths:
           schema:
             additionalProperties: true
             type: object
-      summary: Get All Tenants
+      summary: List All Tenants
       tags:
       - Admin Tenant
-  /admin/tenants/{id}/status:
+    post:
+      consumes:
+      - application/json
+      description: Mendaftarkan tenant (merchant/toko) baru ke dalam platform
+      parameters:
+      - description: Payload Tenant Baru
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateTenantRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Register New Tenant
+      tags:
+      - Admin Tenant
+  /api/v1/admin/tenants/{id}:
+    delete:
+      description: Menghapus tenant secara soft delete (mengisi deleted_at, data tetap
+        ada di DB)
+      parameters:
+      - description: Tenant ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Soft Delete Tenant
+      tags:
+      - Admin Tenant
+    get:
+      description: Mengambil detail satu tenant berdasarkan ID
+      parameters:
+      - description: Tenant ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get Tenant Detail
+      tags:
+      - Admin Tenant
+    put:
+      consumes:
+      - application/json
+      description: Memperbarui data tenant (name, slug, atau status)
+      parameters:
+      - description: Tenant ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Payload Update Tenant
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateTenantRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Update Tenant
+      tags:
+      - Admin Tenant
+  /api/v1/admin/tenants/{id}/status:
     patch:
       consumes:
       - application/json
@@ -278,6 +450,47 @@ paths:
       summary: Update Tenant Status
       tags:
       - Admin Tenant
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Login untuk semua role (customer, merchant, admin)
+      parameters:
+      - description: Login payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Envelope'
+      summary: Login user
+      tags:
       - Auth
   /auth/logout:
     post:
@@ -516,7 +729,4 @@ paths:
       summary: Create merchant tenant
       tags:
       - Merchant
-schemes:
-- http
-- https
 swagger: "2.0"

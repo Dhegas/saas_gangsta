@@ -16,11 +16,9 @@ import (
 type mockAuthRepo struct {
 	userByEmail     *domain.User
 	userByID        *domain.User
-	upgradedUser    *domain.User
 	createdTenant   *domain.MerchantTenant
 	merchantTenants []domain.MerchantTenant
 	createErr       error
-	subscribeErr    error
 	createTenantErr error
 	listTenantsErr  error
 	errEmail        error
@@ -43,13 +41,6 @@ func (m *mockAuthRepo) CreateUser(_ context.Context, user *domain.User) error {
 		user.ID = "created-user-id"
 	}
 	return nil
-}
-
-func (m *mockAuthRepo) SubscribeAndUpgradeCustomer(_ context.Context, _ repository.SubscribeUpgradeInput) (*domain.User, error) {
-	if m.subscribeErr != nil {
-		return nil, m.subscribeErr
-	}
-	return m.upgradedUser, nil
 }
 
 func (m *mockAuthRepo) CreateTenantForMerchant(_ context.Context, _ repository.CreateMerchantTenantInput) (*domain.MerchantTenant, error) {
@@ -239,52 +230,6 @@ func TestLogoutSuccess(t *testing.T) {
 	uc := newAuthUsecaseForTest(&mockAuthRepo{})
 	if err := uc.Logout(context.Background(), "u-1", dto.LogoutRequest{}); err != nil {
 		t.Fatalf("expected nil error, got %v", err)
-	}
-}
-
-func TestSubscribeSuccess(t *testing.T) {
-	repo := &mockAuthRepo{
-		upgradedUser: &domain.User{
-			ID:           "u-1",
-			TenantID:     "",
-			Email:        "user@test.local",
-			Role:         "MITRA",
-			IsActive:     true,
-			TenantStatus: "active",
-		},
-	}
-
-	uc := newAuthUsecaseForTest(repo)
-	res, err := uc.Subscribe(context.Background(), "u-1", dto.SubscribeRequest{PlanID: "11111111-1111-1111-1111-111111111111"})
-	if err != nil {
-		t.Fatalf("expected nil error, got %v", err)
-	}
-	if res.User.Role != "MITRA" {
-		t.Fatalf("expected MITRA after subscribe")
-	}
-	if res.User.TenantID != "" {
-		t.Fatalf("expected empty tenant after subscribe, got %s", res.User.TenantID)
-	}
-	if res.AccessToken == "" || res.RefreshToken == "" {
-		t.Fatalf("expected tokens after subscribe")
-	}
-}
-
-func TestSubscribeForbiddenWhenNotCustomer(t *testing.T) {
-	repo := &mockAuthRepo{subscribeErr: repository.ErrUserNotCustomer}
-	uc := newAuthUsecaseForTest(repo)
-
-	if _, err := uc.Subscribe(context.Background(), "u-1", dto.SubscribeRequest{PlanID: "11111111-1111-1111-1111-111111111111"}); err == nil {
-		t.Fatalf("expected forbidden error")
-	}
-}
-
-func TestSubscribeConflictWhenAlreadySubscribed(t *testing.T) {
-	repo := &mockAuthRepo{subscribeErr: repository.ErrSubscriptionAlreadyExists}
-	uc := newAuthUsecaseForTest(repo)
-
-	if _, err := uc.Subscribe(context.Background(), "u-1", dto.SubscribeRequest{PlanID: "11111111-1111-1111-1111-111111111111"}); err == nil {
-		t.Fatalf("expected conflict error")
 	}
 }
 

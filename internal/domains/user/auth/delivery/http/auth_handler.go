@@ -88,46 +88,6 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	response.Success(c, http.StatusOK, "Login berhasil", res)
 }
 
-// Subscribe godoc
-// @Summary Subscribe customer to merchant plan
-// @Description Customer subscribe paket untuk upgrade akun menjadi merchant; tenant dibuat kemudian di dashboard merchant
-// @Tags Auth
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Param request body dto.SubscribeRequest true "Subscribe payload"
-// @Success 200 {object} response.Envelope
-// @Failure 400 {object} response.Envelope
-// @Failure 401 {object} response.Envelope
-// @Failure 403 {object} response.Envelope
-// @Failure 404 {object} response.Envelope
-// @Failure 409 {object} response.Envelope
-// @Failure 500 {object} response.Envelope
-// @Router /auth/subscribe [post]
-func (h *AuthHandler) Subscribe(c *gin.Context) {
-	userID, _ := c.Get("userId")
-	userIDStr, _ := userID.(string)
-
-	var req dto.SubscribeRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		var validationErrs validator.ValidationErrors
-		details := err.Error()
-		if errors.As(err, &validationErrs) {
-			details = validationErrs.Error()
-		}
-		apperrors.Write(c, apperrors.New("VALIDATION_ERROR", "Payload subscribe tidak valid", http.StatusBadRequest, details))
-		return
-	}
-
-	res, err := h.usecase.Subscribe(c.Request.Context(), userIDStr, req)
-	if err != nil {
-		apperrors.Write(c, err)
-		return
-	}
-
-	response.Success(c, http.StatusOK, "Subscribe berhasil, akun di-upgrade menjadi merchant", res)
-}
-
 // CreateMerchantTenant godoc
 // @Summary Create merchant tenant
 // @Description Merchant membuat tenant baru miliknya sesuai limit paket subscription

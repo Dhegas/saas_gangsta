@@ -66,13 +66,6 @@ definitions:
     - fullName
     - password
     type: object
-  dto.SubscribeRequest:
-    properties:
-      planId:
-        type: string
-    required:
-    - planId
-    type: object
   dto.UpdateSubscriptionPlanRequest:
     properties:
       billingCycle:
@@ -444,55 +437,6 @@ paths:
           schema:
             $ref: '#/definitions/response.Envelope'
       summary: Register user account
-      tags:
-      - Auth
-  /auth/subscribe:
-    post:
-      consumes:
-      - application/json
-      description: Customer subscribe paket untuk upgrade akun menjadi merchant; tenant
-        dibuat kemudian di dashboard merchant
-      parameters:
-      - description: Subscribe payload
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/dto.SubscribeRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/response.Envelope'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/response.Envelope'
-        "401":
-          description: Unauthorized
-          schema:
-            $ref: '#/definitions/response.Envelope'
-        "403":
-          description: Forbidden
-          schema:
-            $ref: '#/definitions/response.Envelope'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/response.Envelope'
-        "409":
-          description: Conflict
-          schema:
-            $ref: '#/definitions/response.Envelope'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/response.Envelope'
-      security:
-      - BearerAuth: []
-      summary: Subscribe customer to merchant plan
       tags:
       - Auth
   /merchant/tenants:

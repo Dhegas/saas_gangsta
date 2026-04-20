@@ -47,22 +47,11 @@ type userRow struct {
 }
 
 func decodeRole(role string) string {
-	trimmed := strings.TrimSpace(role)
-	if strings.EqualFold(trimmed, "basic") || strings.EqualFold(trimmed, "customer") {
-		return "BASIC"
-	}
-	if strings.EqualFold(trimmed, "mitra") || strings.EqualFold(trimmed, "merchant") {
-		return "MITRA"
-	}
-	if strings.EqualFold(trimmed, "admin") {
-		return "ADMIN"
-	}
-
-	return strings.ToUpper(trimmed)
+	return strings.ToUpper(strings.TrimSpace(role))
 }
 
 func encodeRole(role string) string {
-	return decodeRole(role)
+	return strings.ToUpper(strings.TrimSpace(role))
 }
 
 func NewUserRepository(db *gorm.DB) UserRepository {

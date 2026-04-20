@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"strings"
 
-	commonauth "github.com/dhegas/saas_gangsta/internal/domains/user/auth"
-	"github.com/dhegas/saas_gangsta/internal/config"
 	apperrors "github.com/dhegas/saas_gangsta/internal/common/errors"
+	"github.com/dhegas/saas_gangsta/internal/config"
+	commonauth "github.com/dhegas/saas_gangsta/internal/domains/user/auth"
 	"github.com/dhegas/saas_gangsta/internal/domains/user/auth/domain"
 	"github.com/dhegas/saas_gangsta/internal/domains/user/auth/dto"
 	"github.com/dhegas/saas_gangsta/internal/domains/user/auth/repository"
@@ -18,7 +18,6 @@ import (
 type AuthUsecase interface {
 	Register(ctx context.Context, req dto.RegisterRequest) (*dto.RegisterResponse, error)
 	Login(ctx context.Context, req dto.LoginRequest) (*dto.LoginResponse, error)
-	Subscribe(ctx context.Context, userID string, req dto.SubscribeRequest) (*dto.SubscribeResponse, error)
 	CreateMerchantTenant(ctx context.Context, userID string, req dto.CreateMerchantTenantRequest) (*dto.CreateMerchantTenantResponse, error)
 	ListMerchantTenants(ctx context.Context, userID string) (*dto.ListMerchantTenantsResponse, error)
 	Refresh(ctx context.Context, req dto.RefreshTokenRequest) (*dto.LoginResponse, error)
@@ -102,48 +101,6 @@ func (u *authUsecase) Login(ctx context.Context, req dto.LoginRequest) (*dto.Log
 	}
 
 	return u.buildLoginResponse(user)
-}
-
-func (u *authUsecase) Subscribe(ctx context.Context, userID string, req dto.SubscribeRequest) (*dto.SubscribeResponse, error) {
-	if strings.TrimSpace(userID) == "" {
-		return nil, apperrors.New("UNAUTHORIZED", "User tidak valid", http.StatusUnauthorized, nil)
-	}
-
-	planID := strings.TrimSpace(req.PlanID)
-
-	if planID == "" {
-		return nil, apperrors.New("VALIDATION_ERROR", "planId wajib diisi", http.StatusBadRequest, nil)
-	}
-
-	upgradedUser, err := u.repo.SubscribeAndUpgradeCustomer(ctx, repository.SubscribeUpgradeInput{
-		UserID: userID,
-		PlanID: planID,
-	})
-	if err != nil {
-		switch {
-		case errors.Is(err, repository.ErrUserNotFound):
-			return nil, apperrors.New("NOT_FOUND", "User tidak ditemukan", http.StatusNotFound, nil)
-		case errors.Is(err, repository.ErrUserNotCustomer):
-			return nil, apperrors.New("FORBIDDEN", "Hanya BASIC yang dapat subscribe menjadi MITRA", http.StatusForbidden, nil)
-		case errors.Is(err, repository.ErrSubscriptionPlanNotFound):
-			return nil, apperrors.New("NOT_FOUND", "Paket subscription tidak ditemukan atau tidak aktif", http.StatusNotFound, nil)
-		case errors.Is(err, repository.ErrSubscriptionAlreadyExists):
-			return nil, apperrors.New("CONFLICT", "Subscription aktif/pending sudah ada", http.StatusConflict, nil)
-		default:
-			return nil, apperrors.New("INTERNAL_ERROR", "Gagal memproses subscription", http.StatusInternalServerError, nil)
-		}
-	}
-
-	loginRes, err := u.buildLoginResponse(upgradedUser)
-	if err != nil {
-		return nil, err
-	}
-
-	return &dto.SubscribeResponse{
-		AccessToken:  loginRes.AccessToken,
-		RefreshToken: loginRes.RefreshToken,
-		User:         loginRes.User,
-	}, nil
 }
 
 func (u *authUsecase) CreateMerchantTenant(ctx context.Context, userID string, req dto.CreateMerchantTenantRequest) (*dto.CreateMerchantTenantResponse, error) {

@@ -25,12 +25,6 @@ type LogoutResponse struct {
 	LoggedOut bool `json:"loggedOut"`
 }
 
-type SubscribeResponse struct {
-	AccessToken  string       `json:"accessToken"`
-	RefreshToken string       `json:"refreshToken"`
-	User         UserResponse `json:"user"`
-}
-
 type MerchantTenantResponse struct {
 	ID      string `json:"id"`
 	Name    string `json:"name"`

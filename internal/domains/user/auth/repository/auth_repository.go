@@ -16,10 +16,7 @@ import (
 
 var (
 	ErrUserNotFound                = errors.New("user not found")
-	ErrUserNotCustomer             = errors.New("user is not customer")
 	ErrUserNotMerchant             = errors.New("user is not merchant")
-	ErrSubscriptionPlanNotFound    = errors.New("subscription plan not found")
-	ErrSubscriptionAlreadyExists   = errors.New("subscription already exists")
 	ErrMerchantSubscriptionMissing = errors.New("merchant subscription is required")
 	ErrTenantLimitReached          = errors.New("tenant limit reached")
 )
@@ -28,7 +25,6 @@ type AuthRepository interface {
 	FindByEmail(ctx context.Context, email string) (*domain.User, error)
 	FindByID(ctx context.Context, id string) (*domain.User, error)
 	CreateUser(ctx context.Context, user *domain.User) error
-	SubscribeAndUpgradeCustomer(ctx context.Context, input SubscribeUpgradeInput) (*domain.User, error)
 	CreateTenantForMerchant(ctx context.Context, input CreateMerchantTenantInput) (*domain.MerchantTenant, error)
 	ListTenantsByMerchant(ctx context.Context, userID string) ([]domain.MerchantTenant, error)
 }
@@ -47,33 +43,17 @@ type authUserRow struct {
 	TenantStatus string `gorm:"column:tenant_status"`
 }
 
-type SubscribeUpgradeInput struct {
-	UserID string
-	PlanID string
-}
-
 type CreateMerchantTenantInput struct {
 	UserID string
 	Name   string
 }
 
 func decodeRole(role string) string {
-	trimmed := strings.TrimSpace(role)
-	if strings.EqualFold(trimmed, "basic") || strings.EqualFold(trimmed, "customer") {
-		return "BASIC"
-	}
-	if strings.EqualFold(trimmed, "mitra") || strings.EqualFold(trimmed, "merchant") {
-		return "MITRA"
-	}
-	if strings.EqualFold(trimmed, "admin") {
-		return "ADMIN"
-	}
-
-	return strings.ToUpper(trimmed)
+	return strings.ToUpper(strings.TrimSpace(role))
 }
 
 func encodeRole(role string) string {
-	return decodeRole(role)
+	return strings.ToUpper(strings.TrimSpace(role))
 }
 
 func NewAuthRepository(db *gorm.DB) AuthRepository {
@@ -178,113 +158,6 @@ func (r *authRepository) CreateUser(ctx context.Context, user *domain.User) erro
 	user.IsActive = true
 
 	return nil
-}
-
-func (r *authRepository) SubscribeAndUpgradeCustomer(ctx context.Context, input SubscribeUpgradeInput) (*domain.User, error) {
-	if r.db == nil {
-		return nil, fmt.Errorf("database is not initialized")
-	}
-
-	txErr := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		var userRow struct {
-			ID       string `gorm:"column:id"`
-			Role     string `gorm:"column:role"`
-			IsActive bool   `gorm:"column:is_active"`
-		}
-
-		if err := tx.Raw(
-			`SELECT id::text, role, is_active
-			 FROM users
-			 WHERE id = NULLIF(?, '')::uuid
-			 FOR UPDATE`,
-			input.UserID,
-		).Scan(&userRow).Error; err != nil {
-			return fmt.Errorf("lock user: %w", err)
-		}
-		if userRow.ID == "" || !userRow.IsActive {
-			return ErrUserNotFound
-		}
-		if decodeRole(userRow.Role) != "BASIC" {
-			return ErrUserNotCustomer
-		}
-
-		var billingCycle string
-		if err := tx.Raw(
-			`SELECT billing_cycle
-			 FROM subscription_plans
-			 WHERE id = NULLIF(?, '')::uuid AND is_active = TRUE AND deleted_at IS NULL`,
-			input.PlanID,
-		).Scan(&billingCycle).Error; err != nil {
-			return fmt.Errorf("find subscription plan: %w", err)
-		}
-		if strings.TrimSpace(billingCycle) == "" {
-			return ErrSubscriptionPlanNotFound
-		}
-
-		now := time.Now().UTC()
-		expiresAt := now.AddDate(0, 1, 0)
-		if strings.TrimSpace(billingCycle) == "yearly" {
-			expiresAt = now.AddDate(1, 0, 0)
-		}
-
-		if err := tx.Exec(
-			`INSERT INTO subscriptions (
-				tenant_id,
-				subscriber_user_id,
-				plan_id,
-				status,
-				started_at,
-				expires_at,
-				created_at,
-				updated_at
-			)
-			VALUES (
-				NULL,
-				NULLIF(?, '')::uuid,
-				NULLIF(?, '')::uuid,
-				'pending_tenant',
-				?,
-				?,
-				NOW(),
-				NOW()
-			)`,
-			input.UserID,
-			input.PlanID,
-			now,
-			expiresAt,
-		).Error; err != nil {
-			var pgErr *pgconn.PgError
-			if errors.As(err, &pgErr) && pgErr.Code == "23505" {
-				return ErrSubscriptionAlreadyExists
-			}
-			return fmt.Errorf("create pending subscription: %w", err)
-		}
-
-		if err := tx.Exec(
-			`UPDATE users
-			 SET role = ?, updated_at = NOW()
-			 WHERE id = NULLIF(?, '')::uuid`,
-			encodeRole("MITRA"),
-			input.UserID,
-		).Error; err != nil {
-			return fmt.Errorf("upgrade user to merchant: %w", err)
-		}
-
-		return nil
-	})
-	if txErr != nil {
-		return nil, txErr
-	}
-
-	upgradedUser, err := r.FindByID(ctx, input.UserID)
-	if err != nil {
-		return nil, fmt.Errorf("reload upgraded user: %w", err)
-	}
-	if upgradedUser == nil {
-		return nil, ErrUserNotFound
-	}
-
-	return upgradedUser, nil
 }
 
 func (r *authRepository) CreateTenantForMerchant(ctx context.Context, input CreateMerchantTenantInput) (*domain.MerchantTenant, error) {

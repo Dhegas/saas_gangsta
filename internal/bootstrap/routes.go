@@ -107,7 +107,6 @@ func registerAuthRoutes(api *gin.RouterGroup, cfg *config.Config, authHandler *a
 		authProtected := authRoutes.Group("")
 		authProtected.Use(middleware.JWTAuth(cfg))
 		{
-			authProtected.POST("/subscribe", middleware.RoleGuard("BASIC"), authHandler.Subscribe)
 			authProtected.POST("/logout", authHandler.Logout)
 			authProtected.GET("/me", authHandler.Me)
 		}

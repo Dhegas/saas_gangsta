@@ -28,6 +28,7 @@ definitions:
     - name
     - price
     type: object
+<<<<<<< HEAD
   dto.LoginRequest:
     properties:
       email:
@@ -36,6 +37,36 @@ definitions:
         minLength: 6
         type: string
     required:
+=======
+  dto.CreateTenantRequest:
+    properties:
+      name:
+        maxLength: 150
+        minLength: 2
+        type: string
+      slug:
+        maxLength: 80
+        minLength: 2
+        type: string
+      status:
+        enum:
+        - active
+        - inactive
+        - suspended
+        type: string
+    required:
+    - name
+    - slug
+    type: object
+  dto.LoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        minLength: 6
+        type: string
+    required:
+>>>>>>> dev-renata
     - email
     - password
     type: object
@@ -80,11 +111,34 @@ definitions:
       price:
         type: number
     type: object
+<<<<<<< HEAD
   dto.UpdateTenantStatusRequest:
     properties:
       status:
         description: validator.v10 akan memastikan status tidak kosong dan hanya berisi
           nilai tertentu
+=======
+  dto.UpdateTenantRequest:
+    properties:
+      name:
+        maxLength: 150
+        minLength: 2
+        type: string
+      slug:
+        maxLength: 80
+        minLength: 2
+        type: string
+      status:
+        enum:
+        - active
+        - inactive
+        - suspended
+        type: string
+    type: object
+  dto.UpdateTenantStatusRequest:
+    properties:
+      status:
+>>>>>>> dev-renata
         enum:
         - active
         - inactive
@@ -109,7 +163,7 @@ info:
   title: saas_gangsta Backend API
   version: "1.0"
 paths:
-  /admin/dashboard:
+  /api/v1/admin/dashboard:
     get:
       consumes:
       - application/json
@@ -131,7 +185,7 @@ paths:
       summary: Get Admin Dashboard Stats
       tags:
       - Admin Dashboard
-  /admin/subscriptions/plans:
+  /api/v1/admin/subscriptions/plans:
     get:
       description: 'Mengambil daftar semua paket langganan (misal: Basic, Pro, Enterprise)'
       produces:
@@ -182,7 +236,7 @@ paths:
       summary: Create Subscription Plan
       tags:
       - Admin Subscription
-  /admin/subscriptions/plans/{id}:
+  /api/v1/admin/subscriptions/plans/{id}:
     patch:
       consumes:
       - application/json
@@ -221,10 +275,9 @@ paths:
       summary: Update Subscription Plan
       tags:
       - Admin Subscription
-  /admin/tenants:
+  /api/v1/admin/tenants:
     get:
-      description: Mengambil daftar seluruh toko/merchant (tenant) yang terdaftar
-        di platform
+      description: Mengambil daftar seluruh tenant yang terdaftar di platform
       produces:
       - application/json
       responses:
@@ -238,10 +291,144 @@ paths:
           schema:
             additionalProperties: true
             type: object
-      summary: Get All Tenants
+      summary: List All Tenants
       tags:
       - Admin Tenant
-  /admin/tenants/{id}/status:
+    post:
+      consumes:
+      - application/json
+      description: Mendaftarkan tenant (merchant/toko) baru ke dalam platform
+      parameters:
+      - description: Payload Tenant Baru
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateTenantRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Register New Tenant
+      tags:
+      - Admin Tenant
+  /api/v1/admin/tenants/{id}:
+    delete:
+      description: Menghapus tenant secara soft delete (mengisi deleted_at, data tetap
+        ada di DB)
+      parameters:
+      - description: Tenant ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Soft Delete Tenant
+      tags:
+      - Admin Tenant
+    get:
+      description: Mengambil detail satu tenant berdasarkan ID
+      parameters:
+      - description: Tenant ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Get Tenant Detail
+      tags:
+      - Admin Tenant
+    put:
+      consumes:
+      - application/json
+      description: Memperbarui data tenant (name, slug, atau status)
+      parameters:
+      - description: Tenant ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Payload Update Tenant
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateTenantRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Update Tenant
+      tags:
+      - Admin Tenant
+  /api/v1/admin/tenants/{id}/status:
     patch:
       consumes:
       - application/json

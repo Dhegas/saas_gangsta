@@ -25,7 +25,7 @@ func NewDashboardHandler(usecase domain.AdminDashboardUsecase) *DashboardHandler
 // @Produce      json
 // @Success      200  {object}  map[string]interface{}
 // @Failure      500  {object}  map[string]interface{}
-// @Router       /api/v1/admin/dashboard [get]
+// @Router       /admin/dashboard [get]
 func (h *DashboardHandler) GetDashboardStats(c *gin.Context) {
 	ctx := c.Request.Context()
 

@@ -26,7 +26,7 @@ func NewSubscriptionHandler(usecase domain.AdminSubscriptionUsecase) *Subscripti
 // @Produce      json
 // @Success      200  {object}  map[string]interface{}
 // @Failure      500  {object}  map[string]interface{}
-// @Router       /api/v1/admin/subscriptions/plans [get]
+// @Router       /admin/subscriptions/plans [get]
 func (h *SubscriptionHandler) GetAllPlans(c *gin.Context) {
 	ctx := c.Request.Context()
 
@@ -60,7 +60,7 @@ func (h *SubscriptionHandler) GetAllPlans(c *gin.Context) {
 // @Success      201      {object}  map[string]interface{}
 // @Failure      400      {object}  map[string]interface{}
 // @Failure      500      {object}  map[string]interface{}
-// @Router       /api/v1/admin/subscriptions/plans [post]
+// @Router       /admin/subscriptions/plans [post]
 func (h *SubscriptionHandler) CreatePlan(c *gin.Context) {
 	ctx := c.Request.Context()
 	var req dto.CreateSubscriptionPlanRequest
@@ -89,7 +89,7 @@ func (h *SubscriptionHandler) CreatePlan(c *gin.Context) {
 // @Success      200      {object}  map[string]interface{}
 // @Failure      400      {object}  map[string]interface{}
 // @Failure      500      {object}  map[string]interface{}
-// @Router       /api/v1/admin/subscriptions/plans/{id} [patch]
+// @Router       /admin/subscriptions/plans/{id} [patch]
 func (h *SubscriptionHandler) UpdatePlan(c *gin.Context) {
 	ctx := c.Request.Context()
 	planID := c.Param("id")

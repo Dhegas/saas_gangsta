@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"net/http"
+	"strings"
 
 	apperrors "github.com/dhegas/saas_gangsta/internal/common/errors"
 	"github.com/gin-gonic/gin"
@@ -28,7 +29,7 @@ func RoleGuards(allowedRoles ...string) gin.HandlerFunc {
 
 		allowed := false
 		for _, allowedRole := range allowedRoles {
-			if roleStr == allowedRole {
+			if strings.EqualFold(roleStr, allowedRole) {
 				allowed = true
 				break
 			}

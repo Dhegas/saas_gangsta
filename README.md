@@ -10,21 +10,8 @@ SaaS Gangsta adalah layanan backend API skala industri yang dirancang khusus unt
 Sistem ini dibangun menggunakan standar **Clean Architecture** yang dikombinasikan dengan pendekatan **Modular Monolith (Domain-Oriented)**.
 
 ### Architecture Diagram
-```mermaid
-graph TD
-    Client[Web/Mobile/Flutter] -->|HTTPS| Nginx[Nginx API Gateway]
-    Nginx -->|Reverse Proxy| GoServer[Go + Gin HTTP Server]
-    
-   subgraph "Go Internal (Per Domain)"
-        GoServer --> Delivery[Delivery Layer / HTTP Handler]
-        Delivery --> Usecase[Usecase Layer / Business Logic]
-        Usecase --> Domain[Domain Layer / Models & Interfaces]
-        Usecase --> Repository[Repository Layer / DB Queries]
-    end
-    
-    Repository -->|SQL| DB[(PostgreSQL Supabase)]
-    Repository -->|Cache| Redis[(Redis Caching)]
-```
+[ERD Finance Tracker] (https://viewer.diagrams.net/?tags=%7B%7D&lightbox=1&highlight=0000ff&edit=_blank&layers=1&nav=1&title=diagram%20gangsta.drawio&dark=auto#Uhttps%3A%2F%2Fdrive.google.com%2Fuc%3Fid%3D14pQkdyTJauy4w241hsFAc8Z1uFC_wkXd%26export%3Ddownload)
+
 
 ### Layer Responsibility
 - **Delivery**: Menangani binding request JSON, validasi input (`validator/v10`), dan parsing context JWT.

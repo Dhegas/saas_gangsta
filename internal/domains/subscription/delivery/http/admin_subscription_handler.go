@@ -24,6 +24,7 @@ func NewSubscriptionHandler(usecase domain.AdminSubscriptionUsecase) *Subscripti
 // @Description  Mengambil daftar semua paket langganan (misal: Basic, Pro, Enterprise)
 // @Tags         Admin Subscription
 // @Produce      json
+// @Security     BearerAuth
 // @Success      200  {object}  map[string]interface{}
 // @Failure      500  {object}  map[string]interface{}
 // @Router       /admin/subscriptions/plans [get]
@@ -56,6 +57,7 @@ func (h *SubscriptionHandler) GetAllPlans(c *gin.Context) {
 // @Tags         Admin Subscription
 // @Accept       json
 // @Produce      json
+// @Security     BearerAuth
 // @Param        request  body      dto.CreateSubscriptionPlanRequest  true  "Payload Data Paket"
 // @Success      201      {object}  map[string]interface{}
 // @Failure      400      {object}  map[string]interface{}
@@ -84,6 +86,7 @@ func (h *SubscriptionHandler) CreatePlan(c *gin.Context) {
 // @Tags         Admin Subscription
 // @Accept       json
 // @Produce      json
+// @Security     BearerAuth
 // @Param        id       path      string                             true  "Plan ID"
 // @Param        request  body      dto.UpdateSubscriptionPlanRequest  true  "Payload Data Update"
 // @Success      200      {object}  map[string]interface{}

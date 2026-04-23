@@ -7,3 +7,13 @@ type CreateTenantProfileRequest struct {
 	SortOrder   *int   `json:"sortOrder"`
 	IsActive    *bool  `json:"isActive"`
 }
+
+// UpdateTenantProfileRequest adalah payload untuk mengupdate tenant profile.
+// Semua field bersifat opsional (partial update).
+type UpdateTenantProfileRequest struct {
+	Name        *string `json:"name" binding:"omitempty,max=120"`
+	Description *string `json:"description"`
+	SortOrder   *int    `json:"sortOrder"`
+	IsActive    *bool   `json:"isActive"`
+}
+

@@ -22,6 +22,14 @@ func NewTenantProfileHandler(usecase domain.TenantProfileUsecase) *TenantProfile
 	return &TenantProfileHandler{usecase: usecase}
 }
 
+// Create godoc
+// @Summary      Buat tenant profile
+// @Tags         tenant-profiles
+// @Accept       json
+// @Produce      json
+// @Param        body body dto.CreateTenantProfileRequest true "Payload"
+// @Success      201 {object} response.APIResponse
+// @Router       /api/tenant-profiles [post]
 func (h *TenantProfileHandler) Create(c *gin.Context) {
 	tenantID, err := tenant.GetTenantID(c)
 	if err != nil {
@@ -31,12 +39,7 @@ func (h *TenantProfileHandler) Create(c *gin.Context) {
 
 	var req dto.CreateTenantProfileRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		var validationErrs validator.ValidationErrors
-		details := err.Error()
-		if errors.As(err, &validationErrs) {
-			details = validationErrs.Error()
-		}
-		apperrors.Write(c, apperrors.New("VALIDATION_ERROR", "Payload tenant profile tidak valid", http.StatusBadRequest, details))
+		apperrors.Write(c, validationError(err))
 		return
 	}
 
@@ -49,6 +52,12 @@ func (h *TenantProfileHandler) Create(c *gin.Context) {
 	response.Success(c, http.StatusCreated, "Tenant profile berhasil dibuat", res)
 }
 
+// List godoc
+// @Summary      Daftar tenant profile
+// @Tags         tenant-profiles
+// @Produce      json
+// @Success      200 {object} response.APIResponse
+// @Router       /api/tenant-profiles [get]
 func (h *TenantProfileHandler) List(c *gin.Context) {
 	tenantID, err := tenant.GetTenantID(c)
 	if err != nil {
@@ -63,4 +72,122 @@ func (h *TenantProfileHandler) List(c *gin.Context) {
 	}
 
 	response.Success(c, http.StatusOK, "Daftar tenant profile berhasil diambil", res)
+}
+
+// GetByID godoc
+// @Summary      Detail tenant profile
+// @Tags         tenant-profiles
+// @Produce      json
+// @Param        id path string true "Profile ID"
+// @Success      200 {object} response.APIResponse
+// @Router       /api/tenant-profiles/{id} [get]
+func (h *TenantProfileHandler) GetByID(c *gin.Context) {
+	tenantID, err := tenant.GetTenantID(c)
+	if err != nil {
+		apperrors.Write(c, apperrors.New("TENANT_NOT_FOUND", "Tenant context is required", http.StatusUnauthorized, nil))
+		return
+	}
+
+	profileID := c.Param("id")
+
+	res, err := h.usecase.GetProfileByID(c.Request.Context(), tenantID, profileID)
+	if err != nil {
+		apperrors.Write(c, err)
+		return
+	}
+
+	response.Success(c, http.StatusOK, "Detail tenant profile berhasil diambil", res)
+}
+
+// Update godoc
+// @Summary      Update tenant profile
+// @Tags         tenant-profiles
+// @Accept       json
+// @Produce      json
+// @Param        id   path string                          true  "Profile ID"
+// @Param        body body dto.UpdateTenantProfileRequest true  "Payload"
+// @Success      200 {object} response.APIResponse
+// @Router       /api/tenant-profiles/{id} [put]
+func (h *TenantProfileHandler) Update(c *gin.Context) {
+	tenantID, err := tenant.GetTenantID(c)
+	if err != nil {
+		apperrors.Write(c, apperrors.New("TENANT_NOT_FOUND", "Tenant context is required", http.StatusUnauthorized, nil))
+		return
+	}
+
+	profileID := c.Param("id")
+
+	var req dto.UpdateTenantProfileRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		apperrors.Write(c, validationError(err))
+		return
+	}
+
+	res, err := h.usecase.UpdateProfile(c.Request.Context(), tenantID, profileID, req)
+	if err != nil {
+		apperrors.Write(c, err)
+		return
+	}
+
+	response.Success(c, http.StatusOK, "Tenant profile berhasil diupdate", res)
+}
+
+// Delete godoc
+// @Summary      Hapus tenant profile (soft delete)
+// @Tags         tenant-profiles
+// @Produce      json
+// @Param        id path string true "Profile ID"
+// @Success      200 {object} response.APIResponse
+// @Router       /api/tenant-profiles/{id} [delete]
+func (h *TenantProfileHandler) Delete(c *gin.Context) {
+	tenantID, err := tenant.GetTenantID(c)
+	if err != nil {
+		apperrors.Write(c, apperrors.New("TENANT_NOT_FOUND", "Tenant context is required", http.StatusUnauthorized, nil))
+		return
+	}
+
+	profileID := c.Param("id")
+
+	if err := h.usecase.DeleteProfile(c.Request.Context(), tenantID, profileID); err != nil {
+		apperrors.Write(c, err)
+		return
+	}
+
+	response.Success(c, http.StatusOK, "Tenant profile berhasil dihapus", nil)
+}
+
+// ToggleActive godoc
+// @Summary      Aktif / nonaktifkan tenant profile
+// @Tags         tenant-profiles
+// @Produce      json
+// @Param        id path string true "Profile ID"
+// @Success      200 {object} response.APIResponse
+// @Router       /api/tenant-profiles/{id}/toggle-active [patch]
+func (h *TenantProfileHandler) ToggleActive(c *gin.Context) {
+	tenantID, err := tenant.GetTenantID(c)
+	if err != nil {
+		apperrors.Write(c, apperrors.New("TENANT_NOT_FOUND", "Tenant context is required", http.StatusUnauthorized, nil))
+		return
+	}
+
+	profileID := c.Param("id")
+
+	res, err := h.usecase.ToggleActive(c.Request.Context(), tenantID, profileID)
+	if err != nil {
+		apperrors.Write(c, err)
+		return
+	}
+
+	response.Success(c, http.StatusOK, "Status tenant profile berhasil diubah", res)
+}
+
+// --- helpers ---
+
+func validationError(err error) *apperrors.AppError {
+	var validationErrs validator.ValidationErrors
+	details := err.Error()
+	if errors.As(err, &validationErrs) {
+		details = validationErrs.Error()
+	}
+	return apperrors.New("VALIDATION_ERROR", "Payload tenant profile tidak valid", http.StatusBadRequest, details)
 }

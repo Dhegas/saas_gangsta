@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"strings"
 
-	commonauth "github.com/dhegas/saas_gangsta/internal/domains/user/auth"
-	"github.com/dhegas/saas_gangsta/internal/config"
 	apperrors "github.com/dhegas/saas_gangsta/internal/common/errors"
+	"github.com/dhegas/saas_gangsta/internal/config"
+	commonauth "github.com/dhegas/saas_gangsta/internal/domains/user/auth"
 	"github.com/dhegas/saas_gangsta/internal/domains/user/auth/domain"
 	"github.com/dhegas/saas_gangsta/internal/domains/user/auth/dto"
 	"github.com/dhegas/saas_gangsta/internal/domains/user/auth/repository"
@@ -18,7 +18,6 @@ import (
 type AuthUsecase interface {
 	Register(ctx context.Context, req dto.RegisterRequest) (*dto.RegisterResponse, error)
 	Login(ctx context.Context, req dto.LoginRequest) (*dto.LoginResponse, error)
-	Subscribe(ctx context.Context, userID string, req dto.SubscribeRequest) (*dto.SubscribeResponse, error)
 	CreateMerchantTenant(ctx context.Context, userID string, req dto.CreateMerchantTenantRequest) (*dto.CreateMerchantTenantResponse, error)
 	ListMerchantTenants(ctx context.Context, userID string) (*dto.ListMerchantTenantsResponse, error)
 	Refresh(ctx context.Context, req dto.RefreshTokenRequest) (*dto.LoginResponse, error)
@@ -58,7 +57,7 @@ func (u *authUsecase) Register(ctx context.Context, req dto.RegisterRequest) (*d
 		Email:        email,
 		FullName:     fullName,
 		PasswordHash: string(passwordHash),
-		Role:         "customer",
+		Role:         "BASIC",
 		IsActive:     true,
 		TenantStatus: "active",
 	}
@@ -104,48 +103,6 @@ func (u *authUsecase) Login(ctx context.Context, req dto.LoginRequest) (*dto.Log
 	return u.buildLoginResponse(user)
 }
 
-func (u *authUsecase) Subscribe(ctx context.Context, userID string, req dto.SubscribeRequest) (*dto.SubscribeResponse, error) {
-	if strings.TrimSpace(userID) == "" {
-		return nil, apperrors.New("UNAUTHORIZED", "User tidak valid", http.StatusUnauthorized, nil)
-	}
-
-	planID := strings.TrimSpace(req.PlanID)
-
-	if planID == "" {
-		return nil, apperrors.New("VALIDATION_ERROR", "planId wajib diisi", http.StatusBadRequest, nil)
-	}
-
-	upgradedUser, err := u.repo.SubscribeAndUpgradeCustomer(ctx, repository.SubscribeUpgradeInput{
-		UserID: userID,
-		PlanID: planID,
-	})
-	if err != nil {
-		switch {
-		case errors.Is(err, repository.ErrUserNotFound):
-			return nil, apperrors.New("NOT_FOUND", "User tidak ditemukan", http.StatusNotFound, nil)
-		case errors.Is(err, repository.ErrUserNotCustomer):
-			return nil, apperrors.New("FORBIDDEN", "Hanya customer yang dapat subscribe menjadi merchant", http.StatusForbidden, nil)
-		case errors.Is(err, repository.ErrSubscriptionPlanNotFound):
-			return nil, apperrors.New("NOT_FOUND", "Paket subscription tidak ditemukan atau tidak aktif", http.StatusNotFound, nil)
-		case errors.Is(err, repository.ErrSubscriptionAlreadyExists):
-			return nil, apperrors.New("CONFLICT", "Subscription aktif/pending sudah ada", http.StatusConflict, nil)
-		default:
-			return nil, apperrors.New("INTERNAL_ERROR", "Gagal memproses subscription", http.StatusInternalServerError, nil)
-		}
-	}
-
-	loginRes, err := u.buildLoginResponse(upgradedUser)
-	if err != nil {
-		return nil, err
-	}
-
-	return &dto.SubscribeResponse{
-		AccessToken:  loginRes.AccessToken,
-		RefreshToken: loginRes.RefreshToken,
-		User:         loginRes.User,
-	}, nil
-}
-
 func (u *authUsecase) CreateMerchantTenant(ctx context.Context, userID string, req dto.CreateMerchantTenantRequest) (*dto.CreateMerchantTenantResponse, error) {
 	if strings.TrimSpace(userID) == "" {
 		return nil, apperrors.New("UNAUTHORIZED", "User tidak valid", http.StatusUnauthorized, nil)
@@ -165,9 +122,9 @@ func (u *authUsecase) CreateMerchantTenant(ctx context.Context, userID string, r
 		case errors.Is(err, repository.ErrUserNotFound):
 			return nil, apperrors.New("NOT_FOUND", "User tidak ditemukan", http.StatusNotFound, nil)
 		case errors.Is(err, repository.ErrUserNotMerchant):
-			return nil, apperrors.New("FORBIDDEN", "Hanya merchant yang dapat membuat tenant", http.StatusForbidden, nil)
+			return nil, apperrors.New("FORBIDDEN", "Hanya MITRA yang dapat membuat tenant", http.StatusForbidden, nil)
 		case errors.Is(err, repository.ErrMerchantSubscriptionMissing):
-			return nil, apperrors.New("FORBIDDEN", "Subscription merchant tidak ditemukan", http.StatusForbidden, nil)
+			return nil, apperrors.New("FORBIDDEN", "Subscription MITRA tidak ditemukan", http.StatusForbidden, nil)
 		case errors.Is(err, repository.ErrTenantLimitReached):
 			return nil, apperrors.New("FORBIDDEN", "Batas jumlah tenant pada paket subscription sudah tercapai", http.StatusForbidden, nil)
 		default:
@@ -198,8 +155,8 @@ func (u *authUsecase) ListMerchantTenants(ctx context.Context, userID string) (*
 	if merchant == nil {
 		return nil, apperrors.New("UNAUTHORIZED", "User tidak ditemukan", http.StatusUnauthorized, nil)
 	}
-	if merchant.Role != "merchant" {
-		return nil, apperrors.New("FORBIDDEN", "Hanya merchant yang dapat melihat tenant", http.StatusForbidden, nil)
+	if merchant.Role != "MITRA" {
+		return nil, apperrors.New("FORBIDDEN", "Hanya MITRA yang dapat melihat tenant", http.StatusForbidden, nil)
 	}
 
 	tenants, err := u.repo.ListTenantsByMerchant(ctx, userID)
@@ -284,7 +241,7 @@ func (u *authUsecase) Me(ctx context.Context, userID string) (*dto.MeResponse, e
 }
 
 func validateTenantState(user *domain.User) error {
-	if user.Role == "merchant" {
+	if user.Role == "MITRA" {
 		if user.TenantID != "" && strings.TrimSpace(user.TenantStatus) != "active" {
 			return apperrors.New("TENANT_INACTIVE", "Tenant tidak aktif", http.StatusForbidden, nil)
 		}

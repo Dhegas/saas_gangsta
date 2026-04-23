@@ -1,4 +1,4 @@
--- Tujuan: Menyimpan akun pengguna lintas peran (customer, merchant, admin).
+-- Tujuan: Menyimpan akun pengguna lintas peran (BASIC, MITRA, ADMIN).
 
 BEGIN;
 
@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS users (
     email          VARCHAR(255) NOT NULL UNIQUE,
     password_hash  TEXT         NOT NULL,
     full_name      VARCHAR(150) NOT NULL,
-    role           VARCHAR(20)  NOT NULL CHECK (role IN ('c', 'm', 'a')),
+    role           VARCHAR(20)  NOT NULL CHECK (role IN ('BASIC', 'MITRA', 'ADMIN')),
     is_active      BOOLEAN      NOT NULL DEFAULT TRUE,
     last_login_at  TIMESTAMPTZ,
     created_at     TIMESTAMPTZ  NOT NULL DEFAULT NOW(),

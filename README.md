@@ -10,6 +10,8 @@ SaaS Gangsta adalah layanan backend API skala industri yang dirancang khusus unt
 Sistem ini dibangun menggunakan standar **Clean Architecture** yang dikombinasikan dengan pendekatan **Modular Monolith (Domain-Oriented)**.
 
 ### Architecture Diagram
+[ERD SaaS Gangsta] (https://viewer.diagrams.net/?tags=%7B%7D&lightbox=1&highlight=0000ff&edit=_blank&layers=1&nav=1&title=diagram%20gangsta.drawio&dark=auto#Uhttps%3A%2F%2Fdrive.google.com%2Fuc%3Fid%3D14pQkdyTJauy4w241hsFAc8Z1uFC_wkXd%26export%3Ddownload)
+
 ```mermaid
 graph TD
     Client[Web/Mobile/Flutter] -->|HTTPS| Nginx[Nginx API Gateway]

@@ -16,14 +16,12 @@ import (
 type mockAuthUsecase struct {
 	registerRes     *dto.RegisterResponse
 	loginRes        *dto.LoginResponse
-	subscribeRes    *dto.SubscribeResponse
 	createTenantRes *dto.CreateMerchantTenantResponse
 	listTenantsRes  *dto.ListMerchantTenantsResponse
 	refreshRes      *dto.LoginResponse
 	meRes           *dto.MeResponse
 	registerErr     error
 	loginErr        error
-	subscribeErr    error
 	createTenantErr error
 	listTenantsErr  error
 	refreshErr      error
@@ -37,10 +35,6 @@ func (m *mockAuthUsecase) Register(_ context.Context, _ dto.RegisterRequest) (*d
 
 func (m *mockAuthUsecase) Login(_ context.Context, _ dto.LoginRequest) (*dto.LoginResponse, error) {
 	return m.loginRes, m.loginErr
-}
-
-func (m *mockAuthUsecase) Subscribe(_ context.Context, _ string, _ dto.SubscribeRequest) (*dto.SubscribeResponse, error) {
-	return m.subscribeRes, m.subscribeErr
 }
 
 func (m *mockAuthUsecase) CreateMerchantTenant(_ context.Context, _ string, _ dto.CreateMerchantTenantRequest) (*dto.CreateMerchantTenantResponse, error) {
@@ -181,26 +175,6 @@ func TestMeHandlerUnauthorizedWhenUsecaseFails(t *testing.T) {
 	r.ServeHTTP(w, req)
 	if w.Code != http.StatusInternalServerError {
 		t.Fatalf("expected 500 for non-app error mapping, got %d", w.Code)
-	}
-}
-
-func TestSubscribeHandlerSuccess(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-	r := gin.New()
-	h := NewAuthHandler(&mockAuthUsecase{subscribeRes: &dto.SubscribeResponse{User: dto.UserResponse{ID: "u-1", Role: "merchant"}, AccessToken: "a", RefreshToken: "r"}})
-	r.POST("/subscribe", func(c *gin.Context) {
-		c.Set("userId", "u-1")
-		h.Subscribe(c)
-	})
-
-	payload, _ := json.Marshal(dto.SubscribeRequest{PlanID: "11111111-1111-1111-1111-111111111111"})
-	req := httptest.NewRequest(http.MethodPost, "/subscribe", bytes.NewBuffer(payload))
-	req.Header.Set("Content-Type", "application/json")
-	w := httptest.NewRecorder()
-
-	r.ServeHTTP(w, req)
-	if w.Code != http.StatusOK {
-		t.Fatalf("expected 200, got %d", w.Code)
 	}
 }
 

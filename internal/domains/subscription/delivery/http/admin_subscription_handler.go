@@ -24,6 +24,7 @@ func NewSubscriptionHandler(usecase domain.AdminSubscriptionUsecase) *Subscripti
 // @Description  Mengambil daftar semua paket langganan (misal: Basic, Pro, Enterprise)
 // @Tags         Admin Subscription
 // @Produce      json
+// @Security     BearerAuth
 // @Success      200  {object}  map[string]interface{}
 // @Failure      500  {object}  map[string]interface{}
 // @Router       /admin/subscriptions/plans [get]
@@ -56,6 +57,7 @@ func (h *SubscriptionHandler) GetAllPlans(c *gin.Context) {
 // @Tags         Admin Subscription
 // @Accept       json
 // @Produce      json
+// @Security     BearerAuth
 // @Param        request  body      dto.CreateSubscriptionPlanRequest  true  "Payload Data Paket"
 // @Success      201      {object}  map[string]interface{}
 // @Failure      400      {object}  map[string]interface{}
@@ -84,6 +86,7 @@ func (h *SubscriptionHandler) CreatePlan(c *gin.Context) {
 // @Tags         Admin Subscription
 // @Accept       json
 // @Produce      json
+// @Security     BearerAuth
 // @Param        id       path      string                             true  "Plan ID"
 // @Param        request  body      dto.UpdateSubscriptionPlanRequest  true  "Payload Data Update"
 // @Success      200      {object}  map[string]interface{}
@@ -108,15 +111,10 @@ func (h *SubscriptionHandler) UpdatePlan(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"success": true, "message": "Paket berhasil diupdate"})
 }
 
-// RegisterRoutes mendaftarkan endpoint ke router Gin
+// RegisterRoutes mendaftarkan endpoint ke dalam group yang sudah diterima.
+// Group yang masuk sudah ber-prefix /admin (dari bootstrap/admin_routes.go).
 func (h *SubscriptionHandler) RegisterRoutes(router *gin.RouterGroup) {
-	adminRoute := router.Group("/admin")
-	{
-		// Endpoint: GET /api/v1/admin/subscriptions/plans
-		adminRoute.GET("/subscriptions/plans", h.GetAllPlans)
-
-		// Endpoint BARU
-		adminRoute.POST("/subscriptions/plans", h.CreatePlan)
-		adminRoute.PATCH("/subscriptions/plans/:id", h.UpdatePlan)
-	}
+	router.GET("/subscriptions/plans", h.GetAllPlans)
+	router.POST("/subscriptions/plans", h.CreatePlan)
+	router.PATCH("/subscriptions/plans/:id", h.UpdatePlan)
 }

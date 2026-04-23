@@ -17,6 +17,9 @@ import (
 // @description Backend API Service untuk platform SaaS POS & Self-Order UMKM kuliner.
 // @BasePath /api/v1
 // @schemes http https
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
 
 func main() {
 	app, err := bootstrap.New()

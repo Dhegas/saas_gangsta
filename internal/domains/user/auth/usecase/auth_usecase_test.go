@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dhegas/saas_gangsta/internal/domains/user/auth"
 	"github.com/dhegas/saas_gangsta/internal/config"
+	"github.com/dhegas/saas_gangsta/internal/domains/user/auth"
 	"github.com/dhegas/saas_gangsta/internal/domains/user/auth/domain"
 	"github.com/dhegas/saas_gangsta/internal/domains/user/auth/dto"
 	"github.com/dhegas/saas_gangsta/internal/domains/user/auth/repository"
@@ -16,11 +16,9 @@ import (
 type mockAuthRepo struct {
 	userByEmail     *domain.User
 	userByID        *domain.User
-	upgradedUser    *domain.User
 	createdTenant   *domain.MerchantTenant
 	merchantTenants []domain.MerchantTenant
 	createErr       error
-	subscribeErr    error
 	createTenantErr error
 	listTenantsErr  error
 	errEmail        error
@@ -43,13 +41,6 @@ func (m *mockAuthRepo) CreateUser(_ context.Context, user *domain.User) error {
 		user.ID = "created-user-id"
 	}
 	return nil
-}
-
-func (m *mockAuthRepo) SubscribeAndUpgradeCustomer(_ context.Context, _ repository.SubscribeUpgradeInput) (*domain.User, error) {
-	if m.subscribeErr != nil {
-		return nil, m.subscribeErr
-	}
-	return m.upgradedUser, nil
 }
 
 func (m *mockAuthRepo) CreateTenantForMerchant(_ context.Context, _ repository.CreateMerchantTenantInput) (*domain.MerchantTenant, error) {
@@ -91,7 +82,7 @@ func TestLoginSuccess(t *testing.T) {
 			TenantID:     "t-1",
 			Email:        "merchant@test.local",
 			PasswordHash: mustHash(t, "secret123"),
-			Role:         "merchant",
+			Role:         "MITRA",
 			IsActive:     true,
 			TenantStatus: "active",
 		},
@@ -105,8 +96,8 @@ func TestLoginSuccess(t *testing.T) {
 	if res.AccessToken == "" || res.RefreshToken == "" {
 		t.Fatalf("expected tokens to be generated")
 	}
-	if res.User.Role != "merchant" {
-		t.Fatalf("expected role merchant, got %s", res.User.Role)
+	if res.User.Role != "MITRA" {
+		t.Fatalf("expected role MITRA, got %s", res.User.Role)
 	}
 }
 
@@ -149,7 +140,7 @@ func TestLoginUnauthorizedInvalidPassword(t *testing.T) {
 			TenantID:     "t-1",
 			Email:        "merchant@test.local",
 			PasswordHash: mustHash(t, "secret123"),
-			Role:         "merchant",
+			Role:         "MITRA",
 			IsActive:     true,
 			TenantStatus: "active",
 		},
@@ -168,7 +159,7 @@ func TestLoginTenantInactive(t *testing.T) {
 			TenantID:     "t-1",
 			Email:        "merchant@test.local",
 			PasswordHash: mustHash(t, "secret123"),
-			Role:         "merchant",
+			Role:         "MITRA",
 			IsActive:     true,
 			TenantStatus: "inactive",
 		},
@@ -186,7 +177,7 @@ func TestRefreshSuccess(t *testing.T) {
 			ID:           "u-1",
 			TenantID:     "t-1",
 			Email:        "merchant@test.local",
-			Role:         "merchant",
+			Role:         "MITRA",
 			IsActive:     true,
 			TenantStatus: "active",
 		},
@@ -195,7 +186,7 @@ func TestRefreshSuccess(t *testing.T) {
 	uc := newAuthUsecaseForTest(repo)
 	refreshToken, err := auth.GenerateRefreshToken(
 		"u-1",
-		"merchant",
+		"MITRA",
 		"t-1",
 		7*24*time.Hour,
 		"12345678901234567890123456789012",
@@ -219,7 +210,7 @@ func TestMeSuccess(t *testing.T) {
 			ID:           "u-1",
 			TenantID:     "t-1",
 			Email:        "merchant@test.local",
-			Role:         "merchant",
+			Role:         "MITRA",
 			IsActive:     true,
 			TenantStatus: "active",
 		},
@@ -242,52 +233,6 @@ func TestLogoutSuccess(t *testing.T) {
 	}
 }
 
-func TestSubscribeSuccess(t *testing.T) {
-	repo := &mockAuthRepo{
-		upgradedUser: &domain.User{
-			ID:           "u-1",
-			TenantID:     "",
-			Email:        "user@test.local",
-			Role:         "merchant",
-			IsActive:     true,
-			TenantStatus: "active",
-		},
-	}
-
-	uc := newAuthUsecaseForTest(repo)
-	res, err := uc.Subscribe(context.Background(), "u-1", dto.SubscribeRequest{PlanID: "11111111-1111-1111-1111-111111111111"})
-	if err != nil {
-		t.Fatalf("expected nil error, got %v", err)
-	}
-	if res.User.Role != "merchant" {
-		t.Fatalf("expected merchant after subscribe")
-	}
-	if res.User.TenantID != "" {
-		t.Fatalf("expected empty tenant after subscribe, got %s", res.User.TenantID)
-	}
-	if res.AccessToken == "" || res.RefreshToken == "" {
-		t.Fatalf("expected tokens after subscribe")
-	}
-}
-
-func TestSubscribeForbiddenWhenNotCustomer(t *testing.T) {
-	repo := &mockAuthRepo{subscribeErr: repository.ErrUserNotCustomer}
-	uc := newAuthUsecaseForTest(repo)
-
-	if _, err := uc.Subscribe(context.Background(), "u-1", dto.SubscribeRequest{PlanID: "11111111-1111-1111-1111-111111111111"}); err == nil {
-		t.Fatalf("expected forbidden error")
-	}
-}
-
-func TestSubscribeConflictWhenAlreadySubscribed(t *testing.T) {
-	repo := &mockAuthRepo{subscribeErr: repository.ErrSubscriptionAlreadyExists}
-	uc := newAuthUsecaseForTest(repo)
-
-	if _, err := uc.Subscribe(context.Background(), "u-1", dto.SubscribeRequest{PlanID: "11111111-1111-1111-1111-111111111111"}); err == nil {
-		t.Fatalf("expected conflict error")
-	}
-}
-
 func TestCreateMerchantTenantSuccess(t *testing.T) {
 	repo := &mockAuthRepo{
 		createdTenant: &domain.MerchantTenant{ID: "t-1", Name: "Warung A", Slug: "warung-a", Status: "active", IsOwner: true},
@@ -305,7 +250,7 @@ func TestCreateMerchantTenantSuccess(t *testing.T) {
 
 func TestListMerchantTenantsSuccess(t *testing.T) {
 	repo := &mockAuthRepo{
-		userByID:        &domain.User{ID: "u-1", Role: "merchant", IsActive: true},
+		userByID:        &domain.User{ID: "u-1", Role: "MITRA", IsActive: true},
 		merchantTenants: []domain.MerchantTenant{{ID: "t-1", Name: "Warung A", Slug: "warung-a", Status: "active", IsOwner: true}},
 	}
 	uc := newAuthUsecaseForTest(repo)

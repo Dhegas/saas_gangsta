@@ -21,10 +21,8 @@ type MeResponse struct {
 	User UserResponse `json:"user"`
 }
 
-type SubscribeResponse struct {
-	AccessToken  string       `json:"accessToken"`
-	RefreshToken string       `json:"refreshToken"`
-	User         UserResponse `json:"user"`
+type LogoutResponse struct {
+	LoggedOut bool `json:"loggedOut"`
 }
 
 type MerchantTenantResponse struct {

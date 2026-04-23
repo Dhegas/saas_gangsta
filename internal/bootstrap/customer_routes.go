@@ -13,13 +13,13 @@ func RegisterCustomerRoutes(api *gin.RouterGroup, cfg *config.Config) {
 	customerRoutes := api.Group("/customer")
 	customerRoutes.Use(
 		middleware.JWTAuth(cfg),
-		middleware.RoleGuard("customer"),
+		middleware.RoleGuard("BASIC"),
 		middleware.TenantGuard(),
 	)
 
 	customerRoutes.GET("/me", func(c *gin.Context) {
 		response.Success(c, http.StatusOK, "Customer context valid", gin.H{
-			"role":     "customer",
+			"role":     "BASIC",
 			"tenantId": c.GetString("tenantId"),
 		})
 	})

@@ -23,6 +23,7 @@ func NewDashboardHandler(usecase domain.AdminDashboardUsecase) *DashboardHandler
 // @Tags         Admin Dashboard
 // @Accept       json
 // @Produce      json
+// @Security     BearerAuth
 // @Success      200  {object}  map[string]interface{}
 // @Failure      500  {object}  map[string]interface{}
 // @Router       /admin/dashboard [get]
@@ -49,10 +50,8 @@ func (h *DashboardHandler) GetDashboardStats(c *gin.Context) {
 	})
 }
 
-// RegisterRoutes untuk mendaftarkan endpoint ke router Gin
+// RegisterRoutes mendaftarkan endpoint ke dalam group yang sudah diterima.
+// Group yang masuk sudah ber-prefix /admin (dari bootstrap/admin_routes.go).
 func (h *DashboardHandler) RegisterRoutes(router *gin.RouterGroup) {
-	adminRoute := router.Group("/admin")
-	{
-		adminRoute.GET("/dashboard", h.GetDashboardStats)
-	}
+	router.GET("/dashboard", h.GetDashboardStats)
 }

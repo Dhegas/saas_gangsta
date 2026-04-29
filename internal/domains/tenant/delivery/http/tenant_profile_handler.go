@@ -28,7 +28,7 @@ func NewTenantProfileHandler(usecase domain.TenantProfileUsecase) *TenantProfile
 // @Accept       json
 // @Produce      json
 // @Param        body body dto.CreateTenantProfileRequest true "Payload"
-// @Success      201 {object} response.APIResponse
+// @Success      201 {object} map[string]interface{}
 // @Router       /api/tenant-profiles [post]
 func (h *TenantProfileHandler) Create(c *gin.Context) {
 	tenantID, err := tenant.GetTenantID(c)
@@ -56,7 +56,7 @@ func (h *TenantProfileHandler) Create(c *gin.Context) {
 // @Summary      Daftar tenant profile
 // @Tags         tenant-profiles
 // @Produce      json
-// @Success      200 {object} response.APIResponse
+// @Success      200 {object} map[string]interface{}
 // @Router       /api/tenant-profiles [get]
 func (h *TenantProfileHandler) List(c *gin.Context) {
 	tenantID, err := tenant.GetTenantID(c)
@@ -79,7 +79,7 @@ func (h *TenantProfileHandler) List(c *gin.Context) {
 // @Tags         tenant-profiles
 // @Produce      json
 // @Param        id path string true "Profile ID"
-// @Success      200 {object} response.APIResponse
+// @Success      200 {object} map[string]interface{}
 // @Router       /api/tenant-profiles/{id} [get]
 func (h *TenantProfileHandler) GetByID(c *gin.Context) {
 	tenantID, err := tenant.GetTenantID(c)
@@ -106,7 +106,7 @@ func (h *TenantProfileHandler) GetByID(c *gin.Context) {
 // @Produce      json
 // @Param        id   path string                          true  "Profile ID"
 // @Param        body body dto.UpdateTenantProfileRequest true  "Payload"
-// @Success      200 {object} response.APIResponse
+// @Success      200 {object} map[string]interface{}
 // @Router       /api/tenant-profiles/{id} [put]
 func (h *TenantProfileHandler) Update(c *gin.Context) {
 	tenantID, err := tenant.GetTenantID(c)
@@ -137,7 +137,7 @@ func (h *TenantProfileHandler) Update(c *gin.Context) {
 // @Tags         tenant-profiles
 // @Produce      json
 // @Param        id path string true "Profile ID"
-// @Success      200 {object} response.APIResponse
+// @Success      200 {object} map[string]interface{}
 // @Router       /api/tenant-profiles/{id} [delete]
 func (h *TenantProfileHandler) Delete(c *gin.Context) {
 	tenantID, err := tenant.GetTenantID(c)
@@ -161,7 +161,7 @@ func (h *TenantProfileHandler) Delete(c *gin.Context) {
 // @Tags         tenant-profiles
 // @Produce      json
 // @Param        id path string true "Profile ID"
-// @Success      200 {object} response.APIResponse
+// @Success      200 {object} map[string]interface{}
 // @Router       /api/tenant-profiles/{id}/toggle-active [patch]
 func (h *TenantProfileHandler) ToggleActive(c *gin.Context) {
 	tenantID, err := tenant.GetTenantID(c)

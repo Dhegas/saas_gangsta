@@ -86,6 +86,7 @@ func registerRoutes(router *gin.Engine, cfg *config.Config, db *gorm.DB, redisCl
 		RegisterMerchantRoutes(api, cfg, authHandler)
 		RegisterTenantProfileRoutes(api, cfg, db)
 		RegisterCategoryRoutes(api, cfg, db)
+		RegisterMenuRoutes(api, cfg, db)
 
 		api.GET("/health", func(c *gin.Context) {
 			response.Success(c, http.StatusOK, "API is healthy", gin.H{

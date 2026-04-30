@@ -15,6 +15,11 @@ func RegisterOrderRoutes(api *gin.RouterGroup, cfg *config.Config, db *gorm.DB) 
 	orderUC := orderusecase.NewMerchantOrderUsecase(orderRepo)
 	orderHandler := orderhttp.NewMerchantOrderHandler(orderUC)
 
+	// Customer Management routes (per order)
+	customerRepo := orderrepo.NewCustomerRepository(db)
+	customerUC := orderusecase.NewCustomerUsecase(customerRepo)
+	customerHandler := orderhttp.NewCustomerHandler(customerUC)
+
 	// Customer Routes (untuk membuat order dari QR code)
 	customerOrderRoutes := api.Group("/orders")
 	customerOrderRoutes.Use(
@@ -23,6 +28,11 @@ func RegisterOrderRoutes(api *gin.RouterGroup, cfg *config.Config, db *gorm.DB) 
 	)
 	customerOrderRoutes.POST("", orderHandler.CreateOrder)
 	customerOrderRoutes.GET("/:id", orderHandler.GetOrderByID) // Customer mungkin butuh melihat struk detailnya
+
+	// Customer sub-resource routes: POST, GET, PUT /api/orders/:id/customer
+	customerOrderRoutes.POST("/:id/customer", customerHandler.CreateCustomer)
+	customerOrderRoutes.GET("/:id/customer", customerHandler.GetCustomer)
+	customerOrderRoutes.PUT("/:id/customer", customerHandler.UpdateCustomer)
 
 	// Mitra specific routes (untuk memanajemen pesanan masuk)
 	mitraOrderRoutes := api.Group("/orders")

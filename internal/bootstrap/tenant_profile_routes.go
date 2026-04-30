@@ -18,7 +18,7 @@ func RegisterTenantProfileRoutes(api *gin.RouterGroup, cfg *config.Config, db *g
 	routes := api.Group("/tenant-profiles")
 	routes.Use(
 		middleware.JWTAuth(cfg),
-		middleware.RoleGuard("merchant"),
+		middleware.RoleGuard("MITRA"),
 		middleware.TenantGuard(),
 	)
 

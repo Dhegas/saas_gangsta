@@ -32,7 +32,14 @@ func NewMerchantMenuHandler(usecase domain.MerchantMenuUsecase) *MerchantMenuHan
 func (h *MerchantMenuHandler) GetAllMenus(c *gin.Context) {
 	tenantID, err := tenant.GetTenantID(c)
 	if err != nil {
-		return
+		tenantID = c.Query("tenant_id")
+		if tenantID == "" {
+			tenantID = c.GetHeader("X-Tenant-ID")
+		}
+		if tenantID == "" {
+			response.Error(c, http.StatusBadRequest, "Tenant ID diperlukan", gin.H{"code": "TENANT_NOT_FOUND", "details": "Konteks tenant atau parameter tenant_id tidak ditemukan"})
+			return
+		}
 	}
 
 	var filter dto.MenuFilterParams
@@ -63,7 +70,14 @@ func (h *MerchantMenuHandler) GetAllMenus(c *gin.Context) {
 func (h *MerchantMenuHandler) GetMenuByID(c *gin.Context) {
 	tenantID, err := tenant.GetTenantID(c)
 	if err != nil {
-		return
+		tenantID = c.Query("tenant_id")
+		if tenantID == "" {
+			tenantID = c.GetHeader("X-Tenant-ID")
+		}
+		if tenantID == "" {
+			response.Error(c, http.StatusBadRequest, "Tenant ID diperlukan", gin.H{"code": "TENANT_NOT_FOUND", "details": "Konteks tenant atau parameter tenant_id tidak ditemukan"})
+			return
+		}
 	}
 	menuID := c.Param("id")
 

@@ -457,7 +457,7 @@ const docTemplate = `{
         },
         "/auth/login": {
             "post": {
-                "description": "Login untuk semua role (customer, merchant, admin)",
+                "description": "Login untuk semua role (BASIC, MITRA, ADMIN)",
                 "consumes": [
                     "application/json"
                 ],

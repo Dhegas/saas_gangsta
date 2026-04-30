@@ -6,9 +6,9 @@ ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO users (id, tenant_id, email, password_hash, role, is_active)
 VALUES
-	('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1', NULL, 'admin@saasgangsta.local', '$2a$10$dummyadminhash', 'admin', TRUE),
-	('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb1', '11111111-1111-1111-1111-111111111111', 'merchant@warung.local', '$2a$10$dummymerchanthash', 'merchant', TRUE),
-	('cccccccc-cccc-cccc-cccc-ccccccccccc1', '11111111-1111-1111-1111-111111111111', 'customer@warung.local', '$2a$10$dummycustomerhash', 'customer', TRUE)
+	('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1', NULL, 'admin@saasgangsta.local', '$2a$10$dummyadminhash', 'ADMIN', TRUE),
+	('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb1', '11111111-1111-1111-1111-111111111111', 'merchant@warung.local', '$2a$10$dummymerchanthash', 'MITRA', TRUE),
+	('cccccccc-cccc-cccc-cccc-ccccccccccc1', '11111111-1111-1111-1111-111111111111', 'customer@warung.local', '$2a$10$dummycustomerhash', 'BASIC', TRUE)
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO merchant_profiles (id, tenant_id, store_name, address, phone, opening_hours)

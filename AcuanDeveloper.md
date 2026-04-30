@@ -41,22 +41,22 @@
 
 Platform ini menggabungkan kebutuhan utama operasional toko makanan:
 
-| Modul | Keterangan |
-|---|---|
-| Digital Menu | Pelanggan scan QR → lihat menu digital |
-| Self Ordering | Pelanggan order dari meja tanpa panggil pelayan |
-| POS / Kasir | Merchant input order manual via kasir digital |
-| Manajemen Meja | Monitor kondisi dan status meja real-time |
-| Laporan Penjualan | Rekap harian/mingguan/bulanan per merchant |
-| Membership / Subscription | Admin kelola paket langganan SaaS |
+| Modul                     | Keterangan                                      |
+| ------------------------- | ----------------------------------------------- |
+| Digital Menu              | Pelanggan scan QR → lihat menu digital          |
+| Self Ordering             | Pelanggan order dari meja tanpa panggil pelayan |
+| POS / Kasir               | Merchant input order manual via kasir digital   |
+| Manajemen Meja            | Monitor kondisi dan status meja real-time       |
+| Laporan Penjualan         | Rekap harian/mingguan/bulanan per merchant      |
+| Membership / Subscription | Admin kelola paket langganan SaaS               |
 
 ### Tiga Role Utama
 
-| Role | Deskripsi |
-|---|---|
-| **Customer** | Pelanggan toko. Scan QR, lihat menu, order, bayar, cek status, review |
-| **Merchant** | Pemilik toko. Kelola menu, terima order, POS, laporan, profil toko |
-| **Admin** | Pengelola platform SaaS. Kelola tenant, membership, billing, user global |
+| Role         | Deskripsi                                                                |
+| ------------ | ------------------------------------------------------------------------ |
+| **Customer** | Pelanggan toko. Scan QR, lihat menu, order, bayar, cek status, review    |
+| **Merchant** | Pemilik toko. Kelola menu, terima order, POS, laporan, profil toko       |
+| **Admin**    | Pengelola platform SaaS. Kelola tenant, membership, billing, user global |
 
 ### Model Bisnis
 
@@ -66,20 +66,20 @@ Sistem menggunakan model **SaaS multi-tenant**, di mana setiap merchant (tenant)
 
 ## 2. Tech Stack
 
-| Komponen | Teknologi |
-|---|---|
-| Language | Go 1.23+ |
-| HTTP Framework | Gin (`github.com/gin-gonic/gin`) |
-| Database | PostgreSQL via Supabase (managed) |
-| ORM | GORM (`gorm.io/gorm`) + `pgx` |
-| API Gateway | Nginx (reverse proxy & rate limiter) |
-| Authentication | JWT (access token + refresh token) |
-| Container | Docker + Docker Compose |
-| Environment Config | `.env` + `godotenv` |
-| Validation | `go-playground/validator/v10` |
-| Logging | `log/slog` (standard library Go 1.21+) |
-| UUID | `github.com/google/uuid` |
-| Schema Convention | **camelCase** untuk semua JSON response & request |
+| Komponen           | Teknologi                                         |
+| ------------------ | ------------------------------------------------- |
+| Language           | Go 1.23+                                          |
+| HTTP Framework     | Gin (`github.com/gin-gonic/gin`)                  |
+| Database           | PostgreSQL via Supabase (managed)                 |
+| ORM                | GORM (`gorm.io/gorm`) + `pgx`                     |
+| API Gateway        | Nginx (reverse proxy & rate limiter)              |
+| Authentication     | JWT (access token + refresh token)                |
+| Container          | Docker + Docker Compose                           |
+| Environment Config | `.env` + `godotenv`                               |
+| Validation         | `go-playground/validator/v10`                     |
+| Logging            | `log/slog` (standard library Go 1.21+)            |
+| UUID               | `github.com/google/uuid`                          |
+| Schema Convention  | **camelCase** untuk semua JSON response & request |
 
 ---
 
@@ -374,13 +374,13 @@ Nginx digunakan sebagai **API Gateway** di depan Go server. Semua request dari c
 
 ### Fungsi Nginx
 
-| Fungsi | Keterangan |
-|---|---|
-| Reverse Proxy | Forward request dari port 80/443 ke Go server :8080 |
-| Rate Limiting | Batasi jumlah request per IP/client |
-| SSL Termination | Handle HTTPS (jika digunakan) |
-| Request Buffering | Buffer upload sebelum diteruskan ke backend |
-| Health Check | Probe endpoint `/health` |
+| Fungsi            | Keterangan                                          |
+| ----------------- | --------------------------------------------------- |
+| Reverse Proxy     | Forward request dari port 80/443 ke Go server :8080 |
+| Rate Limiting     | Batasi jumlah request per IP/client                 |
+| SSL Termination   | Handle HTTPS (jika digunakan)                       |
+| Request Buffering | Buffer upload sebelum diteruskan ke backend         |
+| Health Check      | Probe endpoint `/health`                            |
 
 ### Konfigurasi (`deployments/nginx/nginx.conf`)
 
@@ -454,21 +454,21 @@ Contoh: `POST /api/v1/auth/login`, `GET /api/v1/merchant/menus`
 
 ```json
 {
-  "sub":      "user-uuid",
-  "role":     "merchant",
+  "sub": "user-uuid",
+  "role": "MITRA",
   "tenantId": "tenant-uuid",
-  "iat":      1700000000,
-  "exp":      1700000900
+  "iat": 1700000000,
+  "exp": 1700000900
 }
 ```
 
 ### Role Values
 
-| Role | Keterangan |
-|---|---|
-| `customer` | Pelanggan toko |
-| `merchant` | Pemilik / pengelola toko |
-| `admin` | Admin platform SaaS |
+| Role    | Keterangan               |
+| ------- | ------------------------ |
+| `BASIC` | Pelanggan toko           |
+| `MITRA` | Pemilik / pengelola toko |
+| `ADMIN` | Admin platform SaaS      |
 
 ### Middleware Stack per Route Group
 
@@ -477,13 +477,13 @@ Public Routes (/auth, /health):
   → CORS → Logger → Recovery
 
 Customer Routes (/api/v1/customer/**):
-  → CORS → Logger → Recovery → JWTAuth → RoleGuard("customer") → TenantGuard
+  → CORS → Logger → Recovery → JWTAuth → RoleGuard("BASIC") → TenantGuard
 
 Merchant Routes (/api/v1/merchant/**):
-  → CORS → Logger → Recovery → JWTAuth → RoleGuard("merchant") → TenantGuard
+  → CORS → Logger → Recovery → JWTAuth → RoleGuard("MITRA") → TenantGuard
 
 Admin Routes (/api/v1/admin/**):
-  → CORS → Logger → Recovery → JWTAuth → RoleGuard("admin")
+  → CORS → Logger → Recovery → JWTAuth → RoleGuard("ADMIN")
 ```
 
 ---
@@ -515,7 +515,7 @@ users
   tenant_id UUID FK → tenants.id (nullable untuk admin platform)
   email VARCHAR UNIQUE
   password_hash VARCHAR
-  role VARCHAR  -- customer | merchant | admin
+  role VARCHAR  -- BASIC | MITRA | ADMIN
   is_active BOOLEAN
   created_at TIMESTAMP
   updated_at TIMESTAMP
@@ -650,12 +650,13 @@ Semua endpoint menggunakan prefix `/api/v1/`.
 
 ### 9.1 Health Check
 
-| Method | Path | Auth | Deskripsi |
-|---|---|---|---|
-| GET | `/health` | Public | Cek status server hidup |
-| GET | `/ready` | Public | Cek readiness (DB connection check) |
+| Method | Path      | Auth   | Deskripsi                           |
+| ------ | --------- | ------ | ----------------------------------- |
+| GET    | `/health` | Public | Cek status server hidup             |
+| GET    | `/ready`  | Public | Cek readiness (DB connection check) |
 
 **Response `GET /health`:**
+
 ```json
 {
   "status": "ok",
@@ -668,14 +669,15 @@ Semua endpoint menggunakan prefix `/api/v1/`.
 
 ### 9.2 Auth
 
-| Method | Path | Auth | Deskripsi |
-|---|---|---|---|
-| POST | `/api/v1/auth/login` | Public | Login user (semua role) |
-| POST | `/api/v1/auth/refresh` | Public | Refresh access token |
-| POST | `/api/v1/auth/logout` | JWT | Logout & invalidate refresh token |
-| GET | `/api/v1/auth/me` | JWT | Get current user info |
+| Method | Path                   | Auth   | Deskripsi                         |
+| ------ | ---------------------- | ------ | --------------------------------- |
+| POST   | `/api/v1/auth/login`   | Public | Login user (semua role)           |
+| POST   | `/api/v1/auth/refresh` | Public | Refresh access token              |
+| POST   | `/api/v1/auth/logout`  | JWT    | Logout & invalidate refresh token |
+| GET    | `/api/v1/auth/me`      | JWT    | Get current user info             |
 
 **Request `POST /api/v1/auth/login`:**
+
 ```json
 {
   "email": "merchant@example.com",
@@ -684,6 +686,7 @@ Semua endpoint menggunakan prefix `/api/v1/`.
 ```
 
 **Response `POST /api/v1/auth/login`:**
+
 ```json
 {
   "success": true,
@@ -694,7 +697,7 @@ Semua endpoint menggunakan prefix `/api/v1/`.
     "user": {
       "id": "uuid",
       "email": "merchant@example.com",
-      "role": "merchant",
+      "role": "MITRA",
       "tenantId": "tenant-uuid"
     }
   }
@@ -705,24 +708,25 @@ Semua endpoint menggunakan prefix `/api/v1/`.
 
 ### 9.3 Customer
 
-> **Auth required**: Bearer token (role: `customer`)
+> **Auth required**: Bearer token (role: `BASIC`)
 > **TenantId**: otomatis dari JWT, tidak perlu dikirim di request
 
-| Method | Path | Deskripsi |
-|---|---|---|
-| GET | `/api/v1/customer/menus` | Lihat daftar menu (berdasarkan tenantId dari JWT) |
-| GET | `/api/v1/customer/menus/:id` | Detail menu |
-| GET | `/api/v1/customer/categories` | Daftar kategori |
-| POST | `/api/v1/customer/orders` | Buat order baru (self-order) |
-| GET | `/api/v1/customer/orders/:id` | Detail order |
-| GET | `/api/v1/customer/orders/:id/status` | Cek status order real-time |
-| POST | `/api/v1/customer/payments` | Buat payment untuk order |
-| GET | `/api/v1/customer/payments/:id/status` | Cek status payment |
-| GET | `/api/v1/customer/transactions` | Riwayat transaksi customer |
-| GET | `/api/v1/customer/transactions/:id` | Detail transaksi |
-| POST | `/api/v1/customer/reviews` | Submit review/rating |
+| Method | Path                                   | Deskripsi                                         |
+| ------ | -------------------------------------- | ------------------------------------------------- |
+| GET    | `/api/v1/customer/menus`               | Lihat daftar menu (berdasarkan tenantId dari JWT) |
+| GET    | `/api/v1/customer/menus/:id`           | Detail menu                                       |
+| GET    | `/api/v1/customer/categories`          | Daftar kategori                                   |
+| POST   | `/api/v1/customer/orders`              | Buat order baru (self-order)                      |
+| GET    | `/api/v1/customer/orders/:id`          | Detail order                                      |
+| GET    | `/api/v1/customer/orders/:id/status`   | Cek status order real-time                        |
+| POST   | `/api/v1/customer/payments`            | Buat payment untuk order                          |
+| GET    | `/api/v1/customer/payments/:id/status` | Cek status payment                                |
+| GET    | `/api/v1/customer/transactions`        | Riwayat transaksi customer                        |
+| GET    | `/api/v1/customer/transactions/:id`    | Detail transaksi                                  |
+| POST   | `/api/v1/customer/reviews`             | Submit review/rating                              |
 
 **Request `POST /api/v1/customer/orders`:**
+
 ```json
 {
   "tableId": "table-uuid",
@@ -742,64 +746,64 @@ Semua endpoint menggunakan prefix `/api/v1/`.
 
 ### 9.4 Merchant
 
-> **Auth required**: Bearer token (role: `merchant`)
+> **Auth required**: Bearer token (role: `MITRA`)
 > **TenantId**: otomatis dari JWT claim
 
 #### 9.4.1 Menu Management
 
-| Method | Path | Deskripsi |
-|---|---|---|
-| GET | `/api/v1/merchant/categories` | Daftar kategori milik tenant |
-| POST | `/api/v1/merchant/categories` | Buat kategori baru |
-| PATCH | `/api/v1/merchant/categories/:id` | Update kategori |
-| DELETE | `/api/v1/merchant/categories/:id` | Hapus kategori |
-| GET | `/api/v1/merchant/menus` | Daftar menu (support: `?page`, `?limit`, `?search`, `?categoryId`) |
-| POST | `/api/v1/merchant/menus` | Buat menu baru |
-| PATCH | `/api/v1/merchant/menus/:id` | Update menu |
-| DELETE | `/api/v1/merchant/menus/:id` | Hapus menu |
-| PATCH | `/api/v1/merchant/menus/:id/availability` | Toggle status tersedia/tidak |
+| Method | Path                                      | Deskripsi                                                          |
+| ------ | ----------------------------------------- | ------------------------------------------------------------------ |
+| GET    | `/api/v1/merchant/categories`             | Daftar kategori milik tenant                                       |
+| POST   | `/api/v1/merchant/categories`             | Buat kategori baru                                                 |
+| PATCH  | `/api/v1/merchant/categories/:id`         | Update kategori                                                    |
+| DELETE | `/api/v1/merchant/categories/:id`         | Hapus kategori                                                     |
+| GET    | `/api/v1/merchant/menus`                  | Daftar menu (support: `?page`, `?limit`, `?search`, `?categoryId`) |
+| POST   | `/api/v1/merchant/menus`                  | Buat menu baru                                                     |
+| PATCH  | `/api/v1/merchant/menus/:id`              | Update menu                                                        |
+| DELETE | `/api/v1/merchant/menus/:id`              | Hapus menu                                                         |
+| PATCH  | `/api/v1/merchant/menus/:id/availability` | Toggle status tersedia/tidak                                       |
 
 #### 9.4.2 Table Management
 
-| Method | Path | Deskripsi |
-|---|---|---|
-| GET | `/api/v1/merchant/tables` | Daftar meja |
-| POST | `/api/v1/merchant/tables` | Tambah meja |
-| PATCH | `/api/v1/merchant/tables/:id` | Update info meja |
-| DELETE | `/api/v1/merchant/tables/:id` | Hapus meja |
+| Method | Path                          | Deskripsi        |
+| ------ | ----------------------------- | ---------------- |
+| GET    | `/api/v1/merchant/tables`     | Daftar meja      |
+| POST   | `/api/v1/merchant/tables`     | Tambah meja      |
+| PATCH  | `/api/v1/merchant/tables/:id` | Update info meja |
+| DELETE | `/api/v1/merchant/tables/:id` | Hapus meja       |
 
 #### 9.4.3 Order Board (POS & Incoming Orders)
 
-| Method | Path | Deskripsi |
-|---|---|---|
-| GET | `/api/v1/merchant/orders` | Daftar order aktif |
-| GET | `/api/v1/merchant/orders/board` | Order board per meja (untuk tampilan kasir) |
-| GET | `/api/v1/merchant/orders/:id` | Detail order |
-| PATCH | `/api/v1/merchant/orders/:id/status` | Update status order |
-| POST | `/api/v1/merchant/pos/orders` | Buat order manual lewat POS |
+| Method | Path                                 | Deskripsi                                   |
+| ------ | ------------------------------------ | ------------------------------------------- |
+| GET    | `/api/v1/merchant/orders`            | Daftar order aktif                          |
+| GET    | `/api/v1/merchant/orders/board`      | Order board per meja (untuk tampilan kasir) |
+| GET    | `/api/v1/merchant/orders/:id`        | Detail order                                |
+| PATCH  | `/api/v1/merchant/orders/:id/status` | Update status order                         |
+| POST   | `/api/v1/merchant/pos/orders`        | Buat order manual lewat POS                 |
 
 #### 9.4.4 Transaction
 
-| Method | Path | Deskripsi |
-|---|---|---|
-| GET | `/api/v1/merchant/transactions` | Daftar transaksi (support filter tanggal, status) |
-| GET | `/api/v1/merchant/transactions/:id` | Detail transaksi |
+| Method | Path                                | Deskripsi                                         |
+| ------ | ----------------------------------- | ------------------------------------------------- |
+| GET    | `/api/v1/merchant/transactions`     | Daftar transaksi (support filter tanggal, status) |
+| GET    | `/api/v1/merchant/transactions/:id` | Detail transaksi                                  |
 
 #### 9.4.5 Report
 
-| Method | Path | Deskripsi |
-|---|---|---|
-| GET | `/api/v1/merchant/reports/daily` | Laporan harian (`?date=YYYY-MM-DD`) |
-| GET | `/api/v1/merchant/reports/weekly` | Laporan mingguan (`?week=YYYY-WNN`) |
-| GET | `/api/v1/merchant/reports/monthly` | Laporan bulanan (`?month=YYYY-MM`) |
-| GET | `/api/v1/merchant/reports/summary` | Summary dashboard merchant |
+| Method | Path                               | Deskripsi                           |
+| ------ | ---------------------------------- | ----------------------------------- |
+| GET    | `/api/v1/merchant/reports/daily`   | Laporan harian (`?date=YYYY-MM-DD`) |
+| GET    | `/api/v1/merchant/reports/weekly`  | Laporan mingguan (`?week=YYYY-WNN`) |
+| GET    | `/api/v1/merchant/reports/monthly` | Laporan bulanan (`?month=YYYY-MM`)  |
+| GET    | `/api/v1/merchant/reports/summary` | Summary dashboard merchant          |
 
 #### 9.4.6 Merchant Profile
 
-| Method | Path | Deskripsi |
-|---|---|---|
-| GET | `/api/v1/merchant/profile` | Get profil toko |
-| PUT | `/api/v1/merchant/profile` | Update profil toko |
+| Method | Path                       | Deskripsi          |
+| ------ | -------------------------- | ------------------ |
+| GET    | `/api/v1/merchant/profile` | Get profil toko    |
+| PUT    | `/api/v1/merchant/profile` | Update profil toko |
 
 ---
 
@@ -810,32 +814,32 @@ Semua endpoint menggunakan prefix `/api/v1/`.
 
 #### 9.5.1 Tenant Management
 
-| Method | Path | Deskripsi |
-|---|---|---|
-| GET | `/api/v1/admin/tenants` | Daftar semua tenant |
-| GET | `/api/v1/admin/tenants/:id` | Detail tenant |
-| POST | `/api/v1/admin/tenants` | Registrasi tenant baru |
-| PATCH | `/api/v1/admin/tenants/:id` | Update info tenant |
-| PATCH | `/api/v1/admin/tenants/:id/status` | Aktifkan / nonaktifkan tenant |
+| Method | Path                               | Deskripsi                     |
+| ------ | ---------------------------------- | ----------------------------- |
+| GET    | `/api/v1/admin/tenants`            | Daftar semua tenant           |
+| GET    | `/api/v1/admin/tenants/:id`        | Detail tenant                 |
+| POST   | `/api/v1/admin/tenants`            | Registrasi tenant baru        |
+| PATCH  | `/api/v1/admin/tenants/:id`        | Update info tenant            |
+| PATCH  | `/api/v1/admin/tenants/:id/status` | Aktifkan / nonaktifkan tenant |
 
 #### 9.5.2 Subscription Management
 
-| Method | Path | Deskripsi |
-|---|---|---|
-| GET | `/api/v1/admin/subscription-plans` | Daftar paket berlangganan |
-| POST | `/api/v1/admin/subscription-plans` | Buat paket baru |
-| PUT | `/api/v1/admin/subscription-plans/:id` | Update paket |
-| DELETE | `/api/v1/admin/subscription-plans/:id` | Hapus paket |
-| GET | `/api/v1/admin/subscriptions` | Monitor status berlangganan semua tenant |
-| PATCH | `/api/v1/admin/tenants/:id/subscription` | Update subscription tenant |
+| Method | Path                                     | Deskripsi                                |
+| ------ | ---------------------------------------- | ---------------------------------------- |
+| GET    | `/api/v1/admin/subscription-plans`       | Daftar paket berlangganan                |
+| POST   | `/api/v1/admin/subscription-plans`       | Buat paket baru                          |
+| PUT    | `/api/v1/admin/subscription-plans/:id`   | Update paket                             |
+| DELETE | `/api/v1/admin/subscription-plans/:id`   | Hapus paket                              |
+| GET    | `/api/v1/admin/subscriptions`            | Monitor status berlangganan semua tenant |
+| PATCH  | `/api/v1/admin/tenants/:id/subscription` | Update subscription tenant               |
 
 #### 9.5.3 Admin Dashboard
 
-| Method | Path | Deskripsi |
-|---|---|---|
-| GET | `/api/v1/admin/dashboard` | Overview platform (jumlah tenant aktif, total transaksi, dll) |
-| GET | `/api/v1/admin/users` | Daftar user platform |
-| PATCH | `/api/v1/admin/users/:id/status` | Aktifkan / nonaktifkan user |
+| Method | Path                             | Deskripsi                                                     |
+| ------ | -------------------------------- | ------------------------------------------------------------- |
+| GET    | `/api/v1/admin/dashboard`        | Overview platform (jumlah tenant aktif, total transaksi, dll) |
+| GET    | `/api/v1/admin/users`            | Daftar user platform                                          |
+| PATCH  | `/api/v1/admin/users/:id/status` | Aktifkan / nonaktifkan user                                   |
 
 ---
 
@@ -869,13 +873,13 @@ func CORSMiddleware(cfg *config.Config) gin.HandlerFunc {
 
 **Aturan CORS:**
 
-| Setting | Value |
-|---|---|
+| Setting         | Value                                             |
+| --------------- | ------------------------------------------------- |
 | Allowed Origins | Dari env `CORS_ALLOWED_ORIGINS` (comma-separated) |
-| Allowed Methods | GET, POST, PUT, PATCH, DELETE, OPTIONS |
-| Allowed Headers | Authorization, Content-Type, X-Idempotency-Key |
-| Credentials | true |
-| Max Age | 86400 seconds (24 jam) |
+| Allowed Methods | GET, POST, PUT, PATCH, DELETE, OPTIONS            |
+| Allowed Headers | Authorization, Content-Type, X-Idempotency-Key    |
+| Credentials     | true                                              |
+| Max Age         | 86400 seconds (24 jam)                            |
 
 ---
 
@@ -886,6 +890,7 @@ func CORSMiddleware(cfg *config.Config) gin.HandlerFunc {
 Semua endpoint **wajib** menggunakan format response yang sama:
 
 **Success:**
+
 ```json
 {
   "success": true,
@@ -895,6 +900,7 @@ Semua endpoint **wajib** menggunakan format response yang sama:
 ```
 
 **Success dengan Pagination:**
+
 ```json
 {
   "success": true,
@@ -910,6 +916,7 @@ Semua endpoint **wajib** menggunakan format response yang sama:
 ```
 
 **Error:**
+
 ```json
 {
   "success": false,
@@ -929,16 +936,16 @@ Semua endpoint **wajib** menggunakan format response yang sama:
 
 ### HTTP Status Code Convention
 
-| Status | Kasus |
-|---|---|
-| `200 OK` | GET, PATCH, DELETE berhasil |
-| `201 Created` | POST create resource berhasil |
-| `400 Bad Request` | Validation error / payload tidak valid |
-| `401 Unauthorized` | Token tidak ada atau expired |
-| `403 Forbidden` | Role tidak punya akses ke resource ini |
-| `404 Not Found` | Resource tidak ditemukan |
-| `409 Conflict` | Duplicate resource (idempotency key conflict) |
-| `500 Internal Server Error` | Error server yang tidak terduga |
+| Status                      | Kasus                                         |
+| --------------------------- | --------------------------------------------- |
+| `200 OK`                    | GET, PATCH, DELETE berhasil                   |
+| `201 Created`               | POST create resource berhasil                 |
+| `400 Bad Request`           | Validation error / payload tidak valid        |
+| `401 Unauthorized`          | Token tidak ada atau expired                  |
+| `403 Forbidden`             | Role tidak punya akses ke resource ini        |
+| `404 Not Found`             | Resource tidak ditemukan                      |
+| `409 Conflict`              | Duplicate resource (idempotency key conflict) |
+| `500 Internal Server Error` | Error server yang tidak terduga               |
 
 ---
 
@@ -948,17 +955,17 @@ Semua error harus dipetakan ke response envelope yang konsisten.
 
 ### Error Code List
 
-| Code | Status | Keterangan |
-|---|---|---|
-| `VALIDATION_ERROR` | 400 | Input tidak valid |
-| `UNAUTHORIZED` | 401 | Token tidak valid / tidak ada |
-| `FORBIDDEN` | 403 | Role tidak memiliki izin |
-| `NOT_FOUND` | 404 | Resource tidak ditemukan |
-| `CONFLICT` | 409 | Duplicate / idempotency conflict |
-| `TENANT_NOT_FOUND` | 404 | Tenant tidak ditemukan |
-| `TENANT_INACTIVE` | 403 | Tenant tidak aktif / suspended |
-| `ORDER_ALREADY_PAID` | 409 | Order sudah dibayar |
-| `INTERNAL_ERROR` | 500 | Error internal server |
+| Code                 | Status | Keterangan                       |
+| -------------------- | ------ | -------------------------------- |
+| `VALIDATION_ERROR`   | 400    | Input tidak valid                |
+| `UNAUTHORIZED`       | 401    | Token tidak valid / tidak ada    |
+| `FORBIDDEN`          | 403    | Role tidak memiliki izin         |
+| `NOT_FOUND`          | 404    | Resource tidak ditemukan         |
+| `CONFLICT`           | 409    | Duplicate / idempotency conflict |
+| `TENANT_NOT_FOUND`   | 404    | Tenant tidak ditemukan           |
+| `TENANT_INACTIVE`    | 403    | Tenant tidak aktif / suspended   |
+| `ORDER_ALREADY_PAID` | 409    | Order sudah dibayar              |
+| `INTERNAL_ERROR`     | 500    | Error internal server            |
 
 ---
 
@@ -1075,17 +1082,17 @@ go run ./cmd/api/main.go
 
 ### Naming Convention
 
-| Konteks | Convention | Contoh |
-|---|---|---|
-| Package | lowercase | `auth`, `middleware`, `config` |
-| File Go | snake_case | `auth_handler.go`, `menu_usecase.go` |
-| Struct/Interface | PascalCase | `MenuUsecase`, `OrderRepository` |
-| Function/Method | camelCase (atau PascalCase jika exported) | `getMenuById`, `CreateOrder` |
-| Variable lokal | camelCase | `userId`, `tenantId`, `menuList` |
-| Constant | PascalCase atau SCREAMING_SNAKE_CASE | `StatusPending`, `MAX_PAGE_SIZE` |
-| JSON field | camelCase | `"tenantId"`, `"createdAt"`, `"isAvailable"` |
-| DB column | snake_case | `tenant_id`, `created_at`, `is_available` |
-| Route path | kebab-case | `/merchant/menu-items`, `/admin/subscription-plans` |
+| Konteks          | Convention                                | Contoh                                              |
+| ---------------- | ----------------------------------------- | --------------------------------------------------- |
+| Package          | lowercase                                 | `auth`, `middleware`, `config`                      |
+| File Go          | snake_case                                | `auth_handler.go`, `menu_usecase.go`                |
+| Struct/Interface | PascalCase                                | `MenuUsecase`, `OrderRepository`                    |
+| Function/Method  | camelCase (atau PascalCase jika exported) | `getMenuById`, `CreateOrder`                        |
+| Variable lokal   | camelCase                                 | `userId`, `tenantId`, `menuList`                    |
+| Constant         | PascalCase atau SCREAMING_SNAKE_CASE      | `StatusPending`, `MAX_PAGE_SIZE`                    |
+| JSON field       | camelCase                                 | `"tenantId"`, `"createdAt"`, `"isAvailable"`        |
+| DB column        | snake_case                                | `tenant_id`, `created_at`, `is_available`           |
+| Route path       | kebab-case                                | `/merchant/menu-items`, `/admin/subscription-plans` |
 
 ### Interface Pattern (Repository & Usecase)
 
@@ -1216,7 +1223,7 @@ internal/domains/menu/
 - [ ] Implement JWT generate & parse (`internal/domains/user/auth/jwt.go`)
 - [ ] Implement `POST /auth/login`, `POST /auth/refresh`, `POST /auth/logout`
 - [ ] Implement JWT auth middleware
-- [ ] Implement role guard middleware (`RoleGuard("merchant")`)
+- [ ] Implement role guard middleware (`RoleGuard("MITRA")`)
 - [ ] Implement tenant guard middleware (inject `tenantId` ke context)
 - [ ] Unit test module auth (coverage ≥ 70%)
 
@@ -1283,14 +1290,14 @@ Setiap endpoint/modul dinyatakan **Done** jika memenuhi semua kriteria berikut:
 
 ## 18. Technical Risks
 
-| Risiko | Mitigasi |
-|---|---|
-| Kebocoran data antar tenant | Tenant guard di middleware + wajib filter `tenantId` di setiap query |
-| Race condition pada update status order | DB transaction + row-level locking pada flow order kritis |
-| Double payment akibat webhook retry | Idempotency key untuk semua endpoint create order & payment |
-| Query report lambat saat data membesar | Index pada `tenant_id`, `created_at`, `status` sejak awal |
-| JWT secret bocor | Simpan di env, rotasi berkala, gunakan secret length minimum 32 char |
-| Salah konfigurasi RLS Supabase | Review RLS policy per role/tenant dengan test otomatis |
+| Risiko                                  | Mitigasi                                                             |
+| --------------------------------------- | -------------------------------------------------------------------- |
+| Kebocoran data antar tenant             | Tenant guard di middleware + wajib filter `tenantId` di setiap query |
+| Race condition pada update status order | DB transaction + row-level locking pada flow order kritis            |
+| Double payment akibat webhook retry     | Idempotency key untuk semua endpoint create order & payment          |
+| Query report lambat saat data membesar  | Index pada `tenant_id`, `created_at`, `status` sejak awal            |
+| JWT secret bocor                        | Simpan di env, rotasi berkala, gunakan secret length minimum 32 char |
+| Salah konfigurasi RLS Supabase          | Review RLS policy per role/tenant dengan test otomatis               |
 
 ---
 

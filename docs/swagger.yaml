@@ -470,7 +470,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: Login untuk semua role (customer, merchant, admin)
+      description: Login untuk semua role (BASIC, MITRA, ADMIN)
       parameters:
       - description: Login payload
         in: body

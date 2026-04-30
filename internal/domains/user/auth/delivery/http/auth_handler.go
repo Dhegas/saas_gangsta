@@ -55,7 +55,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 
 // Login godoc
 // @Summary Login user
-// @Description Login untuk semua role (customer, merchant, admin)
+// @Description Login untuk semua role (BASIC, MITRA, ADMIN)
 // @Tags Auth
 // @Accept json
 // @Produce json

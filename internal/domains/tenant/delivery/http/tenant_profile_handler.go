@@ -29,7 +29,7 @@ func NewTenantProfileHandler(usecase domain.TenantProfileUsecase) *TenantProfile
 // @Produce      json
 // @Param        body body dto.CreateTenantProfileRequest true "Payload"
 // @Success      201 {object} map[string]interface{}
-// @Router       /api/tenant-profiles [post]
+// @Router       tenant-profiles [post]
 func (h *TenantProfileHandler) Create(c *gin.Context) {
 	tenantID, err := tenant.GetTenantID(c)
 	if err != nil {
@@ -57,7 +57,7 @@ func (h *TenantProfileHandler) Create(c *gin.Context) {
 // @Tags         tenant-profiles
 // @Produce      json
 // @Success      200 {object} map[string]interface{}
-// @Router       /api/tenant-profiles [get]
+// @Router       tenant-profiles [get]
 func (h *TenantProfileHandler) List(c *gin.Context) {
 	tenantID, err := tenant.GetTenantID(c)
 	if err != nil {
@@ -80,7 +80,7 @@ func (h *TenantProfileHandler) List(c *gin.Context) {
 // @Produce      json
 // @Param        id path string true "Profile ID"
 // @Success      200 {object} map[string]interface{}
-// @Router       /api/tenant-profiles/{id} [get]
+// @Router       tenant-profiles/{id} [get]
 func (h *TenantProfileHandler) GetByID(c *gin.Context) {
 	tenantID, err := tenant.GetTenantID(c)
 	if err != nil {
@@ -107,7 +107,7 @@ func (h *TenantProfileHandler) GetByID(c *gin.Context) {
 // @Param        id   path string                          true  "Profile ID"
 // @Param        body body dto.UpdateTenantProfileRequest true  "Payload"
 // @Success      200 {object} map[string]interface{}
-// @Router       /api/tenant-profiles/{id} [put]
+// @Router       tenant-profiles/{id} [put]
 func (h *TenantProfileHandler) Update(c *gin.Context) {
 	tenantID, err := tenant.GetTenantID(c)
 	if err != nil {
@@ -138,7 +138,7 @@ func (h *TenantProfileHandler) Update(c *gin.Context) {
 // @Produce      json
 // @Param        id path string true "Profile ID"
 // @Success      200 {object} map[string]interface{}
-// @Router       /api/tenant-profiles/{id} [delete]
+// @Router       tenant-profiles/{id} [delete]
 func (h *TenantProfileHandler) Delete(c *gin.Context) {
 	tenantID, err := tenant.GetTenantID(c)
 	if err != nil {
@@ -162,7 +162,7 @@ func (h *TenantProfileHandler) Delete(c *gin.Context) {
 // @Produce      json
 // @Param        id path string true "Profile ID"
 // @Success      200 {object} map[string]interface{}
-// @Router       /api/tenant-profiles/{id}/toggle-active [patch]
+// @Router       tenant-profiles/{id}/toggle-active [patch]
 func (h *TenantProfileHandler) ToggleActive(c *gin.Context) {
 	tenantID, err := tenant.GetTenantID(c)
 	if err != nil {

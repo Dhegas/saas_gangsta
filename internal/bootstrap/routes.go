@@ -72,12 +72,6 @@ func registerRoutes(router *gin.Engine, cfg *config.Config, db *gorm.DB, redisCl
 	userUC := userusecase.NewUserUsecase(userRepository)
 	userHandler := userhttp.NewUserHandler(userUC)
 
-	apiLegacy := router.Group("/api")
-	{
-		registerAuthRoutes(apiLegacy, cfg, authHandler)
-		registerUserRoutes(apiLegacy, cfg, userHandler)
-	}
-
 	api := router.Group("/api/v1")
 	{
 		registerAuthRoutes(api, cfg, authHandler)

@@ -7,16 +7,16 @@ import (
 	"gorm.io/gorm"
 )
 
-type merchantReportRepository struct {
+type partnerReportRepository struct {
 	db *gorm.DB
 }
 
-func NewMerchantReportRepository(db *gorm.DB) domain.MerchantReportRepository {
-	return &merchantReportRepository{db: db}
+func NewPartnerReportRepository(db *gorm.DB) domain.PartnerReportRepository {
+	return &partnerReportRepository{db: db}
 }
 
 // FetchRevenue menghitung total pendapatan dan jumlah order COMPLETED dalam rentang tanggal.
-func (r *merchantReportRepository) FetchRevenue(ctx context.Context, tenantID, from, to string) (float64, int, error) {
+func (r *partnerReportRepository) FetchRevenue(ctx context.Context, tenantID, from, to string) (float64, int, error) {
 	var result struct {
 		TotalRevenue float64
 		TotalOrders  int
@@ -31,7 +31,7 @@ func (r *merchantReportRepository) FetchRevenue(ctx context.Context, tenantID, f
 }
 
 // FetchTopMenus mengambil menu terlaris berdasarkan total qty terjual.
-func (r *merchantReportRepository) FetchTopMenus(ctx context.Context, tenantID, from, to string, limit int) ([]domain.TopMenuRow, error) {
+func (r *partnerReportRepository) FetchTopMenus(ctx context.Context, tenantID, from, to string, limit int) ([]domain.TopMenuRow, error) {
 	query := r.db.WithContext(ctx).
 		Table("order_items oi").
 		Select("oi.menu_id, oi.menu_name, SUM(oi.quantity) AS total_qty, SUM(oi.subtotal) AS total_sold").
@@ -55,7 +55,7 @@ func (r *merchantReportRepository) FetchTopMenus(ctx context.Context, tenantID, 
 }
 
 // FetchOrdersByTable mengambil meja dengan jumlah order terbanyak.
-func (r *merchantReportRepository) FetchOrdersByTable(ctx context.Context, tenantID, from, to string, limit int) ([]domain.OrdersByTableRow, error) {
+func (r *partnerReportRepository) FetchOrdersByTable(ctx context.Context, tenantID, from, to string, limit int) ([]domain.OrdersByTableRow, error) {
 	query := r.db.WithContext(ctx).
 		Table("orders o").
 		Select(`o.dining_tables_id AS table_id,
@@ -82,7 +82,7 @@ func (r *merchantReportRepository) FetchOrdersByTable(ctx context.Context, tenan
 }
 
 // FetchDailySummary mengambil ringkasan order dan revenue per hari.
-func (r *merchantReportRepository) FetchDailySummary(ctx context.Context, tenantID, from, to string) ([]domain.DailySummaryRow, error) {
+func (r *partnerReportRepository) FetchDailySummary(ctx context.Context, tenantID, from, to string) ([]domain.DailySummaryRow, error) {
 	var rows []domain.DailySummaryRow
 	err := r.db.WithContext(ctx).
 		Table("orders").

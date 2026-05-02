@@ -11,14 +11,14 @@ import (
 )
 
 func RegisterTableRoutes(api *gin.RouterGroup, cfg *config.Config, db *gorm.DB) {
-	tableRepo := tablerepo.NewMerchantTableRepository(db)
-	tableUC := tableusecase.NewMerchantTableUsecase(tableRepo)
-	tableHandler := tablehttp.NewMerchantTableHandler(tableUC)
+	tableRepo := tablerepo.NewPartnerTableRepository(db)
+	tableUC := tableusecase.NewPartnerTableUsecase(tableRepo)
+	tableHandler := tablehttp.NewPartnerTableHandler(tableUC)
 
 	tableRoutes := api.Group("/dining-tables")
 	tableRoutes.Use(
 		middleware.JWTAuth(cfg),
-		middleware.RoleGuard("MITRA"),
+		middleware.RoleGuard("PARTNER"),
 		middleware.TenantGuard(),
 	)
 

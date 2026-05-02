@@ -9,12 +9,12 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type MerchantReportHandler struct {
-	usecase domain.MerchantReportUsecase
+type PartnerReportHandler struct {
+	usecase domain.PartnerReportUsecase
 }
 
-func NewMerchantReportHandler(usecase domain.MerchantReportUsecase) *MerchantReportHandler {
-	return &MerchantReportHandler{usecase: usecase}
+func NewPartnerReportHandler(usecase domain.PartnerReportUsecase) *PartnerReportHandler {
+	return &PartnerReportHandler{usecase: usecase}
 }
 
 // extractReportTenantID mendapatkan tenant_id dari gin context (sudah diset oleh TenantGuard)
@@ -49,7 +49,7 @@ func extractReportTenantID(c *gin.Context) (string, bool) {
 // @Failure      400   {object}  map[string]interface{}
 // @Failure      500   {object}  map[string]interface{}
 // @Router       /reports/revenue [get]
-func (h *MerchantReportHandler) GetRevenue(c *gin.Context) {
+func (h *PartnerReportHandler) GetRevenue(c *gin.Context) {
 	tenantID, ok := extractReportTenantID(c)
 	if !ok {
 		return
@@ -82,7 +82,7 @@ func (h *MerchantReportHandler) GetRevenue(c *gin.Context) {
 // @Failure      400    {object}  map[string]interface{}
 // @Failure      500    {object}  map[string]interface{}
 // @Router       /reports/top-menus [get]
-func (h *MerchantReportHandler) GetTopMenus(c *gin.Context) {
+func (h *PartnerReportHandler) GetTopMenus(c *gin.Context) {
 	tenantID, ok := extractReportTenantID(c)
 	if !ok {
 		return
@@ -115,7 +115,7 @@ func (h *MerchantReportHandler) GetTopMenus(c *gin.Context) {
 // @Failure      400    {object}  map[string]interface{}
 // @Failure      500    {object}  map[string]interface{}
 // @Router       /reports/orders-by-table [get]
-func (h *MerchantReportHandler) GetOrdersByTable(c *gin.Context) {
+func (h *PartnerReportHandler) GetOrdersByTable(c *gin.Context) {
 	tenantID, ok := extractReportTenantID(c)
 	if !ok {
 		return
@@ -147,7 +147,7 @@ func (h *MerchantReportHandler) GetOrdersByTable(c *gin.Context) {
 // @Failure      400   {object}  map[string]interface{}
 // @Failure      500   {object}  map[string]interface{}
 // @Router       /reports/daily-summary [get]
-func (h *MerchantReportHandler) GetDailySummary(c *gin.Context) {
+func (h *PartnerReportHandler) GetDailySummary(c *gin.Context) {
 	tenantID, ok := extractReportTenantID(c)
 	if !ok {
 		return

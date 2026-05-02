@@ -7,8 +7,8 @@ import (
 	"github.com/dhegas/saas_gangsta/internal/domains/order/dto"
 )
 
-// MerchantOrderUsecase kontrak logika bisnis
-type MerchantOrderUsecase interface {
+// PartnerOrderUsecase kontrak logika bisnis
+type PartnerOrderUsecase interface {
 	GetAllOrders(ctx context.Context, tenantID string, filter dto.OrderFilterParams) ([]dto.OrderResponse, error)
 	GetOrderByID(ctx context.Context, tenantID, orderID string) (*dto.OrderResponse, error)
 	CreateOrder(ctx context.Context, tenantID string, req dto.CreateOrderRequest) (*dto.OrderResponse, error)
@@ -16,8 +16,8 @@ type MerchantOrderUsecase interface {
 	SoftDeleteOrder(ctx context.Context, tenantID, orderID string) error
 }
 
-// MerchantOrderRepository kontrak interaksi database
-type MerchantOrderRepository interface {
+// PartnerOrderRepository kontrak interaksi database
+type PartnerOrderRepository interface {
 	FindAll(ctx context.Context, tenantID string, filter dto.OrderFilterParams) ([]OrderEntity, error)
 	FindByID(ctx context.Context, tenantID, orderID string) (*OrderEntity, error)
 	CreateWithItems(ctx context.Context, order *OrderEntity, items []OrderItemEntity) error

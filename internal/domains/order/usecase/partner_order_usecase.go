@@ -11,15 +11,15 @@ import (
 	"gorm.io/gorm"
 )
 
-type merchantOrderUsecase struct {
-	repo domain.MerchantOrderRepository
+type partnerOrderUsecase struct {
+	repo domain.PartnerOrderRepository
 }
 
-func NewMerchantOrderUsecase(repo domain.MerchantOrderRepository) domain.MerchantOrderUsecase {
-	return &merchantOrderUsecase{repo: repo}
+func NewPartnerOrderUsecase(repo domain.PartnerOrderRepository) domain.PartnerOrderUsecase {
+	return &partnerOrderUsecase{repo: repo}
 }
 
-func (u *merchantOrderUsecase) GetAllOrders(ctx context.Context, tenantID string, filter dto.OrderFilterParams) ([]dto.OrderResponse, error) {
+func (u *partnerOrderUsecase) GetAllOrders(ctx context.Context, tenantID string, filter dto.OrderFilterParams) ([]dto.OrderResponse, error) {
 	orders, err := u.repo.FindAll(ctx, tenantID, filter)
 	if err != nil {
 		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil daftar pesanan", http.StatusInternalServerError, err)
@@ -32,7 +32,7 @@ func (u *merchantOrderUsecase) GetAllOrders(ctx context.Context, tenantID string
 	return result, nil
 }
 
-func (u *merchantOrderUsecase) GetOrderByID(ctx context.Context, tenantID, orderID string) (*dto.OrderResponse, error) {
+func (u *partnerOrderUsecase) GetOrderByID(ctx context.Context, tenantID, orderID string) (*dto.OrderResponse, error) {
 	order, err := u.repo.FindByID(ctx, tenantID, orderID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -45,7 +45,7 @@ func (u *merchantOrderUsecase) GetOrderByID(ctx context.Context, tenantID, order
 	return &response, nil
 }
 
-func (u *merchantOrderUsecase) CreateOrder(ctx context.Context, tenantID string, req dto.CreateOrderRequest) (*dto.OrderResponse, error) {
+func (u *partnerOrderUsecase) CreateOrder(ctx context.Context, tenantID string, req dto.CreateOrderRequest) (*dto.OrderResponse, error) {
 	// Kumpulkan ID menu yang dipesan
 	menuIDs := make([]string, 0, len(req.Items))
 	for _, item := range req.Items {
@@ -97,7 +97,7 @@ func (u *merchantOrderUsecase) CreateOrder(ctx context.Context, tenantID string,
 	return &response, nil
 }
 
-func (u *merchantOrderUsecase) UpdateOrderStatus(ctx context.Context, tenantID, orderID string, req dto.UpdateOrderStatusRequest) (*dto.OrderResponse, error) {
+func (u *partnerOrderUsecase) UpdateOrderStatus(ctx context.Context, tenantID, orderID string, req dto.UpdateOrderStatusRequest) (*dto.OrderResponse, error) {
 	err := u.repo.UpdateStatus(ctx, tenantID, orderID, req.Status)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -109,7 +109,7 @@ func (u *merchantOrderUsecase) UpdateOrderStatus(ctx context.Context, tenantID, 
 	return u.GetOrderByID(ctx, tenantID, orderID)
 }
 
-func (u *merchantOrderUsecase) SoftDeleteOrder(ctx context.Context, tenantID, orderID string) error {
+func (u *partnerOrderUsecase) SoftDeleteOrder(ctx context.Context, tenantID, orderID string) error {
 	err := u.repo.SoftDelete(ctx, tenantID, orderID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {

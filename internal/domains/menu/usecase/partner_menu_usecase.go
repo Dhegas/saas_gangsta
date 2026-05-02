@@ -11,15 +11,15 @@ import (
 	"gorm.io/gorm"
 )
 
-type merchantMenuUsecase struct {
-	repo domain.MerchantMenuRepository
+type partnerMenuUsecase struct {
+	repo domain.PartnerMenuRepository
 }
 
-func NewMerchantMenuUsecase(repo domain.MerchantMenuRepository) domain.MerchantMenuUsecase {
-	return &merchantMenuUsecase{repo: repo}
+func NewPartnerMenuUsecase(repo domain.PartnerMenuRepository) domain.PartnerMenuUsecase {
+	return &partnerMenuUsecase{repo: repo}
 }
 
-func (u *merchantMenuUsecase) GetAllMenus(ctx context.Context, tenantID string, filter dto.MenuFilterParams) ([]dto.MenuResponse, error) {
+func (u *partnerMenuUsecase) GetAllMenus(ctx context.Context, tenantID string, filter dto.MenuFilterParams) ([]dto.MenuResponse, error) {
 	menus, err := u.repo.FindAllByTenant(ctx, tenantID, filter)
 	if err != nil {
 		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil data menu", http.StatusInternalServerError, err)
@@ -33,7 +33,7 @@ func (u *merchantMenuUsecase) GetAllMenus(ctx context.Context, tenantID string, 
 	return result, nil
 }
 
-func (u *merchantMenuUsecase) GetMenuByID(ctx context.Context, tenantID, menuID string) (*dto.MenuResponse, error) {
+func (u *partnerMenuUsecase) GetMenuByID(ctx context.Context, tenantID, menuID string) (*dto.MenuResponse, error) {
 	menu, err := u.repo.FindByIDAndTenant(ctx, tenantID, menuID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -46,7 +46,7 @@ func (u *merchantMenuUsecase) GetMenuByID(ctx context.Context, tenantID, menuID 
 	return &response, nil
 }
 
-func (u *merchantMenuUsecase) CreateMenu(ctx context.Context, tenantID string, req dto.CreateMenuRequest) (*dto.MenuResponse, error) {
+func (u *partnerMenuUsecase) CreateMenu(ctx context.Context, tenantID string, req dto.CreateMenuRequest) (*dto.MenuResponse, error) {
 	if req.CategoryID != nil && *req.CategoryID != "" {
 		isValidCategory, err := u.repo.CategoryExists(ctx, tenantID, *req.CategoryID)
 		if err != nil || !isValidCategory {
@@ -80,7 +80,7 @@ func (u *merchantMenuUsecase) CreateMenu(ctx context.Context, tenantID string, r
 	return &response, nil
 }
 
-func (u *merchantMenuUsecase) UpdateMenu(ctx context.Context, tenantID, menuID string, req dto.UpdateMenuRequest) (*dto.MenuResponse, error) {
+func (u *partnerMenuUsecase) UpdateMenu(ctx context.Context, tenantID, menuID string, req dto.UpdateMenuRequest) (*dto.MenuResponse, error) {
 	menu, err := u.repo.FindByIDAndTenant(ctx, tenantID, menuID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -132,7 +132,7 @@ func (u *merchantMenuUsecase) UpdateMenu(ctx context.Context, tenantID, menuID s
 	return &response, nil
 }
 
-func (u *merchantMenuUsecase) SoftDeleteMenu(ctx context.Context, tenantID, menuID string) error {
+func (u *partnerMenuUsecase) SoftDeleteMenu(ctx context.Context, tenantID, menuID string) error {
 	err := u.repo.SoftDelete(ctx, tenantID, menuID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -143,7 +143,7 @@ func (u *merchantMenuUsecase) SoftDeleteMenu(ctx context.Context, tenantID, menu
 	return nil
 }
 
-func (u *merchantMenuUsecase) ToggleMenuAvailable(ctx context.Context, tenantID, menuID string, isAvailable bool) error {
+func (u *partnerMenuUsecase) ToggleMenuAvailable(ctx context.Context, tenantID, menuID string, isAvailable bool) error {
 	err := u.repo.UpdateAvailableStatus(ctx, tenantID, menuID, isAvailable)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {

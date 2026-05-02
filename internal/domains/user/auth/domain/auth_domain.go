@@ -11,7 +11,7 @@ type User struct {
 	TenantStatus string
 }
 
-type MerchantTenant struct {
+type PartnerTenant struct {
 	ID      string
 	Name    string
 	Slug    string

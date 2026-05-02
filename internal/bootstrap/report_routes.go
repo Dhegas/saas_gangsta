@@ -11,14 +11,14 @@ import (
 )
 
 func RegisterReportRoutes(api *gin.RouterGroup, cfg *config.Config, db *gorm.DB) {
-	reportRepo := reportrepo.NewMerchantReportRepository(db)
-	reportUC := reportusecase.NewMerchantReportUsecase(reportRepo)
-	reportHandler := reporthttp.NewMerchantReportHandler(reportUC)
+	reportRepo := reportrepo.NewPartnerReportRepository(db)
+	reportUC := reportusecase.NewPartnerReportUsecase(reportRepo)
+	reportHandler := reporthttp.NewPartnerReportHandler(reportUC)
 
 	reportRoutes := api.Group("/reports")
 	reportRoutes.Use(
 		middleware.JWTAuth(cfg),
-		middleware.RoleGuard("MITRA"),
+		middleware.RoleGuard("PARTNER"),
 		middleware.TenantGuard(),
 	)
 

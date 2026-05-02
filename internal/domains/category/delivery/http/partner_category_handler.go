@@ -10,12 +10,12 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type MerchantCategoryHandler struct {
-	usecase domain.MerchantCategoryUsecase
+type PartnerCategoryHandler struct {
+	usecase domain.PartnerCategoryUsecase
 }
 
-func NewMerchantCategoryHandler(usecase domain.MerchantCategoryUsecase) *MerchantCategoryHandler {
-	return &MerchantCategoryHandler{usecase: usecase}
+func NewPartnerCategoryHandler(usecase domain.PartnerCategoryUsecase) *PartnerCategoryHandler {
+	return &PartnerCategoryHandler{usecase: usecase}
 }
 
 // GetAllCategories godoc
@@ -27,7 +27,7 @@ func NewMerchantCategoryHandler(usecase domain.MerchantCategoryUsecase) *Merchan
 // @Success      200  {object}  map[string]interface{}
 // @Failure      500  {object}  map[string]interface{}
 // @Router       /categories [get]
-func (h *MerchantCategoryHandler) GetAllCategories(c *gin.Context) {
+func (h *PartnerCategoryHandler) GetAllCategories(c *gin.Context) {
 	tenantID, err := tenant.GetTenantID(c)
 	if err != nil {
 		return
@@ -52,7 +52,7 @@ func (h *MerchantCategoryHandler) GetAllCategories(c *gin.Context) {
 // @Failure      404  {object}  map[string]interface{}
 // @Failure      500  {object}  map[string]interface{}
 // @Router       /categories/{id} [get]
-func (h *MerchantCategoryHandler) GetCategoryByID(c *gin.Context) {
+func (h *PartnerCategoryHandler) GetCategoryByID(c *gin.Context) {
 	tenantID, err := tenant.GetTenantID(c)
 	if err != nil {
 		return
@@ -79,7 +79,7 @@ func (h *MerchantCategoryHandler) GetCategoryByID(c *gin.Context) {
 // @Failure      400      {object}  map[string]interface{}
 // @Failure      500      {object}  map[string]interface{}
 // @Router       /categories [post]
-func (h *MerchantCategoryHandler) CreateCategory(c *gin.Context) {
+func (h *PartnerCategoryHandler) CreateCategory(c *gin.Context) {
 	tenantID, err := tenant.GetTenantID(c)
 	if err != nil {
 		return
@@ -113,7 +113,7 @@ func (h *MerchantCategoryHandler) CreateCategory(c *gin.Context) {
 // @Failure      404      {object}  map[string]interface{}
 // @Failure      500      {object}  map[string]interface{}
 // @Router       /categories/{id} [put]
-func (h *MerchantCategoryHandler) UpdateCategory(c *gin.Context) {
+func (h *PartnerCategoryHandler) UpdateCategory(c *gin.Context) {
 	tenantID, err := tenant.GetTenantID(c)
 	if err != nil {
 		return
@@ -145,7 +145,7 @@ func (h *MerchantCategoryHandler) UpdateCategory(c *gin.Context) {
 // @Failure      404  {object}  map[string]interface{}
 // @Failure      500  {object}  map[string]interface{}
 // @Router       /categories/{id} [delete]
-func (h *MerchantCategoryHandler) SoftDeleteCategory(c *gin.Context) {
+func (h *PartnerCategoryHandler) SoftDeleteCategory(c *gin.Context) {
 	tenantID, err := tenant.GetTenantID(c)
 	if err != nil {
 		return
@@ -173,7 +173,7 @@ func (h *MerchantCategoryHandler) SoftDeleteCategory(c *gin.Context) {
 // @Failure      404      {object}  map[string]interface{}
 // @Failure      500      {object}  map[string]interface{}
 // @Router       /categories/{id}/toggle-active [patch]
-func (h *MerchantCategoryHandler) ToggleCategoryActive(c *gin.Context) {
+func (h *PartnerCategoryHandler) ToggleCategoryActive(c *gin.Context) {
 	tenantID, err := tenant.GetTenantID(c)
 	if err != nil {
 		return
@@ -205,7 +205,7 @@ func (h *MerchantCategoryHandler) ToggleCategoryActive(c *gin.Context) {
 // @Failure      400      {object}  map[string]interface{}
 // @Failure      500      {object}  map[string]interface{}
 // @Router       /categories/reorder [patch]
-func (h *MerchantCategoryHandler) ReorderCategories(c *gin.Context) {
+func (h *PartnerCategoryHandler) ReorderCategories(c *gin.Context) {
 	tenantID, err := tenant.GetTenantID(c)
 	if err != nil {
 		return

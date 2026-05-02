@@ -11,15 +11,15 @@ import (
 	"errors"
 )
 
-type merchantCategoryUsecase struct {
-	repo domain.MerchantCategoryRepository
+type partnerCategoryUsecase struct {
+	repo domain.PartnerCategoryRepository
 }
 
-func NewMerchantCategoryUsecase(repo domain.MerchantCategoryRepository) domain.MerchantCategoryUsecase {
-	return &merchantCategoryUsecase{repo: repo}
+func NewPartnerCategoryUsecase(repo domain.PartnerCategoryRepository) domain.PartnerCategoryUsecase {
+	return &partnerCategoryUsecase{repo: repo}
 }
 
-func (u *merchantCategoryUsecase) GetAllCategories(ctx context.Context, tenantID string) ([]dto.CategoryResponse, error) {
+func (u *partnerCategoryUsecase) GetAllCategories(ctx context.Context, tenantID string) ([]dto.CategoryResponse, error) {
 	categories, err := u.repo.FindAllByTenant(ctx, tenantID)
 	if err != nil {
 		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil data kategori", http.StatusInternalServerError, err)
@@ -33,7 +33,7 @@ func (u *merchantCategoryUsecase) GetAllCategories(ctx context.Context, tenantID
 	return result, nil
 }
 
-func (u *merchantCategoryUsecase) GetCategoryByID(ctx context.Context, tenantID, categoryID string) (*dto.CategoryResponse, error) {
+func (u *partnerCategoryUsecase) GetCategoryByID(ctx context.Context, tenantID, categoryID string) (*dto.CategoryResponse, error) {
 	category, err := u.repo.FindByIDAndTenant(ctx, tenantID, categoryID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -46,7 +46,7 @@ func (u *merchantCategoryUsecase) GetCategoryByID(ctx context.Context, tenantID,
 	return &response, nil
 }
 
-func (u *merchantCategoryUsecase) CreateCategory(ctx context.Context, tenantID string, req dto.CreateCategoryRequest) (*dto.CategoryResponse, error) {
+func (u *partnerCategoryUsecase) CreateCategory(ctx context.Context, tenantID string, req dto.CreateCategoryRequest) (*dto.CategoryResponse, error) {
 	exists, err := u.repo.CheckNameExists(ctx, tenantID, req.Name, "")
 	if err != nil {
 		return nil, apperrors.New("INTERNAL_ERROR", "Gagal memvalidasi nama kategori", http.StatusInternalServerError, err)
@@ -71,7 +71,7 @@ func (u *merchantCategoryUsecase) CreateCategory(ctx context.Context, tenantID s
 	return &response, nil
 }
 
-func (u *merchantCategoryUsecase) UpdateCategory(ctx context.Context, tenantID, categoryID string, req dto.UpdateCategoryRequest) (*dto.CategoryResponse, error) {
+func (u *partnerCategoryUsecase) UpdateCategory(ctx context.Context, tenantID, categoryID string, req dto.UpdateCategoryRequest) (*dto.CategoryResponse, error) {
 	category, err := u.repo.FindByIDAndTenant(ctx, tenantID, categoryID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -103,7 +103,7 @@ func (u *merchantCategoryUsecase) UpdateCategory(ctx context.Context, tenantID, 
 	return &response, nil
 }
 
-func (u *merchantCategoryUsecase) SoftDeleteCategory(ctx context.Context, tenantID, categoryID string) error {
+func (u *partnerCategoryUsecase) SoftDeleteCategory(ctx context.Context, tenantID, categoryID string) error {
 	err := u.repo.SoftDelete(ctx, tenantID, categoryID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -114,7 +114,7 @@ func (u *merchantCategoryUsecase) SoftDeleteCategory(ctx context.Context, tenant
 	return nil
 }
 
-func (u *merchantCategoryUsecase) ToggleCategoryActive(ctx context.Context, tenantID, categoryID string, isActive bool) error {
+func (u *partnerCategoryUsecase) ToggleCategoryActive(ctx context.Context, tenantID, categoryID string, isActive bool) error {
 	err := u.repo.UpdateActiveStatus(ctx, tenantID, categoryID, isActive)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -125,7 +125,7 @@ func (u *merchantCategoryUsecase) ToggleCategoryActive(ctx context.Context, tena
 	return nil
 }
 
-func (u *merchantCategoryUsecase) ReorderCategories(ctx context.Context, tenantID string, req dto.ReorderCategoryRequest) error {
+func (u *partnerCategoryUsecase) ReorderCategories(ctx context.Context, tenantID string, req dto.ReorderCategoryRequest) error {
 	err := u.repo.UpdateSortOrderBulk(ctx, tenantID, req.Items)
 	if err != nil {
 		return apperrors.New("INTERNAL_ERROR", "Gagal mengurutkan kategori", http.StatusInternalServerError, err)

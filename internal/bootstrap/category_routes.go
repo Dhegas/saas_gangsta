@@ -11,14 +11,14 @@ import (
 )
 
 func RegisterCategoryRoutes(api *gin.RouterGroup, cfg *config.Config, db *gorm.DB) {
-	categoryRepo := categoryrepo.NewMerchantCategoryRepository(db)
-	categoryUC := categoryusecase.NewMerchantCategoryUsecase(categoryRepo)
-	categoryHandler := categoryhttp.NewMerchantCategoryHandler(categoryUC)
+	categoryRepo := categoryrepo.NewPartnerCategoryRepository(db)
+	categoryUC := categoryusecase.NewPartnerCategoryUsecase(categoryRepo)
+	categoryHandler := categoryhttp.NewPartnerCategoryHandler(categoryUC)
 
 	categoryRoutes := api.Group("/categories")
 	categoryRoutes.Use(
 		middleware.JWTAuth(cfg),
-		middleware.RoleGuard("MITRA"),
+		middleware.RoleGuard("PARTNER"),
 		middleware.TenantGuard(),
 	)
 

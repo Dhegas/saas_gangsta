@@ -34,7 +34,7 @@ func TestFindByEmailSuccess(t *testing.T) {
 
 	repo := NewAuthRepository(db)
 	rows := sqlmock.NewRows([]string{"id", "tenant_id", "email", "password_hash", "role", "is_active", "tenant_status"}).
-		AddRow("u-1", "t-1", "user@test.local", "hash", "MITRA", true, "active")
+		AddRow("u-1", "t-1", "user@test.local", "hash", "PARTNER", true, "active")
 
 	mock.ExpectQuery(regexp.QuoteMeta(`SELECT u.id, COALESCE(u.tenant_id::text, '') AS tenant_id, u.email, u.password_hash, u.role, u.is_active, COALESCE(t.status, 'active') AS tenant_status FROM users u LEFT JOIN tenants t ON t.id = u.tenant_id WHERE LOWER(u.email) = LOWER($1) LIMIT $2`)).
 		WithArgs("user@test.local", 1).
@@ -69,7 +69,7 @@ func TestFindByIDSuccess(t *testing.T) {
 
 	repo := NewAuthRepository(db)
 	rows := sqlmock.NewRows([]string{"id", "tenant_id", "email", "password_hash", "role", "is_active", "tenant_status"}).
-		AddRow("u-2", "t-2", "user2@test.local", "hash", "BASIC", true, "active")
+		AddRow("u-2", "t-2", "user2@test.local", "hash", "CUSTOMER", true, "active")
 
 	mock.ExpectQuery(regexp.QuoteMeta(`SELECT u.id, COALESCE(u.tenant_id::text, '') AS tenant_id, u.email, u.password_hash, u.role, u.is_active, COALESCE(t.status, 'active') AS tenant_status FROM users u LEFT JOIN tenants t ON t.id = u.tenant_id WHERE u.id = $1 LIMIT $2`)).
 		WithArgs("u-1", 1).

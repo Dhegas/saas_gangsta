@@ -6,16 +6,16 @@ import (
 	"github.com/dhegas/saas_gangsta/internal/domains/report/dto"
 )
 
-// MerchantReportUsecase kontrak logika bisnis laporan merchant
-type MerchantReportUsecase interface {
+// PartnerReportUsecase kontrak logika bisnis laporan partner
+type PartnerReportUsecase interface {
 	GetRevenue(ctx context.Context, tenantID string, params dto.RevenueFilterParams) (*dto.RevenueResponse, error)
 	GetTopMenus(ctx context.Context, tenantID string, params dto.TopMenusFilterParams) (*dto.TopMenusResponse, error)
 	GetOrdersByTable(ctx context.Context, tenantID string, params dto.OrdersByTableFilterParams) (*dto.OrdersByTableResponse, error)
 	GetDailySummary(ctx context.Context, tenantID string, params dto.DailySummaryFilterParams) (*dto.DailySummaryResponse, error)
 }
 
-// MerchantReportRepository kontrak interaksi database untuk laporan
-type MerchantReportRepository interface {
+// PartnerReportRepository kontrak interaksi database untuk laporan
+type PartnerReportRepository interface {
 	FetchRevenue(ctx context.Context, tenantID, from, to string) (float64, int, error)
 	FetchTopMenus(ctx context.Context, tenantID, from, to string, limit int) ([]TopMenuRow, error)
 	FetchOrdersByTable(ctx context.Context, tenantID, from, to string, limit int) ([]OrdersByTableRow, error)

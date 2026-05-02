@@ -10,12 +10,12 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type MerchantTableHandler struct {
-	usecase domain.MerchantTableUsecase
+type PartnerTableHandler struct {
+	usecase domain.PartnerTableUsecase
 }
 
-func NewMerchantTableHandler(usecase domain.MerchantTableUsecase) *MerchantTableHandler {
-	return &MerchantTableHandler{usecase: usecase}
+func NewPartnerTableHandler(usecase domain.PartnerTableUsecase) *PartnerTableHandler {
+	return &PartnerTableHandler{usecase: usecase}
 }
 
 // GetAllTables godoc
@@ -27,7 +27,7 @@ func NewMerchantTableHandler(usecase domain.MerchantTableUsecase) *MerchantTable
 // @Success      200  {object}  map[string]interface{}
 // @Failure      500  {object}  map[string]interface{}
 // @Router       /dining-tables [get]
-func (h *MerchantTableHandler) GetAllTables(c *gin.Context) {
+func (h *PartnerTableHandler) GetAllTables(c *gin.Context) {
 	tenantID, err := tenant.GetTenantID(c)
 	if err != nil {
 		return
@@ -52,7 +52,7 @@ func (h *MerchantTableHandler) GetAllTables(c *gin.Context) {
 // @Failure      404  {object}  map[string]interface{}
 // @Failure      500  {object}  map[string]interface{}
 // @Router       /dining-tables/{id} [get]
-func (h *MerchantTableHandler) GetTableByID(c *gin.Context) {
+func (h *PartnerTableHandler) GetTableByID(c *gin.Context) {
 	tenantID, err := tenant.GetTenantID(c)
 	if err != nil {
 		return
@@ -78,7 +78,7 @@ func (h *MerchantTableHandler) GetTableByID(c *gin.Context) {
 // @Failure      404  {object}  map[string]interface{}
 // @Failure      500  {object}  map[string]interface{}
 // @Router       /dining-tables/{id}/status [get]
-func (h *MerchantTableHandler) GetTableStatus(c *gin.Context) {
+func (h *PartnerTableHandler) GetTableStatus(c *gin.Context) {
 	tenantID, err := tenant.GetTenantID(c)
 	if err != nil {
 		return
@@ -105,7 +105,7 @@ func (h *MerchantTableHandler) GetTableStatus(c *gin.Context) {
 // @Failure      400      {object}  map[string]interface{}
 // @Failure      500      {object}  map[string]interface{}
 // @Router       /dining-tables [post]
-func (h *MerchantTableHandler) CreateTable(c *gin.Context) {
+func (h *PartnerTableHandler) CreateTable(c *gin.Context) {
 	tenantID, err := tenant.GetTenantID(c)
 	if err != nil {
 		return
@@ -139,7 +139,7 @@ func (h *MerchantTableHandler) CreateTable(c *gin.Context) {
 // @Failure      404      {object}  map[string]interface{}
 // @Failure      500      {object}  map[string]interface{}
 // @Router       /dining-tables/{id} [put]
-func (h *MerchantTableHandler) UpdateTable(c *gin.Context) {
+func (h *PartnerTableHandler) UpdateTable(c *gin.Context) {
 	tenantID, err := tenant.GetTenantID(c)
 	if err != nil {
 		return
@@ -171,7 +171,7 @@ func (h *MerchantTableHandler) UpdateTable(c *gin.Context) {
 // @Failure      404  {object}  map[string]interface{}
 // @Failure      500  {object}  map[string]interface{}
 // @Router       /dining-tables/{id} [delete]
-func (h *MerchantTableHandler) SoftDeleteTable(c *gin.Context) {
+func (h *PartnerTableHandler) SoftDeleteTable(c *gin.Context) {
 	tenantID, err := tenant.GetTenantID(c)
 	if err != nil {
 		return

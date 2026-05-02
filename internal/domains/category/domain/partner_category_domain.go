@@ -7,8 +7,8 @@ import (
 	"github.com/dhegas/saas_gangsta/internal/domains/category/dto"
 )
 
-// MerchantCategoryUsecase adalah kontrak untuk logika bisnis Category oleh Merchant (MITRA)
-type MerchantCategoryUsecase interface {
+// PartnerCategoryUsecase adalah kontrak untuk logika bisnis Category oleh Partner (PARTNER)
+type PartnerCategoryUsecase interface {
 	GetAllCategories(ctx context.Context, tenantID string) ([]dto.CategoryResponse, error)
 	GetCategoryByID(ctx context.Context, tenantID, categoryID string) (*dto.CategoryResponse, error)
 	CreateCategory(ctx context.Context, tenantID string, req dto.CreateCategoryRequest) (*dto.CategoryResponse, error)
@@ -18,8 +18,8 @@ type MerchantCategoryUsecase interface {
 	ReorderCategories(ctx context.Context, tenantID string, req dto.ReorderCategoryRequest) error
 }
 
-// MerchantCategoryRepository adalah kontrak untuk query ke tabel categories
-type MerchantCategoryRepository interface {
+// PartnerCategoryRepository adalah kontrak untuk query ke tabel categories
+type PartnerCategoryRepository interface {
 	FindAllByTenant(ctx context.Context, tenantID string) ([]CategoryEntity, error)
 	FindByIDAndTenant(ctx context.Context, tenantID, categoryID string) (*CategoryEntity, error)
 	Create(ctx context.Context, entity *CategoryEntity) error

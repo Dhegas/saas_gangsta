@@ -11,15 +11,15 @@ import (
 	"github.com/dhegas/saas_gangsta/internal/domains/report/dto"
 )
 
-type merchantReportUsecase struct {
-	repo domain.MerchantReportRepository
+type partnerReportUsecase struct {
+	repo domain.PartnerReportRepository
 }
 
-func NewMerchantReportUsecase(repo domain.MerchantReportRepository) domain.MerchantReportUsecase {
-	return &merchantReportUsecase{repo: repo}
+func NewPartnerReportUsecase(repo domain.PartnerReportRepository) domain.PartnerReportUsecase {
+	return &partnerReportUsecase{repo: repo}
 }
 
-func (u *merchantReportUsecase) GetRevenue(ctx context.Context, tenantID string, params dto.RevenueFilterParams) (*dto.RevenueResponse, error) {
+func (u *partnerReportUsecase) GetRevenue(ctx context.Context, tenantID string, params dto.RevenueFilterParams) (*dto.RevenueResponse, error) {
 	if err := validateDateRange(params.From, params.To); err != nil {
 		return nil, apperrors.New("BAD_REQUEST", err.Error(), http.StatusBadRequest, nil)
 	}
@@ -38,7 +38,7 @@ func (u *merchantReportUsecase) GetRevenue(ctx context.Context, tenantID string,
 	}, nil
 }
 
-func (u *merchantReportUsecase) GetTopMenus(ctx context.Context, tenantID string, params dto.TopMenusFilterParams) (*dto.TopMenusResponse, error) {
+func (u *partnerReportUsecase) GetTopMenus(ctx context.Context, tenantID string, params dto.TopMenusFilterParams) (*dto.TopMenusResponse, error) {
 	rows, err := u.repo.FetchTopMenus(ctx, tenantID, params.From, params.To, params.Limit)
 	if err != nil {
 		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil data menu terlaris", http.StatusInternalServerError, err)
@@ -62,7 +62,7 @@ func (u *merchantReportUsecase) GetTopMenus(ctx context.Context, tenantID string
 	}, nil
 }
 
-func (u *merchantReportUsecase) GetOrdersByTable(ctx context.Context, tenantID string, params dto.OrdersByTableFilterParams) (*dto.OrdersByTableResponse, error) {
+func (u *partnerReportUsecase) GetOrdersByTable(ctx context.Context, tenantID string, params dto.OrdersByTableFilterParams) (*dto.OrdersByTableResponse, error) {
 	rows, err := u.repo.FetchOrdersByTable(ctx, tenantID, params.From, params.To, params.Limit)
 	if err != nil {
 		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil data order per meja", http.StatusInternalServerError, err)
@@ -86,7 +86,7 @@ func (u *merchantReportUsecase) GetOrdersByTable(ctx context.Context, tenantID s
 	}, nil
 }
 
-func (u *merchantReportUsecase) GetDailySummary(ctx context.Context, tenantID string, params dto.DailySummaryFilterParams) (*dto.DailySummaryResponse, error) {
+func (u *partnerReportUsecase) GetDailySummary(ctx context.Context, tenantID string, params dto.DailySummaryFilterParams) (*dto.DailySummaryResponse, error) {
 	// Default: 7 hari ke belakang jika tidak ada parameter
 	from := params.From
 	to := params.To

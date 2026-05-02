@@ -7,8 +7,8 @@ import (
 	"github.com/dhegas/saas_gangsta/internal/domains/menu/dto"
 )
 
-// MerchantMenuUsecase kontrak logika bisnis
-type MerchantMenuUsecase interface {
+// PartnerMenuUsecase kontrak logika bisnis
+type PartnerMenuUsecase interface {
 	GetAllMenus(ctx context.Context, tenantID string, filter dto.MenuFilterParams) ([]dto.MenuResponse, error)
 	GetMenuByID(ctx context.Context, tenantID, menuID string) (*dto.MenuResponse, error)
 	CreateMenu(ctx context.Context, tenantID string, req dto.CreateMenuRequest) (*dto.MenuResponse, error)
@@ -17,8 +17,8 @@ type MerchantMenuUsecase interface {
 	ToggleMenuAvailable(ctx context.Context, tenantID, menuID string, isAvailable bool) error
 }
 
-// MerchantMenuRepository kontrak interaksi database
-type MerchantMenuRepository interface {
+// PartnerMenuRepository kontrak interaksi database
+type PartnerMenuRepository interface {
 	FindAllByTenant(ctx context.Context, tenantID string, filter dto.MenuFilterParams) ([]MenuEntity, error)
 	FindByIDAndTenant(ctx context.Context, tenantID, menuID string) (*MenuEntity, error)
 	Create(ctx context.Context, entity *MenuEntity) error

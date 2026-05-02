@@ -77,7 +77,7 @@ func registerRoutes(router *gin.Engine, cfg *config.Config, db *gorm.DB, redisCl
 		registerAuthRoutes(api, cfg, authHandler)
 		registerUserRoutes(api, cfg, userHandler)
 		RegisterCustomerRoutes(api, cfg)
-		RegisterMerchantRoutes(api, cfg, authHandler)
+		RegisterPartnerRoutes(api, cfg, authHandler)
 		RegisterTenantProfileRoutes(api, cfg, db)
 		RegisterCategoryRoutes(api, cfg, db)
 		RegisterMenuRoutes(api, cfg, db)
@@ -115,7 +115,7 @@ func registerAuthRoutes(api *gin.RouterGroup, cfg *config.Config, authHandler *a
 
 func registerUserRoutes(api *gin.RouterGroup, cfg *config.Config, userHandler *userhttp.UserHandler) {
 	userRoutes := api.Group("/users")
-	userRoutes.Use(middleware.JWTAuth(cfg), middleware.TenantGuard(), middleware.RoleGuards("MITRA", "ADMIN"))
+	userRoutes.Use(middleware.JWTAuth(cfg), middleware.TenantGuard(), middleware.RoleGuards("PARTNER", "ADMIN"))
 	{
 		userRoutes.GET("", userHandler.ListUsers)
 		userRoutes.GET("/:id", userHandler.GetUserDetail)

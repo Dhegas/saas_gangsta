@@ -1,6 +1,85 @@
 basePath: /api/v1
 definitions:
-  dto.CreateMerchantTenantRequest:
+  dto.CategoryOrder:
+    properties:
+      id:
+        type: string
+      sort_order:
+        type: integer
+    required:
+    - id
+    - sort_order
+    type: object
+  dto.CreateCategoryRequest:
+    properties:
+      description:
+        type: string
+      name:
+        maxLength: 120
+        type: string
+      sort_order:
+        type: integer
+    required:
+    - name
+    type: object
+  dto.CreateCustomerRequest:
+    properties:
+      full_name:
+        maxLength: 150
+        minLength: 2
+        type: string
+      phone_number:
+        maxLength: 20
+        type: string
+    required:
+    - full_name
+    type: object
+  dto.CreateMenuRequest:
+    properties:
+      category_id:
+        type: string
+      description:
+        type: string
+      image_url:
+        type: string
+      name:
+        maxLength: 180
+        type: string
+      price:
+        minimum: 0
+        type: number
+    required:
+    - name
+    - price
+    type: object
+  dto.CreateOrderItemRequest:
+    properties:
+      menu_id:
+        type: string
+      notes:
+        maxLength: 255
+        type: string
+      quantity:
+        minimum: 1
+        type: integer
+    required:
+    - menu_id
+    - quantity
+    type: object
+  dto.CreateOrderRequest:
+    properties:
+      dining_tables_id:
+        type: string
+      items:
+        items:
+          $ref: '#/definitions/dto.CreateOrderItemRequest'
+        minItems: 1
+        type: array
+    required:
+    - dining_tables_id
+    - items
+    type: object
+  dto.CreatePartnerTenantRequest:
     properties:
       name:
         maxLength: 150
@@ -28,35 +107,27 @@ definitions:
     - name
     - price
     type: object
-<<<<<<< HEAD
-  dto.LoginRequest:
+  dto.CreateTableRequest:
     properties:
-      email:
-        type: string
-      password:
-        minLength: 6
+      table_name:
+        maxLength: 50
         type: string
     required:
-=======
-  dto.CreateTenantRequest:
+    - table_name
+    type: object
+  dto.CreateTenantProfileRequest:
     properties:
+      description:
+        type: string
+      isActive:
+        type: boolean
       name:
-        maxLength: 150
-        minLength: 2
+        maxLength: 120
         type: string
-      slug:
-        maxLength: 80
-        minLength: 2
-        type: string
-      status:
-        enum:
-        - active
-        - inactive
-        - suspended
-        type: string
+      sortOrder:
+        type: integer
     required:
     - name
-    - slug
     type: object
   dto.LoginRequest:
     properties:
@@ -66,7 +137,6 @@ definitions:
         minLength: 6
         type: string
     required:
->>>>>>> dev-renata
     - email
     - password
     type: object
@@ -98,6 +168,77 @@ definitions:
     - fullName
     - password
     type: object
+  dto.ReorderCategoryRequest:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/dto.CategoryOrder'
+        minItems: 1
+        type: array
+    required:
+    - items
+    type: object
+  dto.ToggleCategoryActiveRequest:
+    properties:
+      is_active:
+        type: boolean
+    required:
+    - is_active
+    type: object
+  dto.ToggleMenuAvailableRequest:
+    properties:
+      is_available:
+        type: boolean
+    required:
+    - is_available
+    type: object
+  dto.UpdateCategoryRequest:
+    properties:
+      description:
+        type: string
+      name:
+        maxLength: 120
+        type: string
+    type: object
+  dto.UpdateCustomerRequest:
+    properties:
+      full_name:
+        maxLength: 150
+        minLength: 2
+        type: string
+      phone_number:
+        maxLength: 20
+        type: string
+    required:
+    - full_name
+    type: object
+  dto.UpdateMenuRequest:
+    properties:
+      category_id:
+        type: string
+      description:
+        type: string
+      image_url:
+        type: string
+      name:
+        maxLength: 180
+        type: string
+      price:
+        minimum: 0
+        type: number
+    type: object
+  dto.UpdateOrderStatusRequest:
+    properties:
+      status:
+        enum:
+        - PENDING
+        - PROCESSING
+        - COMPLETED
+        - CANCELLED
+        type: string
+    required:
+    - status
+    type: object
   dto.UpdateSubscriptionPlanRequest:
     properties:
       billingCycle:
@@ -111,41 +252,25 @@ definitions:
       price:
         type: number
     type: object
-<<<<<<< HEAD
-  dto.UpdateTenantStatusRequest:
+  dto.UpdateTableRequest:
     properties:
-      status:
-        description: validator.v10 akan memastikan status tidak kosong dan hanya berisi
-          nilai tertentu
-=======
-  dto.UpdateTenantRequest:
-    properties:
-      name:
-        maxLength: 150
-        minLength: 2
-        type: string
-      slug:
-        maxLength: 80
-        minLength: 2
-        type: string
-      status:
-        enum:
-        - active
-        - inactive
-        - suspended
-        type: string
-    type: object
-  dto.UpdateTenantStatusRequest:
-    properties:
-      status:
->>>>>>> dev-renata
-        enum:
-        - active
-        - inactive
-        - suspended
+      table_name:
+        maxLength: 50
         type: string
     required:
-    - status
+    - table_name
+    type: object
+  dto.UpdateTenantProfileRequest:
+    properties:
+      description:
+        type: string
+      isActive:
+        type: boolean
+      name:
+        maxLength: 120
+        type: string
+      sortOrder:
+        type: integer
     type: object
   response.Envelope:
     properties:
@@ -163,7 +288,7 @@ info:
   title: saas_gangsta Backend API
   version: "1.0"
 paths:
-  /api/v1/admin/dashboard:
+  /admin/dashboard:
     get:
       consumes:
       - application/json
@@ -182,10 +307,12 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Get Admin Dashboard Stats
       tags:
       - Admin Dashboard
-  /api/v1/admin/subscriptions/plans:
+  /admin/subscriptions/plans:
     get:
       description: 'Mengambil daftar semua paket langganan (misal: Basic, Pro, Enterprise)'
       produces:
@@ -201,6 +328,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Get All Subscription Plans
       tags:
       - Admin Subscription
@@ -233,10 +362,12 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Create Subscription Plan
       tags:
       - Admin Subscription
-  /api/v1/admin/subscriptions/plans/{id}:
+  /admin/subscriptions/plans/{id}:
     patch:
       consumes:
       - application/json
@@ -272,205 +403,16 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: Update Subscription Plan
       tags:
       - Admin Subscription
-  /api/v1/admin/tenants:
-    get:
-      description: Mengambil daftar seluruh tenant yang terdaftar di platform
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            additionalProperties: true
-            type: object
-      summary: List All Tenants
-      tags:
-      - Admin Tenant
-    post:
-      consumes:
-      - application/json
-      description: Mendaftarkan tenant (merchant/toko) baru ke dalam platform
-      parameters:
-      - description: Payload Tenant Baru
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/dto.CreateTenantRequest'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Created
-          schema:
-            additionalProperties: true
-            type: object
-        "400":
-          description: Bad Request
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            additionalProperties: true
-            type: object
-      summary: Register New Tenant
-      tags:
-      - Admin Tenant
-  /api/v1/admin/tenants/{id}:
-    delete:
-      description: Menghapus tenant secara soft delete (mengisi deleted_at, data tetap
-        ada di DB)
-      parameters:
-      - description: Tenant ID
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties: true
-            type: object
-        "404":
-          description: Not Found
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            additionalProperties: true
-            type: object
-      summary: Soft Delete Tenant
-      tags:
-      - Admin Tenant
-    get:
-      description: Mengambil detail satu tenant berdasarkan ID
-      parameters:
-      - description: Tenant ID
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties: true
-            type: object
-        "404":
-          description: Not Found
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            additionalProperties: true
-            type: object
-      summary: Get Tenant Detail
-      tags:
-      - Admin Tenant
-    put:
-      consumes:
-      - application/json
-      description: Memperbarui data tenant (name, slug, atau status)
-      parameters:
-      - description: Tenant ID
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: Payload Update Tenant
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/dto.UpdateTenantRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties: true
-            type: object
-        "400":
-          description: Bad Request
-          schema:
-            additionalProperties: true
-            type: object
-        "404":
-          description: Not Found
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            additionalProperties: true
-            type: object
-      summary: Update Tenant
-      tags:
-      - Admin Tenant
-  /api/v1/admin/tenants/{id}/status:
-    patch:
-      consumes:
-      - application/json
-      description: Mengubah status operasional tenant (active, inactive, atau suspended)
-      parameters:
-      - description: Tenant ID
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: Payload Status Baru
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/dto.UpdateTenantStatusRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties: true
-            type: object
-        "400":
-          description: Bad Request
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            additionalProperties: true
-            type: object
-      summary: Update Tenant Status
-      tags:
-      - Admin Tenant
   /auth/login:
     post:
       consumes:
       - application/json
-      description: Login untuk semua role (BASIC, MITRA, ADMIN)
+      description: Login untuk semua role (CUSTOMER, PARTNER, ADMIN)
       parameters:
       - description: Login payload
         in: body
@@ -630,9 +572,973 @@ paths:
       summary: Register user account
       tags:
       - Auth
-  /merchant/tenants:
+  /categories:
     get:
-      description: Ambil daftar tenant milik merchant login
+      description: Mengambil daftar category per tenant
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: List Categories
+      tags:
+      - Category Management
+    post:
+      consumes:
+      - application/json
+      description: Buat category baru
+      parameters:
+      - description: Payload Create
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateCategoryRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create Category
+      tags:
+      - Category Management
+  /categories/{id}:
+    delete:
+      description: Hapus category (soft delete)
+      parameters:
+      - description: Category ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Soft Delete Category
+      tags:
+      - Category Management
+    get:
+      description: Mengambil detail satu category
+      parameters:
+      - description: Category ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Detail Category
+      tags:
+      - Category Management
+    put:
+      consumes:
+      - application/json
+      description: Perbarui nama atau deskripsi category
+      parameters:
+      - description: Category ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Payload Update
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateCategoryRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update Category
+      tags:
+      - Category Management
+  /categories/{id}/toggle-active:
+    patch:
+      consumes:
+      - application/json
+      description: Ubah status is_active category
+      parameters:
+      - description: Category ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Payload Toggle
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ToggleCategoryActiveRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Aktif / Nonaktifkan Category
+      tags:
+      - Category Management
+  /categories/reorder:
+    patch:
+      consumes:
+      - application/json
+      description: Ubah urutan (sort_order) untuk beberapa category sekaligus
+      parameters:
+      - description: Payload Reorder
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ReorderCategoryRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update sort_order
+      tags:
+      - Category Management
+  /dining-tables:
+    get:
+      description: Mengambil daftar meja per tenant
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: List Tables
+      tags:
+      - Dining Table Management
+    post:
+      consumes:
+      - application/json
+      description: Mendaftarkan meja baru
+      parameters:
+      - description: Payload Create Table
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateTableRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create Table
+      tags:
+      - Dining Table Management
+  /dining-tables/{id}:
+    delete:
+      description: Menghapus meja (soft delete)
+      parameters:
+      - description: Table ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Soft Delete Table
+      tags:
+      - Dining Table Management
+    get:
+      description: Mengambil detail satu meja
+      parameters:
+      - description: Table ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Detail Table
+      tags:
+      - Dining Table Management
+    put:
+      consumes:
+      - application/json
+      description: Memperbarui nama meja
+      parameters:
+      - description: Table ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Payload Update Table
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateTableRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update Table
+      tags:
+      - Dining Table Management
+  /dining-tables/{id}/status:
+    get:
+      description: Mengecek apakah meja sedang kosong atau occupied (berdasarkan transaksi
+        pesanan)
+      parameters:
+      - description: Table ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Cek Status Meja
+      tags:
+      - Dining Table Management
+  /menus:
+    get:
+      description: Mengambil daftar menu per tenant (mendukung filter category_id
+        dan is_available)
+      parameters:
+      - description: Filter berdasarkan Category ID
+        in: query
+        name: category_id
+        type: string
+      - description: Filter berdasarkan ketersediaan (true/false)
+        in: query
+        name: is_available
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: List Menus
+      tags:
+      - Menu Management
+    post:
+      consumes:
+      - application/json
+      description: Mendaftarkan menu baru
+      parameters:
+      - description: Payload Create Menu
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateMenuRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create Menu
+      tags:
+      - Menu Management
+  /menus/{id}:
+    delete:
+      description: Menghapus menu (soft delete)
+      parameters:
+      - description: Menu ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Soft Delete Menu
+      tags:
+      - Menu Management
+    get:
+      description: Mengambil detail satu menu
+      parameters:
+      - description: Menu ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Detail Menu
+      tags:
+      - Menu Management
+    put:
+      consumes:
+      - application/json
+      description: Memperbarui informasi menu
+      parameters:
+      - description: Menu ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Payload Update Menu
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateMenuRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update Menu
+      tags:
+      - Menu Management
+  /menus/{id}/toggle-available:
+    patch:
+      consumes:
+      - application/json
+      description: Mengubah status is_available pada menu
+      parameters:
+      - description: Menu ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Payload Toggle
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ToggleMenuAvailableRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Toggle menu availability
+      tags:
+      - Menu Management
+  /orders:
+    get:
+      description: Mengambil daftar pesanan per tenant (Partner only)
+      parameters:
+      - description: Tenant ID (Wajib untuk CUSTOMER)
+        in: query
+        name: tenant_id
+        type: string
+      - description: Filter by status (PENDING, PROCESSING, dll)
+        in: query
+        name: status
+        type: string
+      - description: Filter by table id
+        in: query
+        name: table_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: List Orders
+      tags:
+      - Order Management
+    post:
+      consumes:
+      - application/json
+      description: Membuat pesanan baru (Customer & Partner)
+      parameters:
+      - description: Tenant ID (Wajib untuk Customer, opsional untuk Partner)
+        in: query
+        name: tenant_id
+        type: string
+      - description: Payload Create Order
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateOrderRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create Order
+      tags:
+      - Order Management
+  /orders/{id}:
+    delete:
+      description: Membatalkan/menghapus pesanan secara logic (Partner Only)
+      parameters:
+      - description: Order ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Soft Delete / Cancel Order
+      tags:
+      - Order Management
+    get:
+      description: Mengambil detail pesanan beserta itemnya
+      parameters:
+      - description: Order ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Tenant ID (Wajib untuk CUSTOMER)
+        in: query
+        name: tenant_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Detail Order
+      tags:
+      - Order Management
+  /orders/{id}/customer:
+    get:
+      description: Mengambil data customer yang terkait dengan sebuah order.
+      parameters:
+      - description: Order ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Detail Customer dari Order
+      tags:
+      - Customer Management
+    post:
+      consumes:
+      - application/json
+      description: Menambahkan data customer yang terkait dengan sebuah order. Customer
+        hanya dapat dibuat sekali per order.
+      parameters:
+      - description: Order ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Payload Create Customer
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateCustomerRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Tambah Customer ke Order
+      tags:
+      - Customer Management
+    put:
+      consumes:
+      - application/json
+      description: Memperbarui data customer yang terkait dengan sebuah order.
+      parameters:
+      - description: Order ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Payload Update Customer
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateCustomerRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update Data Customer dari Order
+      tags:
+      - Customer Management
+  /orders/{id}/status:
+    patch:
+      consumes:
+      - application/json
+      description: Memperbarui status pesanan (Partner Only)
+      parameters:
+      - description: Order ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Payload Update Status
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateOrderStatusRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update Order Status
+      tags:
+      - Order Management
+  /partner/tenants:
+    get:
+      description: Ambil daftar tenant milik partner login
       produces:
       - application/json
       responses:
@@ -654,20 +1560,20 @@ paths:
             $ref: '#/definitions/response.Envelope'
       security:
       - BearerAuth: []
-      summary: List merchant tenants
+      summary: List partner tenants
       tags:
-      - Merchant
+      - Partner
     post:
       consumes:
       - application/json
-      description: Merchant membuat tenant baru miliknya sesuai limit paket subscription
+      description: Partner membuat tenant baru miliknya sesuai limit paket subscription
       parameters:
-      - description: Create merchant tenant payload
+      - description: Create partner tenant payload
         in: body
         name: request
         required: true
         schema:
-          $ref: '#/definitions/dto.CreateMerchantTenantRequest'
+          $ref: '#/definitions/dto.CreatePartnerTenantRequest'
       produces:
       - application/json
       responses:
@@ -693,9 +1599,291 @@ paths:
             $ref: '#/definitions/response.Envelope'
       security:
       - BearerAuth: []
-      summary: Create merchant tenant
+      summary: Create partner tenant
       tags:
-      - Merchant
+      - Partner
+  /reports/daily-summary:
+    get:
+      description: Mengambil ringkasan order dan revenue per hari. Default 7 hari
+        ke belakang jika from/to tidak diisi.
+      parameters:
+      - description: 'Tanggal awal (YYYY-MM-DD, default: 7 hari lalu)'
+        in: query
+        name: from
+        type: string
+      - description: 'Tanggal akhir (YYYY-MM-DD, default: hari ini)'
+        in: query
+        name: to
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Ringkasan Harian
+      tags:
+      - Reporting & Analytics
+  /reports/orders-by-table:
+    get:
+      description: Mengambil daftar meja dengan jumlah order terbanyak dari order
+        COMPLETED.
+      parameters:
+      - description: Tanggal awal (YYYY-MM-DD)
+        in: query
+        name: from
+        type: string
+      - description: Tanggal akhir (YYYY-MM-DD)
+        in: query
+        name: to
+        type: string
+      - description: 'Jumlah item (default: 10, max: 100)'
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Order Terbanyak per Meja
+      tags:
+      - Reporting & Analytics
+  /reports/revenue:
+    get:
+      description: Menghitung total pendapatan dari order COMPLETED dalam rentang
+        tanggal yang ditentukan.
+      parameters:
+      - description: Tanggal awal (YYYY-MM-DD)
+        in: query
+        name: from
+        required: true
+        type: string
+      - description: Tanggal akhir (YYYY-MM-DD)
+        in: query
+        name: to
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Total Pendapatan (Revenue)
+      tags:
+      - Reporting & Analytics
+  /reports/top-menus:
+    get:
+      description: Mengambil daftar menu terlaris berdasarkan total qty terjual dari
+        order COMPLETED.
+      parameters:
+      - description: Tanggal awal (YYYY-MM-DD)
+        in: query
+        name: from
+        type: string
+      - description: Tanggal akhir (YYYY-MM-DD)
+        in: query
+        name: to
+        type: string
+      - description: 'Jumlah item (default: 10, max: 100)'
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Menu Terlaris
+      tags:
+      - Reporting & Analytics
+  /tenant-profiles:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Daftar tenant profile
+      tags:
+      - tenant-profiles
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateTenantProfileRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Buat tenant profile
+      tags:
+      - tenant-profiles
+  /tenant-profiles/{id}:
+    delete:
+      parameters:
+      - description: Profile ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Hapus tenant profile (soft delete)
+      tags:
+      - tenant-profiles
+    get:
+      parameters:
+      - description: Profile ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Detail tenant profile
+      tags:
+      - tenant-profiles
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: Profile ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Payload
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateTenantProfileRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update tenant profile
+      tags:
+      - tenant-profiles
+  /tenant-profiles/{id}/toggle-active:
+    patch:
+      parameters:
+      - description: Profile ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Aktif / nonaktifkan tenant profile
+      tags:
+      - tenant-profiles
 schemes:
 - http
 - https

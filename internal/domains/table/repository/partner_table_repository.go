@@ -8,15 +8,15 @@ import (
 	"gorm.io/gorm"
 )
 
-type merchantTableRepository struct {
+type partnerTableRepository struct {
 	db *gorm.DB
 }
 
-func NewMerchantTableRepository(db *gorm.DB) tabledomain.MerchantTableRepository {
-	return &merchantTableRepository{db: db}
+func NewPartnerTableRepository(db *gorm.DB) tabledomain.PartnerTableRepository {
+	return &partnerTableRepository{db: db}
 }
 
-func (r *merchantTableRepository) FindAllByTenant(ctx context.Context, tenantID string) ([]tabledomain.DiningTableEntity, error) {
+func (r *partnerTableRepository) FindAllByTenant(ctx context.Context, tenantID string) ([]tabledomain.DiningTableEntity, error) {
 	var tables []tabledomain.DiningTableEntity
 	err := r.db.WithContext(ctx).
 		Where("tenant_id = ? AND deleted_at IS NULL", tenantID).
@@ -25,7 +25,7 @@ func (r *merchantTableRepository) FindAllByTenant(ctx context.Context, tenantID 
 	return tables, err
 }
 
-func (r *merchantTableRepository) FindByIDAndTenant(ctx context.Context, tenantID, tableID string) (*tabledomain.DiningTableEntity, error) {
+func (r *partnerTableRepository) FindByIDAndTenant(ctx context.Context, tenantID, tableID string) (*tabledomain.DiningTableEntity, error) {
 	var table tabledomain.DiningTableEntity
 	err := r.db.WithContext(ctx).
 		Where("id = ? AND tenant_id = ? AND deleted_at IS NULL", tableID, tenantID).
@@ -36,15 +36,15 @@ func (r *merchantTableRepository) FindByIDAndTenant(ctx context.Context, tenantI
 	return &table, nil
 }
 
-func (r *merchantTableRepository) Create(ctx context.Context, entity *tabledomain.DiningTableEntity) error {
+func (r *partnerTableRepository) Create(ctx context.Context, entity *tabledomain.DiningTableEntity) error {
 	return r.db.WithContext(ctx).Create(entity).Error
 }
 
-func (r *merchantTableRepository) Update(ctx context.Context, entity *tabledomain.DiningTableEntity) error {
+func (r *partnerTableRepository) Update(ctx context.Context, entity *tabledomain.DiningTableEntity) error {
 	return r.db.WithContext(ctx).Save(entity).Error
 }
 
-func (r *merchantTableRepository) SoftDelete(ctx context.Context, tenantID, tableID string) error {
+func (r *partnerTableRepository) SoftDelete(ctx context.Context, tenantID, tableID string) error {
 	now := time.Now()
 	res := r.db.WithContext(ctx).
 		Model(&tabledomain.DiningTableEntity{}).
@@ -60,7 +60,7 @@ func (r *merchantTableRepository) SoftDelete(ctx context.Context, tenantID, tabl
 	return nil
 }
 
-func (r *merchantTableRepository) CheckNameExists(ctx context.Context, tenantID, tableName string, excludeID string) (bool, error) {
+func (r *partnerTableRepository) CheckNameExists(ctx context.Context, tenantID, tableName string, excludeID string) (bool, error) {
 	var count int64
 	query := r.db.WithContext(ctx).Model(&tabledomain.DiningTableEntity{}).
 		Where("tenant_id = ? AND table_name = ? AND deleted_at IS NULL", tenantID, tableName)
@@ -76,7 +76,7 @@ func (r *merchantTableRepository) CheckNameExists(ctx context.Context, tenantID,
 	return count > 0, nil
 }
 
-func (r *merchantTableRepository) CheckTableOccupied(ctx context.Context, tableID string) (bool, error) {
+func (r *partnerTableRepository) CheckTableOccupied(ctx context.Context, tableID string) (bool, error) {
 	var count int64
 	// Mengecek apakah ada order yang menggunakan meja ini dan statusnya bukan COMPLETED atau CANCELLED
 	err := r.db.WithContext(ctx).Table("orders").

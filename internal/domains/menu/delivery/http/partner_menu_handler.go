@@ -10,12 +10,12 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type MerchantMenuHandler struct {
-	usecase domain.MerchantMenuUsecase
+type PartnerMenuHandler struct {
+	usecase domain.PartnerMenuUsecase
 }
 
-func NewMerchantMenuHandler(usecase domain.MerchantMenuUsecase) *MerchantMenuHandler {
-	return &MerchantMenuHandler{usecase: usecase}
+func NewPartnerMenuHandler(usecase domain.PartnerMenuUsecase) *PartnerMenuHandler {
+	return &PartnerMenuHandler{usecase: usecase}
 }
 
 // GetAllMenus godoc
@@ -29,7 +29,7 @@ func NewMerchantMenuHandler(usecase domain.MerchantMenuUsecase) *MerchantMenuHan
 // @Success      200  {object}  map[string]interface{}
 // @Failure      500  {object}  map[string]interface{}
 // @Router       /menus [get]
-func (h *MerchantMenuHandler) GetAllMenus(c *gin.Context) {
+func (h *PartnerMenuHandler) GetAllMenus(c *gin.Context) {
 	tenantID, err := tenant.GetTenantID(c)
 	if err != nil {
 		tenantID = c.Query("tenant_id")
@@ -67,7 +67,7 @@ func (h *MerchantMenuHandler) GetAllMenus(c *gin.Context) {
 // @Failure      404  {object}  map[string]interface{}
 // @Failure      500  {object}  map[string]interface{}
 // @Router       /menus/{id} [get]
-func (h *MerchantMenuHandler) GetMenuByID(c *gin.Context) {
+func (h *PartnerMenuHandler) GetMenuByID(c *gin.Context) {
 	tenantID, err := tenant.GetTenantID(c)
 	if err != nil {
 		tenantID = c.Query("tenant_id")
@@ -101,7 +101,7 @@ func (h *MerchantMenuHandler) GetMenuByID(c *gin.Context) {
 // @Failure      400      {object}  map[string]interface{}
 // @Failure      500      {object}  map[string]interface{}
 // @Router       /menus [post]
-func (h *MerchantMenuHandler) CreateMenu(c *gin.Context) {
+func (h *PartnerMenuHandler) CreateMenu(c *gin.Context) {
 	tenantID, err := tenant.GetTenantID(c)
 	if err != nil {
 		return
@@ -135,7 +135,7 @@ func (h *MerchantMenuHandler) CreateMenu(c *gin.Context) {
 // @Failure      404      {object}  map[string]interface{}
 // @Failure      500      {object}  map[string]interface{}
 // @Router       /menus/{id} [put]
-func (h *MerchantMenuHandler) UpdateMenu(c *gin.Context) {
+func (h *PartnerMenuHandler) UpdateMenu(c *gin.Context) {
 	tenantID, err := tenant.GetTenantID(c)
 	if err != nil {
 		return
@@ -167,7 +167,7 @@ func (h *MerchantMenuHandler) UpdateMenu(c *gin.Context) {
 // @Failure      404  {object}  map[string]interface{}
 // @Failure      500  {object}  map[string]interface{}
 // @Router       /menus/{id} [delete]
-func (h *MerchantMenuHandler) SoftDeleteMenu(c *gin.Context) {
+func (h *PartnerMenuHandler) SoftDeleteMenu(c *gin.Context) {
 	tenantID, err := tenant.GetTenantID(c)
 	if err != nil {
 		return
@@ -195,7 +195,7 @@ func (h *MerchantMenuHandler) SoftDeleteMenu(c *gin.Context) {
 // @Failure      404      {object}  map[string]interface{}
 // @Failure      500      {object}  map[string]interface{}
 // @Router       /menus/{id}/toggle-available [patch]
-func (h *MerchantMenuHandler) ToggleMenuAvailable(c *gin.Context) {
+func (h *PartnerMenuHandler) ToggleMenuAvailable(c *gin.Context) {
 	tenantID, err := tenant.GetTenantID(c)
 	if err != nil {
 		return

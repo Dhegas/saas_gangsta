@@ -9,16 +9,16 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type MerchantOrderHandler struct {
-	usecase domain.MerchantOrderUsecase
+type PartnerOrderHandler struct {
+	usecase domain.PartnerOrderUsecase
 }
 
-func NewMerchantOrderHandler(usecase domain.MerchantOrderUsecase) *MerchantOrderHandler {
-	return &MerchantOrderHandler{usecase: usecase}
+func NewPartnerOrderHandler(usecase domain.PartnerOrderUsecase) *PartnerOrderHandler {
+	return &PartnerOrderHandler{usecase: usecase}
 }
 
-// extractTenantID is a helper to get tenant_id for both CUSTOMER and MITRA
-func (h *MerchantOrderHandler) extractTenantID(c *gin.Context) (string, error) {
+// extractTenantID is a helper to get tenant_id for both CUSTOMER and PARTNER
+func (h *PartnerOrderHandler) extractTenantID(c *gin.Context) (string, error) {
 	// First check query param (mostly for CUSTOMER role)
 	tenantID := c.Query("tenant_id")
 	if tenantID == "" {
@@ -26,7 +26,7 @@ func (h *MerchantOrderHandler) extractTenantID(c *gin.Context) (string, error) {
 		tenantID = c.GetHeader("X-Tenant-ID")
 	}
 	if tenantID == "" {
-		// Finally check gin context (for MITRA who passed TenantGuard)
+		// Finally check gin context (for PARTNER who passed TenantGuard)
 		if val, exists := c.Get("tenantId"); exists {
 			if tID, ok := val.(string); ok && tID != "" {
 				tenantID = tID
@@ -43,17 +43,17 @@ func (h *MerchantOrderHandler) extractTenantID(c *gin.Context) (string, error) {
 
 // GetAllOrders godoc
 // @Summary      List Orders
-// @Description  Mengambil daftar pesanan per tenant (Mitra only)
+// @Description  Mengambil daftar pesanan per tenant (Partner only)
 // @Tags         Order Management
 // @Produce      json
 // @Security     BearerAuth
-// @Param        tenant_id query     string  false  "Tenant ID (Wajib untuk BASIC)"
+// @Param        tenant_id query     string  false  "Tenant ID (Wajib untuk CUSTOMER)"
 // @Param        status    query     string  false  "Filter by status (PENDING, PROCESSING, dll)"
 // @Param        table_id  query     string  false  "Filter by table id"
 // @Success      200  {object}  map[string]interface{}
 // @Failure      500  {object}  map[string]interface{}
 // @Router       /orders [get]
-func (h *MerchantOrderHandler) GetAllOrders(c *gin.Context) {
+func (h *PartnerOrderHandler) GetAllOrders(c *gin.Context) {
 	tenantID, err := h.extractTenantID(c)
 	if err != nil {
 		return
@@ -80,12 +80,12 @@ func (h *MerchantOrderHandler) GetAllOrders(c *gin.Context) {
 // @Produce      json
 // @Security     BearerAuth
 // @Param        id        path      string  true   "Order ID"
-// @Param        tenant_id query     string  false  "Tenant ID (Wajib untuk BASIC)"
+// @Param        tenant_id query     string  false  "Tenant ID (Wajib untuk CUSTOMER)"
 // @Success      200  {object}  map[string]interface{}
 // @Failure      404  {object}  map[string]interface{}
 // @Failure      500  {object}  map[string]interface{}
 // @Router       /orders/{id} [get]
-func (h *MerchantOrderHandler) GetOrderByID(c *gin.Context) {
+func (h *PartnerOrderHandler) GetOrderByID(c *gin.Context) {
 	tenantID, err := h.extractTenantID(c)
 	if err != nil {
 		return
@@ -102,18 +102,18 @@ func (h *MerchantOrderHandler) GetOrderByID(c *gin.Context) {
 
 // CreateOrder godoc
 // @Summary      Create Order
-// @Description  Membuat pesanan baru (Customer & Mitra)
+// @Description  Membuat pesanan baru (Customer & Partner)
 // @Tags         Order Management
 // @Accept       json
 // @Produce      json
 // @Security     BearerAuth
-// @Param        tenant_id query     string                  false "Tenant ID (Wajib untuk Customer, opsional untuk Mitra)"
+// @Param        tenant_id query     string                  false "Tenant ID (Wajib untuk Customer, opsional untuk Partner)"
 // @Param        request   body      dto.CreateOrderRequest  true  "Payload Create Order"
 // @Success      201      {object}  map[string]interface{}
 // @Failure      400      {object}  map[string]interface{}
 // @Failure      500      {object}  map[string]interface{}
 // @Router       /orders [post]
-func (h *MerchantOrderHandler) CreateOrder(c *gin.Context) {
+func (h *PartnerOrderHandler) CreateOrder(c *gin.Context) {
 	tenantID, err := h.extractTenantID(c)
 	if err != nil {
 		return
@@ -135,7 +135,7 @@ func (h *MerchantOrderHandler) CreateOrder(c *gin.Context) {
 
 // UpdateOrderStatus godoc
 // @Summary      Update Order Status
-// @Description  Memperbarui status pesanan (Mitra Only)
+// @Description  Memperbarui status pesanan (Partner Only)
 // @Tags         Order Management
 // @Accept       json
 // @Produce      json
@@ -147,7 +147,7 @@ func (h *MerchantOrderHandler) CreateOrder(c *gin.Context) {
 // @Failure      404      {object}  map[string]interface{}
 // @Failure      500      {object}  map[string]interface{}
 // @Router       /orders/{id}/status [patch]
-func (h *MerchantOrderHandler) UpdateOrderStatus(c *gin.Context) {
+func (h *PartnerOrderHandler) UpdateOrderStatus(c *gin.Context) {
 	tenantID, err := h.extractTenantID(c)
 	if err != nil {
 		return
@@ -170,7 +170,7 @@ func (h *MerchantOrderHandler) UpdateOrderStatus(c *gin.Context) {
 
 // SoftDeleteOrder godoc
 // @Summary      Soft Delete / Cancel Order
-// @Description  Membatalkan/menghapus pesanan secara logic (Mitra Only)
+// @Description  Membatalkan/menghapus pesanan secara logic (Partner Only)
 // @Tags         Order Management
 // @Produce      json
 // @Security     BearerAuth
@@ -179,7 +179,7 @@ func (h *MerchantOrderHandler) UpdateOrderStatus(c *gin.Context) {
 // @Failure      404  {object}  map[string]interface{}
 // @Failure      500  {object}  map[string]interface{}
 // @Router       /orders/{id} [delete]
-func (h *MerchantOrderHandler) SoftDeleteOrder(c *gin.Context) {
+func (h *PartnerOrderHandler) SoftDeleteOrder(c *gin.Context) {
 	tenantID, err := h.extractTenantID(c)
 	if err != nil {
 		return

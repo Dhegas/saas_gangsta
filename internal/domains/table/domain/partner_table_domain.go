@@ -7,8 +7,8 @@ import (
 	"github.com/dhegas/saas_gangsta/internal/domains/table/dto"
 )
 
-// MerchantTableUsecase kontrak logika bisnis
-type MerchantTableUsecase interface {
+// PartnerTableUsecase kontrak logika bisnis
+type PartnerTableUsecase interface {
 	GetAllTables(ctx context.Context, tenantID string) ([]dto.TableResponse, error)
 	GetTableByID(ctx context.Context, tenantID, tableID string) (*dto.TableResponse, error)
 	GetTableStatus(ctx context.Context, tenantID, tableID string) (*dto.TableStatusResponse, error)
@@ -17,8 +17,8 @@ type MerchantTableUsecase interface {
 	SoftDeleteTable(ctx context.Context, tenantID, tableID string) error
 }
 
-// MerchantTableRepository kontrak interaksi database
-type MerchantTableRepository interface {
+// PartnerTableRepository kontrak interaksi database
+type PartnerTableRepository interface {
 	FindAllByTenant(ctx context.Context, tenantID string) ([]DiningTableEntity, error)
 	FindByIDAndTenant(ctx context.Context, tenantID, tableID string) (*DiningTableEntity, error)
 	Create(ctx context.Context, entity *DiningTableEntity) error

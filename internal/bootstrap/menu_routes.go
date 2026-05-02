@@ -11,28 +11,28 @@ import (
 )
 
 func RegisterMenuRoutes(api *gin.RouterGroup, cfg *config.Config, db *gorm.DB) {
-	menuRepo := menurepo.NewMerchantMenuRepository(db)
-	menuUC := menuusecase.NewMerchantMenuUsecase(menuRepo)
-	menuHandler := menuhttp.NewMerchantMenuHandler(menuUC)
+	menuRepo := menurepo.NewPartnerMenuRepository(db)
+	menuUC := menuusecase.NewPartnerMenuUsecase(menuRepo)
+	menuHandler := menuhttp.NewPartnerMenuHandler(menuUC)
 
-	// Customer / Public Routes (bisa baca tanpa TenantGuard / JWT MITRA, tapi baca tenant_id dari query)
+	// Customer / Public Routes (bisa baca tanpa TenantGuard / JWT Partner, tapi baca tenant_id dari query)
 	customerMenuRoutes := api.Group("/menus")
 	customerMenuRoutes.Use(
 		middleware.JWTAuth(cfg),
-		middleware.RoleGuards("MITRA", "BASIC", "ADMIN"),
+		middleware.RoleGuards("PARTNER", "CUSTOMER", "ADMIN"),
 	)
 	customerMenuRoutes.GET("", menuHandler.GetAllMenus)
 	customerMenuRoutes.GET("/:id", menuHandler.GetMenuByID)
 
-	// Mitra specific routes (bisa tulis)
-	mitraMenuRoutes := api.Group("/menus")
-	mitraMenuRoutes.Use(
+	// Partner specific routes (bisa tulis)
+	partnerMenuRoutes := api.Group("/menus")
+	partnerMenuRoutes.Use(
 		middleware.JWTAuth(cfg),
-		middleware.RoleGuard("MITRA"),
+		middleware.RoleGuard("PARTNER"),
 		middleware.TenantGuard(),
 	)
-	mitraMenuRoutes.POST("", menuHandler.CreateMenu)
-	mitraMenuRoutes.PUT("/:id", menuHandler.UpdateMenu)
-	mitraMenuRoutes.DELETE("/:id", menuHandler.SoftDeleteMenu)
-	mitraMenuRoutes.PATCH("/:id/toggle-available", menuHandler.ToggleMenuAvailable)
+	partnerMenuRoutes.POST("", menuHandler.CreateMenu)
+	partnerMenuRoutes.PUT("/:id", menuHandler.UpdateMenu)
+	partnerMenuRoutes.DELETE("/:id", menuHandler.SoftDeleteMenu)
+	partnerMenuRoutes.PATCH("/:id/toggle-available", menuHandler.ToggleMenuAvailable)
 }

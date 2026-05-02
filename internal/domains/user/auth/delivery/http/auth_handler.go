@@ -55,7 +55,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 
 // Login godoc
 // @Summary Login user
-// @Description Login untuk semua role (BASIC, MITRA, ADMIN)
+// @Description Login untuk semua role (CUSTOMER, PARTNER, ADMIN)
 // @Tags Auth
 // @Accept json
 // @Produce json
@@ -88,25 +88,25 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	response.Success(c, http.StatusOK, "Login berhasil", res)
 }
 
-// CreateMerchantTenant godoc
-// @Summary Create merchant tenant
-// @Description Merchant membuat tenant baru miliknya sesuai limit paket subscription
-// @Tags Merchant
+// CreatePartnerTenant godoc
+// @Summary Create partner tenant
+// @Description Partner membuat tenant baru miliknya sesuai limit paket subscription
+// @Tags Partner
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Param request body dto.CreateMerchantTenantRequest true "Create merchant tenant payload"
+// @Param request body dto.CreatePartnerTenantRequest true "Create partner tenant payload"
 // @Success 201 {object} response.Envelope
 // @Failure 400 {object} response.Envelope
 // @Failure 401 {object} response.Envelope
 // @Failure 403 {object} response.Envelope
 // @Failure 500 {object} response.Envelope
-// @Router /merchant/tenants [post]
-func (h *AuthHandler) CreateMerchantTenant(c *gin.Context) {
+// @Router /partner/tenants [post]
+func (h *AuthHandler) CreatePartnerTenant(c *gin.Context) {
 	userID, _ := c.Get("userId")
 	userIDStr, _ := userID.(string)
 
-	var req dto.CreateMerchantTenantRequest
+	var req dto.CreatePartnerTenantRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		var validationErrs validator.ValidationErrors
 		details := err.Error()
@@ -117,37 +117,37 @@ func (h *AuthHandler) CreateMerchantTenant(c *gin.Context) {
 		return
 	}
 
-	res, err := h.usecase.CreateMerchantTenant(c.Request.Context(), userIDStr, req)
+	res, err := h.usecase.CreatePartnerTenant(c.Request.Context(), userIDStr, req)
 	if err != nil {
 		apperrors.Write(c, err)
 		return
 	}
 
-	response.Success(c, http.StatusCreated, "Tenant merchant berhasil dibuat", res)
+	response.Success(c, http.StatusCreated, "Tenant partner berhasil dibuat", res)
 }
 
-// ListMerchantTenants godoc
-// @Summary List merchant tenants
-// @Description Ambil daftar tenant milik merchant login
-// @Tags Merchant
+// ListPartnerTenants godoc
+// @Summary List partner tenants
+// @Description Ambil daftar tenant milik partner login
+// @Tags Partner
 // @Produce json
 // @Security BearerAuth
 // @Success 200 {object} response.Envelope
 // @Failure 401 {object} response.Envelope
 // @Failure 403 {object} response.Envelope
 // @Failure 500 {object} response.Envelope
-// @Router /merchant/tenants [get]
-func (h *AuthHandler) ListMerchantTenants(c *gin.Context) {
+// @Router /partner/tenants [get]
+func (h *AuthHandler) ListPartnerTenants(c *gin.Context) {
 	userID, _ := c.Get("userId")
 	userIDStr, _ := userID.(string)
 
-	res, err := h.usecase.ListMerchantTenants(c.Request.Context(), userIDStr)
+	res, err := h.usecase.ListPartnerTenants(c.Request.Context(), userIDStr)
 	if err != nil {
 		apperrors.Write(c, err)
 		return
 	}
 
-	response.Success(c, http.StatusOK, "Daftar tenant merchant berhasil diambil", res)
+	response.Success(c, http.StatusOK, "Daftar tenant partner berhasil diambil", res)
 }
 
 // Refresh godoc

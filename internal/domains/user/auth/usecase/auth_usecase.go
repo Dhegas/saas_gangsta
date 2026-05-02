@@ -18,8 +18,8 @@ import (
 type AuthUsecase interface {
 	Register(ctx context.Context, req dto.RegisterRequest) (*dto.RegisterResponse, error)
 	Login(ctx context.Context, req dto.LoginRequest) (*dto.LoginResponse, error)
-	CreateMerchantTenant(ctx context.Context, userID string, req dto.CreateMerchantTenantRequest) (*dto.CreateMerchantTenantResponse, error)
-	ListMerchantTenants(ctx context.Context, userID string) (*dto.ListMerchantTenantsResponse, error)
+	CreatePartnerTenant(ctx context.Context, userID string, req dto.CreatePartnerTenantRequest) (*dto.CreatePartnerTenantResponse, error)
+	ListPartnerTenants(ctx context.Context, userID string) (*dto.ListPartnerTenantsResponse, error)
 	Refresh(ctx context.Context, req dto.RefreshTokenRequest) (*dto.LoginResponse, error)
 	Logout(ctx context.Context, userID string, req dto.LogoutRequest) error
 	Me(ctx context.Context, userID string) (*dto.MeResponse, error)
@@ -57,7 +57,7 @@ func (u *authUsecase) Register(ctx context.Context, req dto.RegisterRequest) (*d
 		Email:        email,
 		FullName:     fullName,
 		PasswordHash: string(passwordHash),
-		Role:         "BASIC",
+		Role:         "CUSTOMER",
 		IsActive:     true,
 		TenantStatus: "active",
 	}
@@ -103,7 +103,7 @@ func (u *authUsecase) Login(ctx context.Context, req dto.LoginRequest) (*dto.Log
 	return u.buildLoginResponse(user)
 }
 
-func (u *authUsecase) CreateMerchantTenant(ctx context.Context, userID string, req dto.CreateMerchantTenantRequest) (*dto.CreateMerchantTenantResponse, error) {
+func (u *authUsecase) CreatePartnerTenant(ctx context.Context, userID string, req dto.CreatePartnerTenantRequest) (*dto.CreatePartnerTenantResponse, error) {
 	if strings.TrimSpace(userID) == "" {
 		return nil, apperrors.New("UNAUTHORIZED", "User tidak valid", http.StatusUnauthorized, nil)
 	}
@@ -113,7 +113,7 @@ func (u *authUsecase) CreateMerchantTenant(ctx context.Context, userID string, r
 		return nil, apperrors.New("VALIDATION_ERROR", "Nama tenant wajib diisi", http.StatusBadRequest, nil)
 	}
 
-	tenant, err := u.repo.CreateTenantForMerchant(ctx, repository.CreateMerchantTenantInput{
+	tenant, err := u.repo.CreateTenantForPartner(ctx, repository.CreatePartnerTenantInput{
 		UserID: userID,
 		Name:   name,
 	})
@@ -121,19 +121,19 @@ func (u *authUsecase) CreateMerchantTenant(ctx context.Context, userID string, r
 		switch {
 		case errors.Is(err, repository.ErrUserNotFound):
 			return nil, apperrors.New("NOT_FOUND", "User tidak ditemukan", http.StatusNotFound, nil)
-		case errors.Is(err, repository.ErrUserNotMerchant):
-			return nil, apperrors.New("FORBIDDEN", "Hanya MITRA yang dapat membuat tenant", http.StatusForbidden, nil)
-		case errors.Is(err, repository.ErrMerchantSubscriptionMissing):
-			return nil, apperrors.New("FORBIDDEN", "Subscription MITRA tidak ditemukan", http.StatusForbidden, nil)
+		case errors.Is(err, repository.ErrUserNotPartner):
+			return nil, apperrors.New("FORBIDDEN", "Hanya PARTNER yang dapat membuat tenant", http.StatusForbidden, nil)
+		case errors.Is(err, repository.ErrPartnerSubscriptionMissing):
+			return nil, apperrors.New("FORBIDDEN", "Subscription PARTNER tidak ditemukan", http.StatusForbidden, nil)
 		case errors.Is(err, repository.ErrTenantLimitReached):
 			return nil, apperrors.New("FORBIDDEN", "Batas jumlah tenant pada paket subscription sudah tercapai", http.StatusForbidden, nil)
 		default:
-			return nil, apperrors.New("INTERNAL_ERROR", "Gagal membuat tenant merchant", http.StatusInternalServerError, nil)
+			return nil, apperrors.New("INTERNAL_ERROR", "Gagal membuat tenant partner", http.StatusInternalServerError, nil)
 		}
 	}
 
-	return &dto.CreateMerchantTenantResponse{
-		Tenant: dto.MerchantTenantResponse{
+	return &dto.CreatePartnerTenantResponse{
+		Tenant: dto.PartnerTenantResponse{
 			ID:      tenant.ID,
 			Name:    tenant.Name,
 			Slug:    tenant.Slug,
@@ -143,30 +143,30 @@ func (u *authUsecase) CreateMerchantTenant(ctx context.Context, userID string, r
 	}, nil
 }
 
-func (u *authUsecase) ListMerchantTenants(ctx context.Context, userID string) (*dto.ListMerchantTenantsResponse, error) {
+func (u *authUsecase) ListPartnerTenants(ctx context.Context, userID string) (*dto.ListPartnerTenantsResponse, error) {
 	if strings.TrimSpace(userID) == "" {
 		return nil, apperrors.New("UNAUTHORIZED", "User tidak valid", http.StatusUnauthorized, nil)
 	}
 
-	merchant, err := u.repo.FindByID(ctx, userID)
+	partner, err := u.repo.FindByID(ctx, userID)
 	if err != nil {
 		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil data user", http.StatusInternalServerError, nil)
 	}
-	if merchant == nil {
+	if partner == nil {
 		return nil, apperrors.New("UNAUTHORIZED", "User tidak ditemukan", http.StatusUnauthorized, nil)
 	}
-	if merchant.Role != "MITRA" {
-		return nil, apperrors.New("FORBIDDEN", "Hanya MITRA yang dapat melihat tenant", http.StatusForbidden, nil)
+	if partner.Role != "PARTNER" {
+		return nil, apperrors.New("FORBIDDEN", "Hanya PARTNER yang dapat melihat tenant", http.StatusForbidden, nil)
 	}
 
-	tenants, err := u.repo.ListTenantsByMerchant(ctx, userID)
+	tenants, err := u.repo.ListTenantsByPartner(ctx, userID)
 	if err != nil {
-		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil daftar tenant merchant", http.StatusInternalServerError, nil)
+		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil daftar tenant partner", http.StatusInternalServerError, nil)
 	}
 
-	items := make([]dto.MerchantTenantResponse, 0, len(tenants))
+	items := make([]dto.PartnerTenantResponse, 0, len(tenants))
 	for _, tenant := range tenants {
-		items = append(items, dto.MerchantTenantResponse{
+		items = append(items, dto.PartnerTenantResponse{
 			ID:      tenant.ID,
 			Name:    tenant.Name,
 			Slug:    tenant.Slug,
@@ -175,7 +175,7 @@ func (u *authUsecase) ListMerchantTenants(ctx context.Context, userID string) (*
 		})
 	}
 
-	return &dto.ListMerchantTenantsResponse{Tenants: items}, nil
+	return &dto.ListPartnerTenantsResponse{Tenants: items}, nil
 }
 
 func (u *authUsecase) Refresh(ctx context.Context, req dto.RefreshTokenRequest) (*dto.LoginResponse, error) {
@@ -241,7 +241,7 @@ func (u *authUsecase) Me(ctx context.Context, userID string) (*dto.MeResponse, e
 }
 
 func validateTenantState(user *domain.User) error {
-	if user.Role == "MITRA" {
+	if user.Role == "PARTNER" {
 		if user.TenantID != "" && strings.TrimSpace(user.TenantStatus) != "active" {
 			return apperrors.New("TENANT_INACTIVE", "Tenant tidak aktif", http.StatusForbidden, nil)
 		}

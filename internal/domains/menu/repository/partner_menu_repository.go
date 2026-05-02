@@ -10,15 +10,15 @@ import (
 	"gorm.io/gorm"
 )
 
-type merchantMenuRepository struct {
+type partnerMenuRepository struct {
 	db *gorm.DB
 }
 
-func NewMerchantMenuRepository(db *gorm.DB) menudomain.MerchantMenuRepository {
-	return &merchantMenuRepository{db: db}
+func NewPartnerMenuRepository(db *gorm.DB) menudomain.PartnerMenuRepository {
+	return &partnerMenuRepository{db: db}
 }
 
-func (r *merchantMenuRepository) FindAllByTenant(ctx context.Context, tenantID string, filter dto.MenuFilterParams) ([]menudomain.MenuEntity, error) {
+func (r *partnerMenuRepository) FindAllByTenant(ctx context.Context, tenantID string, filter dto.MenuFilterParams) ([]menudomain.MenuEntity, error) {
 	var menus []menudomain.MenuEntity
 	query := r.db.WithContext(ctx).
 		Where("tenant_id = ? AND deleted_at IS NULL", tenantID)
@@ -34,7 +34,7 @@ func (r *merchantMenuRepository) FindAllByTenant(ctx context.Context, tenantID s
 	return menus, err
 }
 
-func (r *merchantMenuRepository) FindByIDAndTenant(ctx context.Context, tenantID, menuID string) (*menudomain.MenuEntity, error) {
+func (r *partnerMenuRepository) FindByIDAndTenant(ctx context.Context, tenantID, menuID string) (*menudomain.MenuEntity, error) {
 	var menu menudomain.MenuEntity
 	err := r.db.WithContext(ctx).
 		Where("id = ? AND tenant_id = ? AND deleted_at IS NULL", menuID, tenantID).
@@ -45,15 +45,15 @@ func (r *merchantMenuRepository) FindByIDAndTenant(ctx context.Context, tenantID
 	return &menu, nil
 }
 
-func (r *merchantMenuRepository) Create(ctx context.Context, entity *menudomain.MenuEntity) error {
+func (r *partnerMenuRepository) Create(ctx context.Context, entity *menudomain.MenuEntity) error {
 	return r.db.WithContext(ctx).Create(entity).Error
 }
 
-func (r *merchantMenuRepository) Update(ctx context.Context, entity *menudomain.MenuEntity) error {
+func (r *partnerMenuRepository) Update(ctx context.Context, entity *menudomain.MenuEntity) error {
 	return r.db.WithContext(ctx).Save(entity).Error
 }
 
-func (r *merchantMenuRepository) SoftDelete(ctx context.Context, tenantID, menuID string) error {
+func (r *partnerMenuRepository) SoftDelete(ctx context.Context, tenantID, menuID string) error {
 	now := time.Now()
 	res := r.db.WithContext(ctx).
 		Model(&menudomain.MenuEntity{}).
@@ -69,7 +69,7 @@ func (r *merchantMenuRepository) SoftDelete(ctx context.Context, tenantID, menuI
 	return nil
 }
 
-func (r *merchantMenuRepository) UpdateAvailableStatus(ctx context.Context, tenantID, menuID string, isAvailable bool) error {
+func (r *partnerMenuRepository) UpdateAvailableStatus(ctx context.Context, tenantID, menuID string, isAvailable bool) error {
 	res := r.db.WithContext(ctx).
 		Model(&menudomain.MenuEntity{}).
 		Where("id = ? AND tenant_id = ? AND deleted_at IS NULL", menuID, tenantID).
@@ -84,7 +84,7 @@ func (r *merchantMenuRepository) UpdateAvailableStatus(ctx context.Context, tena
 	return nil
 }
 
-func (r *merchantMenuRepository) CheckNameExists(ctx context.Context, tenantID, name string, excludeID string) (bool, error) {
+func (r *partnerMenuRepository) CheckNameExists(ctx context.Context, tenantID, name string, excludeID string) (bool, error) {
 	var count int64
 	query := r.db.WithContext(ctx).Model(&menudomain.MenuEntity{}).
 		Where("tenant_id = ? AND name = ? AND deleted_at IS NULL", tenantID, name)
@@ -100,7 +100,7 @@ func (r *merchantMenuRepository) CheckNameExists(ctx context.Context, tenantID, 
 	return count > 0, nil
 }
 
-func (r *merchantMenuRepository) CategoryExists(ctx context.Context, tenantID, categoryID string) (bool, error) {
+func (r *partnerMenuRepository) CategoryExists(ctx context.Context, tenantID, categoryID string) (bool, error) {
 	var count int64
 	err := r.db.WithContext(ctx).Model(&domain.CategoryEntity{}).
 		Where("id = ? AND tenant_id = ? AND deleted_at IS NULL", categoryID, tenantID).

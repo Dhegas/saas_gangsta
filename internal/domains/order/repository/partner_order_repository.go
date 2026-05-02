@@ -9,15 +9,15 @@ import (
 	"gorm.io/gorm"
 )
 
-type merchantOrderRepository struct {
+type partnerOrderRepository struct {
 	db *gorm.DB
 }
 
-func NewMerchantOrderRepository(db *gorm.DB) orderdomain.MerchantOrderRepository {
-	return &merchantOrderRepository{db: db}
+func NewPartnerOrderRepository(db *gorm.DB) orderdomain.PartnerOrderRepository {
+	return &partnerOrderRepository{db: db}
 }
 
-func (r *merchantOrderRepository) FindAll(ctx context.Context, tenantID string, filter dto.OrderFilterParams) ([]orderdomain.OrderEntity, error) {
+func (r *partnerOrderRepository) FindAll(ctx context.Context, tenantID string, filter dto.OrderFilterParams) ([]orderdomain.OrderEntity, error) {
 	var orders []orderdomain.OrderEntity
 	query := r.db.WithContext(ctx).Preload("Items").Where("tenant_id = ? AND deleted_at IS NULL", tenantID)
 
@@ -32,7 +32,7 @@ func (r *merchantOrderRepository) FindAll(ctx context.Context, tenantID string, 
 	return orders, err
 }
 
-func (r *merchantOrderRepository) FindByID(ctx context.Context, tenantID, orderID string) (*orderdomain.OrderEntity, error) {
+func (r *partnerOrderRepository) FindByID(ctx context.Context, tenantID, orderID string) (*orderdomain.OrderEntity, error) {
 	var order orderdomain.OrderEntity
 	err := r.db.WithContext(ctx).Preload("Items").
 		Where("id = ? AND tenant_id = ? AND deleted_at IS NULL", orderID, tenantID).
@@ -43,7 +43,7 @@ func (r *merchantOrderRepository) FindByID(ctx context.Context, tenantID, orderI
 	return &order, nil
 }
 
-func (r *merchantOrderRepository) CreateWithItems(ctx context.Context, order *orderdomain.OrderEntity, items []orderdomain.OrderItemEntity) error {
+func (r *partnerOrderRepository) CreateWithItems(ctx context.Context, order *orderdomain.OrderEntity, items []orderdomain.OrderItemEntity) error {
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := tx.Create(order).Error; err != nil {
 			return err
@@ -62,7 +62,7 @@ func (r *merchantOrderRepository) CreateWithItems(ctx context.Context, order *or
 	})
 }
 
-func (r *merchantOrderRepository) UpdateStatus(ctx context.Context, tenantID, orderID, status string) error {
+func (r *partnerOrderRepository) UpdateStatus(ctx context.Context, tenantID, orderID, status string) error {
 	res := r.db.WithContext(ctx).Model(&orderdomain.OrderEntity{}).
 		Where("id = ? AND tenant_id = ? AND deleted_at IS NULL", orderID, tenantID).
 		Update("status", status)
@@ -76,7 +76,7 @@ func (r *merchantOrderRepository) UpdateStatus(ctx context.Context, tenantID, or
 	return nil
 }
 
-func (r *merchantOrderRepository) SoftDelete(ctx context.Context, tenantID, orderID string) error {
+func (r *partnerOrderRepository) SoftDelete(ctx context.Context, tenantID, orderID string) error {
 	now := time.Now()
 	res := r.db.WithContext(ctx).Model(&orderdomain.OrderEntity{}).
 		Where("id = ? AND tenant_id = ? AND deleted_at IS NULL", orderID, tenantID).
@@ -91,7 +91,7 @@ func (r *merchantOrderRepository) SoftDelete(ctx context.Context, tenantID, orde
 	return nil
 }
 
-func (r *merchantOrderRepository) GetMenuDetails(ctx context.Context, menuIDs []string) (map[string]orderdomain.MenuDetail, error) {
+func (r *partnerOrderRepository) GetMenuDetails(ctx context.Context, menuIDs []string) (map[string]orderdomain.MenuDetail, error) {
 	var menus []struct {
 		ID    string
 		Name  string

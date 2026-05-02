@@ -16,8 +16,8 @@ import (
 
 var (
 	ErrUserNotFound                = errors.New("user not found")
-	ErrUserNotMerchant             = errors.New("user is not merchant")
-	ErrMerchantSubscriptionMissing = errors.New("merchant subscription is required")
+	ErrUserNotPartner              = errors.New("user is not partner")
+	ErrPartnerSubscriptionMissing  = errors.New("partner subscription is required")
 	ErrTenantLimitReached          = errors.New("tenant limit reached")
 )
 
@@ -25,8 +25,8 @@ type AuthRepository interface {
 	FindByEmail(ctx context.Context, email string) (*domain.User, error)
 	FindByID(ctx context.Context, id string) (*domain.User, error)
 	CreateUser(ctx context.Context, user *domain.User) error
-	CreateTenantForMerchant(ctx context.Context, input CreateMerchantTenantInput) (*domain.MerchantTenant, error)
-	ListTenantsByMerchant(ctx context.Context, userID string) ([]domain.MerchantTenant, error)
+	CreateTenantForPartner(ctx context.Context, input CreatePartnerTenantInput) (*domain.PartnerTenant, error)
+	ListTenantsByPartner(ctx context.Context, userID string) ([]domain.PartnerTenant, error)
 }
 
 type authRepository struct {
@@ -43,7 +43,7 @@ type authUserRow struct {
 	TenantStatus string `gorm:"column:tenant_status"`
 }
 
-type CreateMerchantTenantInput struct {
+type CreatePartnerTenantInput struct {
 	UserID string
 	Name   string
 }
@@ -160,14 +160,14 @@ func (r *authRepository) CreateUser(ctx context.Context, user *domain.User) erro
 	return nil
 }
 
-func (r *authRepository) CreateTenantForMerchant(ctx context.Context, input CreateMerchantTenantInput) (*domain.MerchantTenant, error) {
+func (r *authRepository) CreateTenantForPartner(ctx context.Context, input CreatePartnerTenantInput) (*domain.PartnerTenant, error) {
 	if r.db == nil {
 		return nil, fmt.Errorf("database is not initialized")
 	}
 
 	tenantSlug := generateTenantSlug(input.Name)
 
-	createdTenant := &domain.MerchantTenant{}
+	createdTenant := &domain.PartnerTenant{}
 	txErr := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		var userRow struct {
 			ID       string `gorm:"column:id"`
@@ -183,13 +183,13 @@ func (r *authRepository) CreateTenantForMerchant(ctx context.Context, input Crea
 			 FOR UPDATE`,
 			input.UserID,
 		).Scan(&userRow).Error; err != nil {
-			return fmt.Errorf("lock merchant user: %w", err)
+			return fmt.Errorf("lock partner user: %w", err)
 		}
 		if userRow.ID == "" || !userRow.IsActive {
 			return ErrUserNotFound
 		}
-		if decodeRole(userRow.Role) != "MITRA" {
-			return ErrUserNotMerchant
+		if decodeRole(userRow.Role) != "PARTNER" {
+			return ErrUserNotPartner
 		}
 
 		var subscriptionRow struct {
@@ -215,21 +215,21 @@ func (r *authRepository) CreateTenantForMerchant(ctx context.Context, input Crea
 			 LIMIT 1`,
 			input.UserID,
 		).Scan(&subscriptionRow).Error; err != nil {
-			return fmt.Errorf("find merchant subscription: %w", err)
+			return fmt.Errorf("find partner subscription: %w", err)
 		}
 		if subscriptionRow.ID == "" {
-			return ErrMerchantSubscriptionMissing
+			return ErrPartnerSubscriptionMissing
 		}
 
 		var tenantCount int64
 		if err := tx.Raw(
 			`SELECT COUNT(*)
-			 FROM merchant_tenants mt
-			 INNER JOIN tenants t ON t.id = mt.tenant_id
-			 WHERE mt.user_id = NULLIF(?, '')::uuid AND t.deleted_at IS NULL`,
+			 FROM partner_tenants pt
+			 INNER JOIN tenants t ON t.id = pt.tenant_id
+			 WHERE pt.user_id = NULLIF(?, '')::uuid AND t.deleted_at IS NULL`,
 			input.UserID,
 		).Scan(&tenantCount).Error; err != nil {
-			return fmt.Errorf("count merchant tenants: %w", err)
+			return fmt.Errorf("count partner tenants: %w", err)
 		}
 
 		if subscriptionRow.MaxTenants.Valid && tenantCount >= subscriptionRow.MaxTenants.Int64 {
@@ -248,12 +248,12 @@ func (r *authRepository) CreateTenantForMerchant(ctx context.Context, input Crea
 		createdTenant.IsOwner = true
 
 		if err := tx.Exec(
-			`INSERT INTO merchant_tenants (user_id, tenant_id, is_owner, created_at, updated_at)
+			`INSERT INTO partner_tenants (user_id, tenant_id, is_owner, created_at, updated_at)
 			 VALUES (NULLIF(?, '')::uuid, NULLIF(?, '')::uuid, TRUE, NOW(), NOW())`,
 			input.UserID,
 			createdTenant.ID,
 		).Error; err != nil {
-			return fmt.Errorf("link merchant tenant: %w", err)
+			return fmt.Errorf("link partner tenant: %w", err)
 		}
 
 		if userRow.TenantID == "" {
@@ -287,22 +287,22 @@ func (r *authRepository) CreateTenantForMerchant(ctx context.Context, input Crea
 	return createdTenant, nil
 }
 
-func (r *authRepository) ListTenantsByMerchant(ctx context.Context, userID string) ([]domain.MerchantTenant, error) {
+func (r *authRepository) ListTenantsByPartner(ctx context.Context, userID string) ([]domain.PartnerTenant, error) {
 	if r.db == nil {
 		return nil, fmt.Errorf("database is not initialized")
 	}
 
-	tenants := make([]domain.MerchantTenant, 0)
+	tenants := make([]domain.PartnerTenant, 0)
 	err := r.db.WithContext(ctx).Raw(
-		`SELECT t.id::text AS id, t.name, t.slug, t.status, mt.is_owner
-		 FROM merchant_tenants mt
-		 INNER JOIN tenants t ON t.id = mt.tenant_id
-		 WHERE mt.user_id = NULLIF(?, '')::uuid AND t.deleted_at IS NULL
-		 ORDER BY mt.created_at DESC`,
+		`SELECT t.id::text AS id, t.name, t.slug, t.status, pt.is_owner
+		 FROM partner_tenants pt
+		 INNER JOIN tenants t ON t.id = pt.tenant_id
+		 WHERE pt.user_id = NULLIF(?, '')::uuid AND t.deleted_at IS NULL
+		 ORDER BY pt.created_at DESC`,
 		userID,
 	).Scan(&tenants).Error
 	if err != nil {
-		return nil, fmt.Errorf("list merchant tenants: %w", err)
+		return nil, fmt.Errorf("list partner tenants: %w", err)
 	}
 
 	return tenants, nil

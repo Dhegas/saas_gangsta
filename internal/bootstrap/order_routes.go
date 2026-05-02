@@ -11,9 +11,9 @@ import (
 )
 
 func RegisterOrderRoutes(api *gin.RouterGroup, cfg *config.Config, db *gorm.DB) {
-	orderRepo := orderrepo.NewMerchantOrderRepository(db)
-	orderUC := orderusecase.NewMerchantOrderUsecase(orderRepo)
-	orderHandler := orderhttp.NewMerchantOrderHandler(orderUC)
+	orderRepo := orderrepo.NewPartnerOrderRepository(db)
+	orderUC := orderusecase.NewPartnerOrderUsecase(orderRepo)
+	orderHandler := orderhttp.NewPartnerOrderHandler(orderUC)
 
 	// Customer Management routes (per order)
 	customerRepo := orderrepo.NewCustomerRepository(db)
@@ -24,7 +24,7 @@ func RegisterOrderRoutes(api *gin.RouterGroup, cfg *config.Config, db *gorm.DB) 
 	customerOrderRoutes := api.Group("/orders")
 	customerOrderRoutes.Use(
 		middleware.JWTAuth(cfg), // Tetap butuh auth (token login customer atau guest token), atur sesuai kebutuhan sistem
-		middleware.RoleGuards("BASIC", "MITRA", "ADMIN"),
+		middleware.RoleGuards("CUSTOMER", "PARTNER", "ADMIN"),
 	)
 	customerOrderRoutes.POST("", orderHandler.CreateOrder)
 	customerOrderRoutes.GET("/:id", orderHandler.GetOrderByID) // Customer mungkin butuh melihat struk detailnya
@@ -34,14 +34,14 @@ func RegisterOrderRoutes(api *gin.RouterGroup, cfg *config.Config, db *gorm.DB) 
 	customerOrderRoutes.GET("/:id/customer", customerHandler.GetCustomer)
 	customerOrderRoutes.PUT("/:id/customer", customerHandler.UpdateCustomer)
 
-	// Mitra specific routes (untuk memanajemen pesanan masuk)
-	mitraOrderRoutes := api.Group("/orders")
-	mitraOrderRoutes.Use(
+	// Partner specific routes (untuk memanajemen pesanan masuk)
+	partnerOrderRoutes := api.Group("/orders")
+	partnerOrderRoutes.Use(
 		middleware.JWTAuth(cfg),
-		middleware.RoleGuard("MITRA"),
+		middleware.RoleGuard("PARTNER"),
 		middleware.TenantGuard(),
 	)
-	mitraOrderRoutes.GET("", orderHandler.GetAllOrders)
-	mitraOrderRoutes.PATCH("/:id/status", orderHandler.UpdateOrderStatus)
-	mitraOrderRoutes.DELETE("/:id", orderHandler.SoftDeleteOrder)
+	partnerOrderRoutes.GET("", orderHandler.GetAllOrders)
+	partnerOrderRoutes.PATCH("/:id/status", orderHandler.UpdateOrderStatus)
+	partnerOrderRoutes.DELETE("/:id", orderHandler.SoftDeleteOrder)
 }

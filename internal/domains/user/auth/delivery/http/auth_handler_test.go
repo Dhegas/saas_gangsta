@@ -16,8 +16,8 @@ import (
 type mockAuthUsecase struct {
 	registerRes     *dto.RegisterResponse
 	loginRes        *dto.LoginResponse
-	createTenantRes *dto.CreateMerchantTenantResponse
-	listTenantsRes  *dto.ListMerchantTenantsResponse
+	createTenantRes *dto.CreatePartnerTenantResponse
+	listTenantsRes  *dto.ListPartnerTenantsResponse
 	refreshRes      *dto.LoginResponse
 	meRes           *dto.MeResponse
 	registerErr     error
@@ -37,11 +37,11 @@ func (m *mockAuthUsecase) Login(_ context.Context, _ dto.LoginRequest) (*dto.Log
 	return m.loginRes, m.loginErr
 }
 
-func (m *mockAuthUsecase) CreateMerchantTenant(_ context.Context, _ string, _ dto.CreateMerchantTenantRequest) (*dto.CreateMerchantTenantResponse, error) {
+func (m *mockAuthUsecase) CreatePartnerTenant(_ context.Context, _ string, _ dto.CreatePartnerTenantRequest) (*dto.CreatePartnerTenantResponse, error) {
 	return m.createTenantRes, m.createTenantErr
 }
 
-func (m *mockAuthUsecase) ListMerchantTenants(_ context.Context, _ string) (*dto.ListMerchantTenantsResponse, error) {
+func (m *mockAuthUsecase) ListPartnerTenants(_ context.Context, _ string) (*dto.ListPartnerTenantsResponse, error) {
 	return m.listTenantsRes, m.listTenantsErr
 }
 
@@ -178,17 +178,17 @@ func TestMeHandlerUnauthorizedWhenUsecaseFails(t *testing.T) {
 	}
 }
 
-func TestCreateMerchantTenantHandlerSuccess(t *testing.T) {
+func TestCreatePartnerTenantHandlerSuccess(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
-	h := NewAuthHandler(&mockAuthUsecase{createTenantRes: &dto.CreateMerchantTenantResponse{Tenant: dto.MerchantTenantResponse{ID: "t-1", Name: "Warung A", Slug: "warung-a", Status: "active", IsOwner: true}}})
-	r.POST("/merchant/tenants", func(c *gin.Context) {
+	h := NewAuthHandler(&mockAuthUsecase{createTenantRes: &dto.CreatePartnerTenantResponse{Tenant: dto.PartnerTenantResponse{ID: "t-1", Name: "Warung A", Slug: "warung-a", Status: "active", IsOwner: true}}})
+	r.POST("/Partner/tenants", func(c *gin.Context) {
 		c.Set("userId", "u-1")
-		h.CreateMerchantTenant(c)
+		h.CreatePartnerTenant(c)
 	})
 
-	payload, _ := json.Marshal(dto.CreateMerchantTenantRequest{Name: "Warung A"})
-	req := httptest.NewRequest(http.MethodPost, "/merchant/tenants", bytes.NewBuffer(payload))
+	payload, _ := json.Marshal(dto.CreatePartnerTenantRequest{Name: "Warung A"})
+	req := httptest.NewRequest(http.MethodPost, "/Partner/tenants", bytes.NewBuffer(payload))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
@@ -198,16 +198,16 @@ func TestCreateMerchantTenantHandlerSuccess(t *testing.T) {
 	}
 }
 
-func TestListMerchantTenantsHandlerSuccess(t *testing.T) {
+func TestListPartnerTenantsHandlerSuccess(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
-	h := NewAuthHandler(&mockAuthUsecase{listTenantsRes: &dto.ListMerchantTenantsResponse{Tenants: []dto.MerchantTenantResponse{{ID: "t-1", Name: "Warung A", Slug: "warung-a", Status: "active", IsOwner: true}}}})
-	r.GET("/merchant/tenants", func(c *gin.Context) {
+	h := NewAuthHandler(&mockAuthUsecase{listTenantsRes: &dto.ListPartnerTenantsResponse{Tenants: []dto.PartnerTenantResponse{{ID: "t-1", Name: "Warung A", Slug: "warung-a", Status: "active", IsOwner: true}}}})
+	r.GET("/Partner/tenants", func(c *gin.Context) {
 		c.Set("userId", "u-1")
-		h.ListMerchantTenants(c)
+		h.ListPartnerTenants(c)
 	})
 
-	req := httptest.NewRequest(http.MethodGet, "/merchant/tenants", nil)
+	req := httptest.NewRequest(http.MethodGet, "/Partner/tenants", nil)
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)

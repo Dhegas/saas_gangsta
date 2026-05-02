@@ -16,8 +16,8 @@ import (
 type mockAuthRepo struct {
 	userByEmail     *domain.User
 	userByID        *domain.User
-	createdTenant   *domain.MerchantTenant
-	merchantTenants []domain.MerchantTenant
+	createdTenant   *domain.PartnerTenant
+	partnerTenants  []domain.PartnerTenant
 	createErr       error
 	createTenantErr error
 	listTenantsErr  error
@@ -43,18 +43,18 @@ func (m *mockAuthRepo) CreateUser(_ context.Context, user *domain.User) error {
 	return nil
 }
 
-func (m *mockAuthRepo) CreateTenantForMerchant(_ context.Context, _ repository.CreateMerchantTenantInput) (*domain.MerchantTenant, error) {
+func (m *mockAuthRepo) CreateTenantForPartner(_ context.Context, _ repository.CreatePartnerTenantInput) (*domain.PartnerTenant, error) {
 	if m.createTenantErr != nil {
 		return nil, m.createTenantErr
 	}
 	return m.createdTenant, nil
 }
 
-func (m *mockAuthRepo) ListTenantsByMerchant(_ context.Context, _ string) ([]domain.MerchantTenant, error) {
+func (m *mockAuthRepo) ListTenantsByPartner(_ context.Context, _ string) ([]domain.PartnerTenant, error) {
 	if m.listTenantsErr != nil {
 		return nil, m.listTenantsErr
 	}
-	return m.merchantTenants, nil
+	return m.partnerTenants, nil
 }
 
 func mustHash(t *testing.T, plain string) string {
@@ -80,24 +80,24 @@ func TestLoginSuccess(t *testing.T) {
 		userByEmail: &domain.User{
 			ID:           "u-1",
 			TenantID:     "t-1",
-			Email:        "merchant@test.local",
+			Email:        "partner@test.local",
 			PasswordHash: mustHash(t, "secret123"),
-			Role:         "MITRA",
+			Role:         "PARTNER",
 			IsActive:     true,
 			TenantStatus: "active",
 		},
 	}
 
 	uc := newAuthUsecaseForTest(repo)
-	res, err := uc.Login(context.Background(), dto.LoginRequest{Email: "merchant@test.local", Password: "secret123"})
+	res, err := uc.Login(context.Background(), dto.LoginRequest{Email: "partner@test.local", Password: "secret123"})
 	if err != nil {
 		t.Fatalf("expected nil error, got %v", err)
 	}
 	if res.AccessToken == "" || res.RefreshToken == "" {
 		t.Fatalf("expected tokens to be generated")
 	}
-	if res.User.Role != "MITRA" {
-		t.Fatalf("expected role MITRA, got %s", res.User.Role)
+	if res.User.Role != "PARTNER" {
+		t.Fatalf("expected role PARTNER, got %s", res.User.Role)
 	}
 }
 
@@ -138,16 +138,16 @@ func TestLoginUnauthorizedInvalidPassword(t *testing.T) {
 		userByEmail: &domain.User{
 			ID:           "u-1",
 			TenantID:     "t-1",
-			Email:        "merchant@test.local",
+			Email:        "partner@test.local",
 			PasswordHash: mustHash(t, "secret123"),
-			Role:         "MITRA",
+			Role:         "PARTNER",
 			IsActive:     true,
 			TenantStatus: "active",
 		},
 	}
 
 	uc := newAuthUsecaseForTest(repo)
-	if _, err := uc.Login(context.Background(), dto.LoginRequest{Email: "merchant@test.local", Password: "wrongpass"}); err == nil {
+	if _, err := uc.Login(context.Background(), dto.LoginRequest{Email: "partner@test.local", Password: "wrongpass"}); err == nil {
 		t.Fatalf("expected unauthorized error")
 	}
 }
@@ -157,16 +157,16 @@ func TestLoginTenantInactive(t *testing.T) {
 		userByEmail: &domain.User{
 			ID:           "u-1",
 			TenantID:     "t-1",
-			Email:        "merchant@test.local",
+			Email:        "partner@test.local",
 			PasswordHash: mustHash(t, "secret123"),
-			Role:         "MITRA",
+			Role:         "PARTNER",
 			IsActive:     true,
 			TenantStatus: "inactive",
 		},
 	}
 
 	uc := newAuthUsecaseForTest(repo)
-	if _, err := uc.Login(context.Background(), dto.LoginRequest{Email: "merchant@test.local", Password: "secret123"}); err == nil {
+	if _, err := uc.Login(context.Background(), dto.LoginRequest{Email: "partner@test.local", Password: "secret123"}); err == nil {
 		t.Fatalf("expected tenant inactive error")
 	}
 }
@@ -176,8 +176,8 @@ func TestRefreshSuccess(t *testing.T) {
 		userByID: &domain.User{
 			ID:           "u-1",
 			TenantID:     "t-1",
-			Email:        "merchant@test.local",
-			Role:         "MITRA",
+			Email:        "partner@test.local",
+			Role:         "PARTNER",
 			IsActive:     true,
 			TenantStatus: "active",
 		},
@@ -186,7 +186,7 @@ func TestRefreshSuccess(t *testing.T) {
 	uc := newAuthUsecaseForTest(repo)
 	refreshToken, err := auth.GenerateRefreshToken(
 		"u-1",
-		"MITRA",
+		"PARTNER",
 		"t-1",
 		7*24*time.Hour,
 		"12345678901234567890123456789012",
@@ -209,8 +209,8 @@ func TestMeSuccess(t *testing.T) {
 		userByID: &domain.User{
 			ID:           "u-1",
 			TenantID:     "t-1",
-			Email:        "merchant@test.local",
-			Role:         "MITRA",
+			Email:        "partner@test.local",
+			Role:         "PARTNER",
 			IsActive:     true,
 			TenantStatus: "active",
 		},
@@ -221,7 +221,7 @@ func TestMeSuccess(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected nil error, got %v", err)
 	}
-	if res.User.Email != "merchant@test.local" {
+	if res.User.Email != "partner@test.local" {
 		t.Fatalf("unexpected email: %s", res.User.Email)
 	}
 }
@@ -233,13 +233,13 @@ func TestLogoutSuccess(t *testing.T) {
 	}
 }
 
-func TestCreateMerchantTenantSuccess(t *testing.T) {
+func TestCreatePartnerTenantSuccess(t *testing.T) {
 	repo := &mockAuthRepo{
-		createdTenant: &domain.MerchantTenant{ID: "t-1", Name: "Warung A", Slug: "warung-a", Status: "active", IsOwner: true},
+		createdTenant: &domain.PartnerTenant{ID: "t-1", Name: "Warung A", Slug: "warung-a", Status: "active", IsOwner: true},
 	}
 	uc := newAuthUsecaseForTest(repo)
 
-	res, err := uc.CreateMerchantTenant(context.Background(), "u-1", dto.CreateMerchantTenantRequest{Name: "Warung A"})
+	res, err := uc.CreatePartnerTenant(context.Background(), "u-1", dto.CreatePartnerTenantRequest{Name: "Warung A"})
 	if err != nil {
 		t.Fatalf("expected nil error, got %v", err)
 	}
@@ -248,14 +248,14 @@ func TestCreateMerchantTenantSuccess(t *testing.T) {
 	}
 }
 
-func TestListMerchantTenantsSuccess(t *testing.T) {
+func TestListPartnerTenantsSuccess(t *testing.T) {
 	repo := &mockAuthRepo{
-		userByID:        &domain.User{ID: "u-1", Role: "MITRA", IsActive: true},
-		merchantTenants: []domain.MerchantTenant{{ID: "t-1", Name: "Warung A", Slug: "warung-a", Status: "active", IsOwner: true}},
+		userByID:       &domain.User{ID: "u-1", Role: "PARTNER", IsActive: true},
+		partnerTenants: []domain.PartnerTenant{{ID: "t-1", Name: "Warung A", Slug: "warung-a", Status: "active", IsOwner: true}},
 	}
 	uc := newAuthUsecaseForTest(repo)
 
-	res, err := uc.ListMerchantTenants(context.Background(), "u-1")
+	res, err := uc.ListPartnerTenants(context.Background(), "u-1")
 	if err != nil {
 		t.Fatalf("expected nil error, got %v", err)
 	}

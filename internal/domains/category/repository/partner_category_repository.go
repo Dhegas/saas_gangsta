@@ -9,15 +9,15 @@ import (
 	"gorm.io/gorm"
 )
 
-type merchantCategoryRepository struct {
+type partnerCategoryRepository struct {
 	db *gorm.DB
 }
 
-func NewMerchantCategoryRepository(db *gorm.DB) domain.MerchantCategoryRepository {
-	return &merchantCategoryRepository{db: db}
+func NewPartnerCategoryRepository(db *gorm.DB) domain.PartnerCategoryRepository {
+	return &partnerCategoryRepository{db: db}
 }
 
-func (r *merchantCategoryRepository) FindAllByTenant(ctx context.Context, tenantID string) ([]domain.CategoryEntity, error) {
+func (r *partnerCategoryRepository) FindAllByTenant(ctx context.Context, tenantID string) ([]domain.CategoryEntity, error) {
 	var categories []domain.CategoryEntity
 	err := r.db.WithContext(ctx).
 		Where("tenant_id = ? AND deleted_at IS NULL", tenantID).
@@ -26,7 +26,7 @@ func (r *merchantCategoryRepository) FindAllByTenant(ctx context.Context, tenant
 	return categories, err
 }
 
-func (r *merchantCategoryRepository) FindByIDAndTenant(ctx context.Context, tenantID, categoryID string) (*domain.CategoryEntity, error) {
+func (r *partnerCategoryRepository) FindByIDAndTenant(ctx context.Context, tenantID, categoryID string) (*domain.CategoryEntity, error) {
 	var category domain.CategoryEntity
 	err := r.db.WithContext(ctx).
 		Where("id = ? AND tenant_id = ? AND deleted_at IS NULL", categoryID, tenantID).
@@ -37,15 +37,15 @@ func (r *merchantCategoryRepository) FindByIDAndTenant(ctx context.Context, tena
 	return &category, nil
 }
 
-func (r *merchantCategoryRepository) Create(ctx context.Context, entity *domain.CategoryEntity) error {
+func (r *partnerCategoryRepository) Create(ctx context.Context, entity *domain.CategoryEntity) error {
 	return r.db.WithContext(ctx).Create(entity).Error
 }
 
-func (r *merchantCategoryRepository) Update(ctx context.Context, entity *domain.CategoryEntity) error {
+func (r *partnerCategoryRepository) Update(ctx context.Context, entity *domain.CategoryEntity) error {
 	return r.db.WithContext(ctx).Save(entity).Error
 }
 
-func (r *merchantCategoryRepository) SoftDelete(ctx context.Context, tenantID, categoryID string) error {
+func (r *partnerCategoryRepository) SoftDelete(ctx context.Context, tenantID, categoryID string) error {
 	now := time.Now()
 	res := r.db.WithContext(ctx).
 		Model(&domain.CategoryEntity{}).
@@ -61,7 +61,7 @@ func (r *merchantCategoryRepository) SoftDelete(ctx context.Context, tenantID, c
 	return nil
 }
 
-func (r *merchantCategoryRepository) UpdateActiveStatus(ctx context.Context, tenantID, categoryID string, isActive bool) error {
+func (r *partnerCategoryRepository) UpdateActiveStatus(ctx context.Context, tenantID, categoryID string, isActive bool) error {
 	res := r.db.WithContext(ctx).
 		Model(&domain.CategoryEntity{}).
 		Where("id = ? AND tenant_id = ? AND deleted_at IS NULL", categoryID, tenantID).
@@ -76,7 +76,7 @@ func (r *merchantCategoryRepository) UpdateActiveStatus(ctx context.Context, ten
 	return nil
 }
 
-func (r *merchantCategoryRepository) UpdateSortOrderBulk(ctx context.Context, tenantID string, items []dto.CategoryOrder) error {
+func (r *partnerCategoryRepository) UpdateSortOrderBulk(ctx context.Context, tenantID string, items []dto.CategoryOrder) error {
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		for _, item := range items {
 			res := tx.Model(&domain.CategoryEntity{}).
@@ -90,7 +90,7 @@ func (r *merchantCategoryRepository) UpdateSortOrderBulk(ctx context.Context, te
 	})
 }
 
-func (r *merchantCategoryRepository) CheckNameExists(ctx context.Context, tenantID, name string, excludeID string) (bool, error) {
+func (r *partnerCategoryRepository) CheckNameExists(ctx context.Context, tenantID, name string, excludeID string) (bool, error) {
 	var count int64
 	query := r.db.WithContext(ctx).Model(&domain.CategoryEntity{}).
 		Where("tenant_id = ? AND name = ? AND deleted_at IS NULL", tenantID, name)

@@ -25,7 +25,7 @@ type LogoutResponse struct {
 	LoggedOut bool `json:"loggedOut"`
 }
 
-type MerchantTenantResponse struct {
+type PartnerTenantResponse struct {
 	ID      string `json:"id"`
 	Name    string `json:"name"`
 	Slug    string `json:"slug"`
@@ -33,10 +33,10 @@ type MerchantTenantResponse struct {
 	IsOwner bool   `json:"isOwner"`
 }
 
-type CreateMerchantTenantResponse struct {
-	Tenant MerchantTenantResponse `json:"tenant"`
+type CreatePartnerTenantResponse struct {
+	Tenant PartnerTenantResponse `json:"tenant"`
 }
 
-type ListMerchantTenantsResponse struct {
-	Tenants []MerchantTenantResponse `json:"tenants"`
+type ListPartnerTenantsResponse struct {
+	Tenants []PartnerTenantResponse `json:"tenants"`
 }

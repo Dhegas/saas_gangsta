@@ -11,15 +11,15 @@ import (
 	"gorm.io/gorm"
 )
 
-type merchantTableUsecase struct {
-	repo domain.MerchantTableRepository
+type partnerTableUsecase struct {
+	repo domain.PartnerTableRepository
 }
 
-func NewMerchantTableUsecase(repo domain.MerchantTableRepository) domain.MerchantTableUsecase {
-	return &merchantTableUsecase{repo: repo}
+func NewPartnerTableUsecase(repo domain.PartnerTableRepository) domain.PartnerTableUsecase {
+	return &partnerTableUsecase{repo: repo}
 }
 
-func (u *merchantTableUsecase) GetAllTables(ctx context.Context, tenantID string) ([]dto.TableResponse, error) {
+func (u *partnerTableUsecase) GetAllTables(ctx context.Context, tenantID string) ([]dto.TableResponse, error) {
 	tables, err := u.repo.FindAllByTenant(ctx, tenantID)
 	if err != nil {
 		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil data meja", http.StatusInternalServerError, err)
@@ -33,7 +33,7 @@ func (u *merchantTableUsecase) GetAllTables(ctx context.Context, tenantID string
 	return result, nil
 }
 
-func (u *merchantTableUsecase) GetTableByID(ctx context.Context, tenantID, tableID string) (*dto.TableResponse, error) {
+func (u *partnerTableUsecase) GetTableByID(ctx context.Context, tenantID, tableID string) (*dto.TableResponse, error) {
 	table, err := u.repo.FindByIDAndTenant(ctx, tenantID, tableID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -46,7 +46,7 @@ func (u *merchantTableUsecase) GetTableByID(ctx context.Context, tenantID, table
 	return &response, nil
 }
 
-func (u *merchantTableUsecase) GetTableStatus(ctx context.Context, tenantID, tableID string) (*dto.TableStatusResponse, error) {
+func (u *partnerTableUsecase) GetTableStatus(ctx context.Context, tenantID, tableID string) (*dto.TableStatusResponse, error) {
 	table, err := u.repo.FindByIDAndTenant(ctx, tenantID, tableID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -72,7 +72,7 @@ func (u *merchantTableUsecase) GetTableStatus(ctx context.Context, tenantID, tab
 	}, nil
 }
 
-func (u *merchantTableUsecase) CreateTable(ctx context.Context, tenantID string, req dto.CreateTableRequest) (*dto.TableResponse, error) {
+func (u *partnerTableUsecase) CreateTable(ctx context.Context, tenantID string, req dto.CreateTableRequest) (*dto.TableResponse, error) {
 	exists, err := u.repo.CheckNameExists(ctx, tenantID, req.TableName, "")
 	if err != nil {
 		return nil, apperrors.New("INTERNAL_ERROR", "Gagal memvalidasi nama meja", http.StatusInternalServerError, err)
@@ -94,7 +94,7 @@ func (u *merchantTableUsecase) CreateTable(ctx context.Context, tenantID string,
 	return &response, nil
 }
 
-func (u *merchantTableUsecase) UpdateTable(ctx context.Context, tenantID, tableID string, req dto.UpdateTableRequest) (*dto.TableResponse, error) {
+func (u *partnerTableUsecase) UpdateTable(ctx context.Context, tenantID, tableID string, req dto.UpdateTableRequest) (*dto.TableResponse, error) {
 	table, err := u.repo.FindByIDAndTenant(ctx, tenantID, tableID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -122,7 +122,7 @@ func (u *merchantTableUsecase) UpdateTable(ctx context.Context, tenantID, tableI
 	return &response, nil
 }
 
-func (u *merchantTableUsecase) SoftDeleteTable(ctx context.Context, tenantID, tableID string) error {
+func (u *partnerTableUsecase) SoftDeleteTable(ctx context.Context, tenantID, tableID string) error {
 	err := u.repo.SoftDelete(ctx, tenantID, tableID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {

@@ -1,7 +1,16 @@
 # 🚀 SaaS Gangsta Backend API
 > **Enterprise-Grade Platform SaaS POS & Self-Ordering UMKM Kuliner**
 
-SaaS Gangsta adalah layanan backend API skala industri yang dirancang khusus untuk mendigitalisasi operasional UMKM kuliner di Indonesia. Dengan arsitektur **multi-tenant**, setiap merchant mendapatkan ekosistem data yang terisolasi, aman, dan performan.
+SaaS Gangsta adalah layanan backend API skala industri yang dirancang khusus untuk mendigitalisasi operasional UMKM kuliner di Indonesia. Dengan arsitektur **multi-tenant**, setiap partner mendapatkan ekosistem data yang terisolasi, aman, dan performan.
+
+---
+
+## 📖 Terminologi Domain
+Agar tidak ada ambiguitas dalam arsitektur sistem, berikut adalah standar istilah yang digunakan:
+* **Partner** = Pelaku usaha / Penjual yang mendaftar ke platform. (Satu partner bisa memiliki banyak tenant).
+* **Tenant** = Unit bisnis / Toko fisik cabang yang beroperasi. (Data menu, pesanan, dan meja terikat pada entitas ini).
+* **Customer** = Pengguna akhir (pembeli) yang menggunakan layanan self-ordering.
+* **Admin** = Super user pengelola platform SaaS.
 
 ---
 
@@ -35,7 +44,7 @@ graph TD
 - **Repository**: Abstraksi data akses. Menggunakan GORM dan Redis.
 
 ### Current Internal Structure
-- **Routing Bootstrap**: dipisah ke `internal/bootstrap/routes.go`, `internal/bootstrap/customer_routes.go`, `internal/bootstrap/merchant_routes.go`, dan `internal/bootstrap/admin_routes.go`.
+- **Routing Bootstrap**: dipisah ke `internal/bootstrap/routes.go`, `internal/bootstrap/customer_routes.go`, `internal/bootstrap/partner_routes.go`, dan `internal/bootstrap/admin_routes.go`.
 - **Cross-cutting Infra**: `internal/config`, `internal/middleware`, `internal/infrastructure/database`.
 - **Business Domains**: `internal/domains/{menu,order,payment,report,subscription,table,tenant,user}`.
 - **Shared Utilities**: `internal/common/errors` dan `internal/common/response`.
@@ -46,7 +55,7 @@ graph TD
 | Role | Deskripsi | Hak Akses Utama |
 |---|---|---|
 | 👑 **Admin** | Pengelola Platform | Kelola Tenant, Billing, Monitoring Global |
-| 🏪 **Merchant** | Pemilik Toko | Kelola Menu, POS, Meja, Laporan Penjualan |
+| 🏪 **Partner** | Pelaku Usaha / Mitra | Kelola Tenant, Menu, POS, Meja, Laporan Penjualan |
 | 📱 **Customer** | Pelanggan | Scan QR, Self-Ordering, Cek Status Pesanan |
 
 ---

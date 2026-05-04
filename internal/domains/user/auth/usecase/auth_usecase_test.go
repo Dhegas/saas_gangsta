@@ -9,18 +9,13 @@ import (
 	"github.com/dhegas/saas_gangsta/internal/domains/user/auth"
 	"github.com/dhegas/saas_gangsta/internal/domains/user/auth/domain"
 	"github.com/dhegas/saas_gangsta/internal/domains/user/auth/dto"
-	"github.com/dhegas/saas_gangsta/internal/domains/user/auth/repository"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type mockAuthRepo struct {
 	userByEmail     *domain.User
 	userByID        *domain.User
-	createdTenant   *domain.PartnerTenant
-	partnerTenants  []domain.PartnerTenant
 	createErr       error
-	createTenantErr error
-	listTenantsErr  error
 	errEmail        error
 	errUserID       error
 }
@@ -41,20 +36,6 @@ func (m *mockAuthRepo) CreateUser(_ context.Context, user *domain.User) error {
 		user.ID = "created-user-id"
 	}
 	return nil
-}
-
-func (m *mockAuthRepo) CreateTenantForPartner(_ context.Context, _ repository.CreatePartnerTenantInput) (*domain.PartnerTenant, error) {
-	if m.createTenantErr != nil {
-		return nil, m.createTenantErr
-	}
-	return m.createdTenant, nil
-}
-
-func (m *mockAuthRepo) ListTenantsByPartner(_ context.Context, _ string) ([]domain.PartnerTenant, error) {
-	if m.listTenantsErr != nil {
-		return nil, m.listTenantsErr
-	}
-	return m.partnerTenants, nil
 }
 
 func mustHash(t *testing.T, plain string) string {
@@ -233,33 +214,3 @@ func TestLogoutSuccess(t *testing.T) {
 	}
 }
 
-func TestCreatePartnerTenantSuccess(t *testing.T) {
-	repo := &mockAuthRepo{
-		createdTenant: &domain.PartnerTenant{ID: "t-1", Name: "Warung A", Slug: "warung-a", Status: "active", IsOwner: true},
-	}
-	uc := newAuthUsecaseForTest(repo)
-
-	res, err := uc.CreatePartnerTenant(context.Background(), "u-1", dto.CreatePartnerTenantRequest{Name: "Warung A"})
-	if err != nil {
-		t.Fatalf("expected nil error, got %v", err)
-	}
-	if res.Tenant.ID == "" || !res.Tenant.IsOwner {
-		t.Fatalf("expected created tenant with owner flag")
-	}
-}
-
-func TestListPartnerTenantsSuccess(t *testing.T) {
-	repo := &mockAuthRepo{
-		userByID:       &domain.User{ID: "u-1", Role: "PARTNER", IsActive: true},
-		partnerTenants: []domain.PartnerTenant{{ID: "t-1", Name: "Warung A", Slug: "warung-a", Status: "active", IsOwner: true}},
-	}
-	uc := newAuthUsecaseForTest(repo)
-
-	res, err := uc.ListPartnerTenants(context.Background(), "u-1")
-	if err != nil {
-		t.Fatalf("expected nil error, got %v", err)
-	}
-	if len(res.Tenants) != 1 {
-		t.Fatalf("expected 1 tenant, got %d", len(res.Tenants))
-	}
-}

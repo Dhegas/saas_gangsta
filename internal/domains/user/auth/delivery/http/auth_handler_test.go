@@ -16,14 +16,10 @@ import (
 type mockAuthUsecase struct {
 	registerRes     *dto.RegisterResponse
 	loginRes        *dto.LoginResponse
-	createTenantRes *dto.CreatePartnerTenantResponse
-	listTenantsRes  *dto.ListPartnerTenantsResponse
 	refreshRes      *dto.LoginResponse
 	meRes           *dto.MeResponse
 	registerErr     error
 	loginErr        error
-	createTenantErr error
-	listTenantsErr  error
 	refreshErr      error
 	logoutErr       error
 	meErr           error
@@ -35,14 +31,6 @@ func (m *mockAuthUsecase) Register(_ context.Context, _ dto.RegisterRequest) (*d
 
 func (m *mockAuthUsecase) Login(_ context.Context, _ dto.LoginRequest) (*dto.LoginResponse, error) {
 	return m.loginRes, m.loginErr
-}
-
-func (m *mockAuthUsecase) CreatePartnerTenant(_ context.Context, _ string, _ dto.CreatePartnerTenantRequest) (*dto.CreatePartnerTenantResponse, error) {
-	return m.createTenantRes, m.createTenantErr
-}
-
-func (m *mockAuthUsecase) ListPartnerTenants(_ context.Context, _ string) (*dto.ListPartnerTenantsResponse, error) {
-	return m.listTenantsRes, m.listTenantsErr
 }
 
 func (m *mockAuthUsecase) Refresh(_ context.Context, _ dto.RefreshTokenRequest) (*dto.LoginResponse, error) {
@@ -178,40 +166,3 @@ func TestMeHandlerUnauthorizedWhenUsecaseFails(t *testing.T) {
 	}
 }
 
-func TestCreatePartnerTenantHandlerSuccess(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-	r := gin.New()
-	h := NewAuthHandler(&mockAuthUsecase{createTenantRes: &dto.CreatePartnerTenantResponse{Tenant: dto.PartnerTenantResponse{ID: "t-1", Name: "Warung A", Slug: "warung-a", Status: "active", IsOwner: true}}})
-	r.POST("/Partner/tenants", func(c *gin.Context) {
-		c.Set("userId", "u-1")
-		h.CreatePartnerTenant(c)
-	})
-
-	payload, _ := json.Marshal(dto.CreatePartnerTenantRequest{Name: "Warung A"})
-	req := httptest.NewRequest(http.MethodPost, "/Partner/tenants", bytes.NewBuffer(payload))
-	req.Header.Set("Content-Type", "application/json")
-	w := httptest.NewRecorder()
-
-	r.ServeHTTP(w, req)
-	if w.Code != http.StatusCreated {
-		t.Fatalf("expected 201, got %d", w.Code)
-	}
-}
-
-func TestListPartnerTenantsHandlerSuccess(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-	r := gin.New()
-	h := NewAuthHandler(&mockAuthUsecase{listTenantsRes: &dto.ListPartnerTenantsResponse{Tenants: []dto.PartnerTenantResponse{{ID: "t-1", Name: "Warung A", Slug: "warung-a", Status: "active", IsOwner: true}}}})
-	r.GET("/Partner/tenants", func(c *gin.Context) {
-		c.Set("userId", "u-1")
-		h.ListPartnerTenants(c)
-	})
-
-	req := httptest.NewRequest(http.MethodGet, "/Partner/tenants", nil)
-	w := httptest.NewRecorder()
-
-	r.ServeHTTP(w, req)
-	if w.Code != http.StatusOK {
-		t.Fatalf("expected 200, got %d", w.Code)
-	}
-}

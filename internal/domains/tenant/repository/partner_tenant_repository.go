@@ -1,0 +1,229 @@
+package repository
+
+import (
+	"context"
+	"database/sql"
+	"errors"
+	"fmt"
+	"regexp"
+	"strings"
+	"time"
+
+	"github.com/dhegas/saas_gangsta/internal/domains/tenant/domain"
+	"github.com/jackc/pgx/v5/pgconn"
+	"gorm.io/gorm"
+)
+
+var (
+	ErrUserNotFound               = errors.New("user not found")
+	ErrUserNotPartner             = errors.New("user is not partner")
+	ErrPartnerSubscriptionMissing = errors.New("partner subscription is required")
+	ErrTenantLimitReached         = errors.New("tenant limit reached")
+)
+
+type partnerTenantRepository struct {
+	db *gorm.DB
+}
+
+type partnerUserRow struct {
+	ID       string `gorm:"column:id"`
+	Role     string `gorm:"column:role"`
+	IsActive bool   `gorm:"column:is_active"`
+}
+
+func NewPartnerTenantRepository(db *gorm.DB) domain.PartnerTenantRepository {
+	return &partnerTenantRepository{db: db}
+}
+
+func (r *partnerTenantRepository) FindPartnerByID(ctx context.Context, userID string) (*domain.PartnerUser, error) {
+	if r.db == nil {
+		return nil, fmt.Errorf("database is not initialized")
+	}
+
+	var row partnerUserRow
+	err := r.db.WithContext(ctx).
+		Table("users").
+		Select("id::text AS id, role, is_active").
+		Where("id = NULLIF(?, '')::uuid", userID).
+		Take(&row).
+		Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("find partner by id: %w", err)
+	}
+
+	return &domain.PartnerUser{
+		ID:       row.ID,
+		Role:     decodeRole(row.Role),
+		IsActive: row.IsActive,
+	}, nil
+}
+
+func (r *partnerTenantRepository) CreateTenantForPartner(ctx context.Context, input domain.CreatePartnerTenantInput) (*domain.PartnerTenant, error) {
+	if r.db == nil {
+		return nil, fmt.Errorf("database is not initialized")
+	}
+
+	tenantSlug := generateTenantSlug(input.Name)
+
+	createdTenant := &domain.PartnerTenant{}
+	txErr := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		var userRow struct {
+			ID       string `gorm:"column:id"`
+			Role     string `gorm:"column:role"`
+			IsActive bool   `gorm:"column:is_active"`
+			TenantID string `gorm:"column:tenant_id"`
+		}
+
+		if err := tx.Raw(
+			`SELECT id::text, role, is_active, COALESCE(tenant_id::text, '') AS tenant_id
+			 FROM users
+			 WHERE id = NULLIF(?, '')::uuid
+			 FOR UPDATE`,
+			input.UserID,
+		).Scan(&userRow).Error; err != nil {
+			return fmt.Errorf("lock partner user: %w", err)
+		}
+		if userRow.ID == "" || !userRow.IsActive {
+			return ErrUserNotFound
+		}
+		if decodeRole(userRow.Role) != "PARTNER" {
+			return ErrUserNotPartner
+		}
+
+		var subscriptionRow struct {
+			ID         string        `gorm:"column:id"`
+			MaxTenants sql.NullInt64 `gorm:"column:max_tenants"`
+		}
+
+		if err := tx.Raw(
+			`SELECT s.id::text AS id, sp.max_tenants
+			 FROM subscriptions s
+			 INNER JOIN subscription_plans sp ON sp.id = s.plan_id
+			 WHERE s.subscriber_user_id = NULLIF(?, '')::uuid
+			   AND s.status IN ('active', 'pending_tenant', 'trial')
+			   AND s.deleted_at IS NULL
+			   AND sp.deleted_at IS NULL
+			 ORDER BY
+			   CASE s.status
+			     WHEN 'active' THEN 0
+			     WHEN 'pending_tenant' THEN 1
+			     ELSE 2
+			   END,
+			   s.created_at DESC
+			 LIMIT 1`,
+			input.UserID,
+		).Scan(&subscriptionRow).Error; err != nil {
+			return fmt.Errorf("find partner subscription: %w", err)
+		}
+		if subscriptionRow.ID == "" {
+			return ErrPartnerSubscriptionMissing
+		}
+
+		var tenantCount int64
+		if err := tx.Raw(
+			`SELECT COUNT(*)
+			 FROM partner_tenants pt
+			 INNER JOIN tenants t ON t.id = pt.tenant_id
+			 WHERE pt.user_id = NULLIF(?, '')::uuid AND t.deleted_at IS NULL`,
+			input.UserID,
+		).Scan(&tenantCount).Error; err != nil {
+			return fmt.Errorf("count partner tenants: %w", err)
+		}
+
+		if subscriptionRow.MaxTenants.Valid && tenantCount >= subscriptionRow.MaxTenants.Int64 {
+			return ErrTenantLimitReached
+		}
+
+		if err := tx.Raw(
+			`INSERT INTO tenants (name, slug, status, created_at, updated_at)
+			 VALUES (?, ?, 'active', NOW(), NOW())
+			 RETURNING id::text, name, slug, status`,
+			input.Name,
+			tenantSlug,
+		).Scan(createdTenant).Error; err != nil {
+			var pgErr *pgconn.PgError
+			if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+				return fmt.Errorf("duplicate tenant slug: %w", err)
+			}
+			return fmt.Errorf("create tenant: %w", err)
+		}
+		createdTenant.IsOwner = true
+
+		if err := tx.Exec(
+			`INSERT INTO partner_tenants (user_id, tenant_id, is_owner, created_at, updated_at)
+			 VALUES (NULLIF(?, '')::uuid, NULLIF(?, '')::uuid, TRUE, NOW(), NOW())`,
+			input.UserID,
+			createdTenant.ID,
+		).Error; err != nil {
+			return fmt.Errorf("link partner tenant: %w", err)
+		}
+
+		if userRow.TenantID == "" {
+			if err := tx.Exec(
+				`UPDATE users
+				 SET tenant_id = NULLIF(?, '')::uuid, updated_at = NOW()
+				 WHERE id = NULLIF(?, '')::uuid`,
+				createdTenant.ID,
+				input.UserID,
+			).Error; err != nil {
+				return fmt.Errorf("set default tenant on user: %w", err)
+			}
+		}
+
+		if err := tx.Exec(
+			`UPDATE subscriptions
+			 SET tenant_id = NULLIF(?, '')::uuid, status = 'active', updated_at = NOW()
+			 WHERE id = NULLIF(?, '')::uuid AND status = 'pending_tenant' AND tenant_id IS NULL`,
+			createdTenant.ID,
+			subscriptionRow.ID,
+		).Error; err != nil {
+			return fmt.Errorf("activate pending subscription: %w", err)
+		}
+
+		return nil
+	})
+	if txErr != nil {
+		return nil, txErr
+	}
+
+	return createdTenant, nil
+}
+
+func (r *partnerTenantRepository) ListTenantsByPartner(ctx context.Context, userID string) ([]domain.PartnerTenant, error) {
+	if r.db == nil {
+		return nil, fmt.Errorf("database is not initialized")
+	}
+
+	tenants := make([]domain.PartnerTenant, 0)
+	err := r.db.WithContext(ctx).Raw(
+		`SELECT t.id::text AS id, t.name, t.slug, t.status, pt.is_owner
+		 FROM partner_tenants pt
+		 INNER JOIN tenants t ON t.id = pt.tenant_id
+		 WHERE pt.user_id = NULLIF(?, '')::uuid AND t.deleted_at IS NULL
+		 ORDER BY pt.created_at DESC`,
+		userID,
+	).Scan(&tenants).Error
+	if err != nil {
+		return nil, fmt.Errorf("list partner tenants: %w", err)
+	}
+
+	return tenants, nil
+}
+
+func decodeRole(role string) string {
+	return strings.ToUpper(strings.TrimSpace(role))
+}
+
+func generateTenantSlug(name string) string {
+	normalized := strings.ToLower(strings.TrimSpace(name))
+	re := regexp.MustCompile(`[^a-z0-9]+`)
+	slug := strings.Trim(re.ReplaceAllString(normalized, "-"), "-")
+	if slug == "" {
+		slug = "tenant"
+	}
+
+	return fmt.Sprintf("%s-%d", slug, time.Now().UTC().UnixNano())
+}

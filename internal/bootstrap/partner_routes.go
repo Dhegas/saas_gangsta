@@ -3,22 +3,29 @@ package bootstrap
 import (
 	"net/http"
 
-	"github.com/dhegas/saas_gangsta/internal/config"
-	"github.com/dhegas/saas_gangsta/internal/middleware"
 	"github.com/dhegas/saas_gangsta/internal/common/response"
-	authhttp "github.com/dhegas/saas_gangsta/internal/domains/user/auth/delivery/http"
+	"github.com/dhegas/saas_gangsta/internal/config"
+	tenanthttp "github.com/dhegas/saas_gangsta/internal/domains/tenant/delivery/http"
+	"github.com/dhegas/saas_gangsta/internal/domains/tenant/repository"
+	"github.com/dhegas/saas_gangsta/internal/domains/tenant/usecase"
+	"github.com/dhegas/saas_gangsta/internal/middleware"
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
-func RegisterPartnerRoutes(api *gin.RouterGroup, cfg *config.Config, authHandler *authhttp.AuthHandler) {
+func RegisterPartnerRoutes(api *gin.RouterGroup, cfg *config.Config, db *gorm.DB) {
+	tenantRepo := repository.NewPartnerTenantRepository(db)
+	tenantUsecase := usecase.NewPartnerTenantUsecase(tenantRepo)
+	tenantHandler := tenanthttp.NewPartnerTenantHandler(tenantUsecase)
+
 	partnerRoutes := api.Group("/partner")
 	partnerRoutes.Use(
 		middleware.JWTAuth(cfg),
 		middleware.RoleGuard("PARTNER"),
 	)
 
-	partnerRoutes.POST("/tenants", authHandler.CreatePartnerTenant)
-	partnerRoutes.GET("/tenants", authHandler.ListPartnerTenants)
+	partnerRoutes.POST("/tenants", tenantHandler.CreatePartnerTenant)
+	partnerRoutes.GET("/tenants", tenantHandler.ListPartnerTenants)
 
 	partnerTenantScoped := partnerRoutes.Group("")
 	partnerTenantScoped.Use(middleware.TenantGuard())

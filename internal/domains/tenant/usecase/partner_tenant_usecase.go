@@ -40,10 +40,6 @@ func (u *partnerTenantUsecase) CreatePartnerTenant(ctx context.Context, userID s
 			return nil, apperrors.New("NOT_FOUND", "User tidak ditemukan", http.StatusNotFound, nil)
 		case errors.Is(err, repository.ErrUserNotPartner):
 			return nil, apperrors.New("FORBIDDEN", "Hanya PARTNER yang dapat membuat tenant", http.StatusForbidden, nil)
-		case errors.Is(err, repository.ErrPartnerSubscriptionMissing):
-			return nil, apperrors.New("FORBIDDEN", "Subscription PARTNER tidak ditemukan", http.StatusForbidden, nil)
-		case errors.Is(err, repository.ErrTenantLimitReached):
-			return nil, apperrors.New("FORBIDDEN", "Batas jumlah tenant pada paket subscription sudah tercapai", http.StatusForbidden, nil)
 		default:
 			return nil, apperrors.New("INTERNAL_ERROR", "Gagal membuat tenant partner", http.StatusInternalServerError, nil)
 		}

@@ -73,16 +73,18 @@ func (r *userRepository) ListByTenant(ctx context.Context, tenantID string) ([]d
 	}
 
 	err := r.db.WithContext(ctx).Raw(
-		`SELECT id::text,
-		        COALESCE(tenant_id::text, '') AS tenant_id,
-		        email,
-		        full_name,
-		        role,
-		        is_active
-		 FROM users
-		 WHERE tenant_id = NULLIF(?, '')::uuid
-		   AND deleted_at IS NULL
-		 ORDER BY created_at DESC`,
+		`SELECT u.id::text,
+		        t.id::text AS tenant_id,
+		        u.email,
+		        u.full_name,
+		        u.role,
+		        u.is_active
+		 FROM tenants t
+		 INNER JOIN users u ON u.id = t.user_id
+		 WHERE t.id = NULLIF(?, '')::uuid
+		   AND t.deleted_at IS NULL
+		   AND u.deleted_at IS NULL
+		 ORDER BY u.created_at DESC`,
 		tenantID,
 	).Scan(&rows).Error
 	if err != nil {
@@ -119,16 +121,18 @@ func (r *userRepository) FindByIDAndTenant(ctx context.Context, tenantID, userID
 	}
 
 	err := r.db.WithContext(ctx).Raw(
-		`SELECT id::text,
-		        COALESCE(tenant_id::text, '') AS tenant_id,
-		        email,
-		        full_name,
-		        role,
-		        is_active
-		 FROM users
-		 WHERE id = NULLIF(?, '')::uuid
-		   AND tenant_id = NULLIF(?, '')::uuid
-		   AND deleted_at IS NULL
+		`SELECT u.id::text,
+		        t.id::text AS tenant_id,
+		        u.email,
+		        u.full_name,
+		        u.role,
+		        u.is_active
+		 FROM tenants t
+		 INNER JOIN users u ON u.id = t.user_id
+		 WHERE u.id = NULLIF(?, '')::uuid
+		   AND t.id = NULLIF(?, '')::uuid
+		   AND t.deleted_at IS NULL
+		   AND u.deleted_at IS NULL
 		 LIMIT 1`,
 		userID,
 		tenantID,
@@ -172,7 +176,7 @@ func (r *userRepository) UpdateByIDAndTenant(ctx context.Context, tenantID, user
 
 	result := r.db.WithContext(ctx).
 		Table("users").
-		Where("id = NULLIF(?, '')::uuid AND tenant_id = NULLIF(?, '')::uuid AND deleted_at IS NULL", userID, tenantID).
+		Where("id = NULLIF(?, '')::uuid AND id IN (SELECT user_id FROM tenants WHERE id = NULLIF(?, '')::uuid AND deleted_at IS NULL) AND deleted_at IS NULL", userID, tenantID).
 		Updates(updates)
 	if result.Error != nil {
 		var pgErr *pgconn.PgError
@@ -199,7 +203,7 @@ func (r *userRepository) SoftDeleteByIDAndTenant(ctx context.Context, tenantID, 
 			 SET deleted_at = NOW(),
 			     updated_at = NOW()
 			 WHERE id = NULLIF(?, '')::uuid
-			   AND tenant_id = NULLIF(?, '')::uuid
+			   AND id IN (SELECT user_id FROM tenants WHERE id = NULLIF(?, '')::uuid AND deleted_at IS NULL)
 			   AND deleted_at IS NULL`,
 			userID,
 			tenantID,
@@ -233,15 +237,16 @@ func (r *userRepository) ToggleActiveByIDAndTenant(ctx context.Context, tenantID
 		 SET is_active = NOT is_active,
 		     updated_at = NOW()
 		 WHERE id = NULLIF(?, '')::uuid
-		   AND tenant_id = NULLIF(?, '')::uuid
+		   AND id IN (SELECT user_id FROM tenants WHERE id = NULLIF(?, '')::uuid AND deleted_at IS NULL)
 		   AND deleted_at IS NULL
 		 RETURNING id::text,
-		           COALESCE(tenant_id::text, '') AS tenant_id,
+		           NULLIF(?, '')::uuid::text AS tenant_id,
 		           email,
 		           full_name,
 		           role,
 		           is_active`,
 		userID,
+		tenantID,
 		tenantID,
 	).Scan(&row).Error
 	if err != nil {

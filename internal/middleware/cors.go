@@ -9,14 +9,23 @@ import (
 
 func CORS(cfg *config.Config) gin.HandlerFunc {
 	allowedOrigins := make(map[string]struct{}, len(cfg.CORSAllowedOrigins))
+	allowAll := false
 	for _, origin := range cfg.CORSAllowedOrigins {
-		allowedOrigins[strings.TrimSpace(origin)] = struct{}{}
+		trimmed := strings.TrimSpace(origin)
+		if trimmed == "" {
+			continue
+		}
+		if trimmed == "*" {
+			allowAll = true
+			continue
+		}
+		allowedOrigins[trimmed] = struct{}{}
 	}
 
 	return func(c *gin.Context) {
 		origin := c.GetHeader("Origin")
 		if origin != "" {
-			if _, ok := allowedOrigins[origin]; ok {
+			if allowAll || matchOrigin(origin, allowedOrigins) {
 				c.Writer.Header().Set("Access-Control-Allow-Origin", origin)
 			}
 		}
@@ -36,4 +45,25 @@ func CORS(cfg *config.Config) gin.HandlerFunc {
 
 		c.Next()
 	}
+}
+
+func matchOrigin(origin string, allowed map[string]struct{}) bool {
+	if _, ok := allowed[origin]; ok {
+		return true
+	}
+
+	for pattern := range allowed {
+		if !strings.Contains(pattern, "*") {
+			continue
+		}
+		parts := strings.SplitN(pattern, "*", 2)
+		if len(parts) != 2 {
+			continue
+		}
+		if strings.HasPrefix(origin, parts[0]) && strings.HasSuffix(origin, parts[1]) {
+			return true
+		}
+	}
+
+	return false
 }

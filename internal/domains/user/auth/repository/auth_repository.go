@@ -52,9 +52,9 @@ func (r *authRepository) FindByEmail(ctx context.Context, email string) (*domain
 	err := r.db.WithContext(ctx).
 		Table("users u").
 		Select(
-			"u.id, COALESCE(u.tenant_id::text, '') AS tenant_id, u.email, u.password_hash, u.role, u.is_active, COALESCE(t.status, 'active') AS tenant_status",
+			"u.id, COALESCE(t.id::text, '') AS tenant_id, u.email, u.password_hash, u.role, u.is_active, COALESCE(t.status, 'active') AS tenant_status",
 		).
-		Joins("LEFT JOIN tenants t ON t.id = u.tenant_id").
+		Joins("LEFT JOIN LATERAL (SELECT id, status FROM tenants WHERE user_id = u.id AND deleted_at IS NULL ORDER BY created_at DESC LIMIT 1) t ON true").
 		Where("LOWER(u.email) = LOWER(?)", email).
 		Take(&row).
 		Error
@@ -85,9 +85,9 @@ func (r *authRepository) FindByID(ctx context.Context, id string) (*domain.User,
 	err := r.db.WithContext(ctx).
 		Table("users u").
 		Select(
-			"u.id, COALESCE(u.tenant_id::text, '') AS tenant_id, u.email, u.password_hash, u.role, u.is_active, COALESCE(t.status, 'active') AS tenant_status",
+			"u.id, COALESCE(t.id::text, '') AS tenant_id, u.email, u.password_hash, u.role, u.is_active, COALESCE(t.status, 'active') AS tenant_status",
 		).
-		Joins("LEFT JOIN tenants t ON t.id = u.tenant_id").
+		Joins("LEFT JOIN LATERAL (SELECT id, status FROM tenants WHERE user_id = u.id AND deleted_at IS NULL ORDER BY created_at DESC LIMIT 1) t ON true").
 		Where("u.id = ?", id).
 		Take(&row).
 		Error
@@ -120,10 +120,9 @@ func (r *authRepository) CreateUser(ctx context.Context, user *domain.User) erro
 	}{ID: ""}
 
 	err := r.db.WithContext(ctx).Raw(
-		`INSERT INTO users (tenant_id, email, password_hash, full_name, role, is_active, created_at, updated_at)
-		 VALUES (NULLIF(?, '')::uuid, ?, ?, ?, ?, TRUE, NOW(), NOW())
+		`INSERT INTO users (email, password_hash, full_name, role, is_active, created_at, updated_at)
+		 VALUES (?, ?, ?, ?, TRUE, NOW(), NOW())
 		 RETURNING id::text`,
-		user.TenantID,
 		user.Email,
 		user.PasswordHash,
 		user.FullName,

@@ -27,7 +27,7 @@ func NewAuthHandler(usecase usecase.AuthUsecase) *AuthHandler {
 // @Accept json
 // @Produce json
 // @Param request body dto.RegisterRequest true "Register payload"
-// @Success 201 {object} response.Envelope
+// @Success 201 {object} response.Envelope{data=dto.RegisterResponse}
 // @Failure 400 {object} response.Envelope
 // @Failure 409 {object} response.Envelope
 // @Failure 500 {object} response.Envelope
@@ -60,7 +60,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param request body dto.LoginRequest true "Login payload"
-// @Success 200 {object} response.Envelope
+// @Success 200 {object} response.Envelope{data=dto.LoginResponse}
 // @Failure 400 {object} response.Envelope
 // @Failure 401 {object} response.Envelope
 // @Failure 403 {object} response.Envelope
@@ -95,7 +95,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param request body dto.RefreshTokenRequest true "Refresh payload"
-// @Success 200 {object} response.Envelope
+// @Success 200 {object} response.Envelope{data=dto.LoginResponse}
 // @Failure 400 {object} response.Envelope
 // @Failure 401 {object} response.Envelope
 // @Failure 500 {object} response.Envelope
@@ -129,7 +129,7 @@ func (h *AuthHandler) Refresh(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param request body dto.LogoutRequest false "Logout payload"
-// @Success 200 {object} response.Envelope
+// @Success 200 {object} response.Envelope{data=dto.LogoutResponse}
 // @Failure 401 {object} response.Envelope
 // @Failure 500 {object} response.Envelope
 // @Router /auth/logout [post]
@@ -154,7 +154,7 @@ func (h *AuthHandler) Logout(c *gin.Context) {
 // @Tags Auth
 // @Produce json
 // @Security BearerAuth
-// @Success 200 {object} response.Envelope
+// @Success 200 {object} response.Envelope{data=dto.MeResponse}
 // @Failure 401 {object} response.Envelope
 // @Failure 500 {object} response.Envelope
 // @Router /auth/me [get]

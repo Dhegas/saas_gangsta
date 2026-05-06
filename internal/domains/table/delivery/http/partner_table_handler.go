@@ -3,6 +3,7 @@ package http
 import (
 	"net/http"
 
+	"github.com/dhegas/saas_gangsta/internal/common/errors"
 	"github.com/dhegas/saas_gangsta/internal/common/response"
 	"github.com/dhegas/saas_gangsta/internal/domains/table/domain"
 	"github.com/dhegas/saas_gangsta/internal/domains/table/dto"
@@ -35,6 +36,7 @@ func (h *PartnerTableHandler) GetAllTables(c *gin.Context) {
 
 	tables, err := h.usecase.GetAllTables(c.Request.Context(), tenantID)
 	if err != nil {
+		errors.Write(c, err)
 		return
 	}
 
@@ -61,6 +63,7 @@ func (h *PartnerTableHandler) GetTableByID(c *gin.Context) {
 
 	table, err := h.usecase.GetTableByID(c.Request.Context(), tenantID, tableID)
 	if err != nil {
+		errors.Write(c, err)
 		return
 	}
 
@@ -87,6 +90,7 @@ func (h *PartnerTableHandler) GetTableStatus(c *gin.Context) {
 
 	statusRes, err := h.usecase.GetTableStatus(c.Request.Context(), tenantID, tableID)
 	if err != nil {
+		errors.Write(c, err)
 		return
 	}
 
@@ -119,6 +123,7 @@ func (h *PartnerTableHandler) CreateTable(c *gin.Context) {
 
 	table, err := h.usecase.CreateTable(c.Request.Context(), tenantID, req)
 	if err != nil {
+		errors.Write(c, err)
 		return
 	}
 
@@ -154,6 +159,7 @@ func (h *PartnerTableHandler) UpdateTable(c *gin.Context) {
 
 	table, err := h.usecase.UpdateTable(c.Request.Context(), tenantID, tableID, req)
 	if err != nil {
+		errors.Write(c, err)
 		return
 	}
 
@@ -179,6 +185,7 @@ func (h *PartnerTableHandler) SoftDeleteTable(c *gin.Context) {
 	tableID := c.Param("id")
 
 	if err := h.usecase.SoftDeleteTable(c.Request.Context(), tenantID, tableID); err != nil {
+		errors.Write(c, err)
 		return
 	}
 

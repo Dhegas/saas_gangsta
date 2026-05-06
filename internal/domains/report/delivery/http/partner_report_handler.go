@@ -3,6 +3,7 @@ package http
 import (
 	"net/http"
 
+	"github.com/dhegas/saas_gangsta/internal/common/errors"
 	"github.com/dhegas/saas_gangsta/internal/common/response"
 	"github.com/dhegas/saas_gangsta/internal/domains/report/domain"
 	"github.com/dhegas/saas_gangsta/internal/domains/report/dto"
@@ -63,6 +64,7 @@ func (h *PartnerReportHandler) GetRevenue(c *gin.Context) {
 
 	result, err := h.usecase.GetRevenue(c.Request.Context(), tenantID, params)
 	if err != nil {
+		errors.Write(c, err)
 		return
 	}
 
@@ -96,6 +98,7 @@ func (h *PartnerReportHandler) GetTopMenus(c *gin.Context) {
 
 	result, err := h.usecase.GetTopMenus(c.Request.Context(), tenantID, params)
 	if err != nil {
+		errors.Write(c, err)
 		return
 	}
 
@@ -129,6 +132,7 @@ func (h *PartnerReportHandler) GetOrdersByTable(c *gin.Context) {
 
 	result, err := h.usecase.GetOrdersByTable(c.Request.Context(), tenantID, params)
 	if err != nil {
+		errors.Write(c, err)
 		return
 	}
 
@@ -161,6 +165,7 @@ func (h *PartnerReportHandler) GetDailySummary(c *gin.Context) {
 
 	result, err := h.usecase.GetDailySummary(c.Request.Context(), tenantID, params)
 	if err != nil {
+		errors.Write(c, err)
 		return
 	}
 

@@ -3,6 +3,7 @@ package http
 import (
 	"net/http"
 
+	"github.com/dhegas/saas_gangsta/internal/common/errors"
 	"github.com/dhegas/saas_gangsta/internal/common/response"
 	"github.com/dhegas/saas_gangsta/internal/domains/order/domain"
 	"github.com/dhegas/saas_gangsta/internal/domains/order/dto"
@@ -47,6 +48,7 @@ func (h *CustomerHandler) CreateCustomer(c *gin.Context) {
 
 	customer, err := h.usecase.CreateCustomer(c.Request.Context(), tenantID, orderID, req)
 	if err != nil {
+		errors.Write(c, err)
 		return
 	}
 
@@ -73,6 +75,7 @@ func (h *CustomerHandler) GetCustomer(c *gin.Context) {
 
 	customer, err := h.usecase.GetCustomerByOrderID(c.Request.Context(), tenantID, orderID)
 	if err != nil {
+		errors.Write(c, err)
 		return
 	}
 
@@ -108,6 +111,7 @@ func (h *CustomerHandler) UpdateCustomer(c *gin.Context) {
 
 	customer, err := h.usecase.UpdateCustomer(c.Request.Context(), tenantID, orderID, req)
 	if err != nil {
+		errors.Write(c, err)
 		return
 	}
 

@@ -3,6 +3,7 @@ package http
 import (
 	"net/http"
 
+	"github.com/dhegas/saas_gangsta/internal/common/errors"
 	"github.com/dhegas/saas_gangsta/internal/common/response"
 	"github.com/dhegas/saas_gangsta/internal/domains/category/domain"
 	"github.com/dhegas/saas_gangsta/internal/domains/category/dto"
@@ -35,6 +36,7 @@ func (h *PartnerCategoryHandler) GetAllCategories(c *gin.Context) {
 
 	categories, err := h.usecase.GetAllCategories(c.Request.Context(), tenantID)
 	if err != nil {
+		errors.Write(c, err)
 		return // Usecase returns formatted apperrors
 	}
 
@@ -61,6 +63,7 @@ func (h *PartnerCategoryHandler) GetCategoryByID(c *gin.Context) {
 
 	category, err := h.usecase.GetCategoryByID(c.Request.Context(), tenantID, categoryID)
 	if err != nil {
+		errors.Write(c, err)
 		return
 	}
 
@@ -93,6 +96,7 @@ func (h *PartnerCategoryHandler) CreateCategory(c *gin.Context) {
 
 	category, err := h.usecase.CreateCategory(c.Request.Context(), tenantID, req)
 	if err != nil {
+		errors.Write(c, err)
 		return
 	}
 
@@ -128,6 +132,7 @@ func (h *PartnerCategoryHandler) UpdateCategory(c *gin.Context) {
 
 	category, err := h.usecase.UpdateCategory(c.Request.Context(), tenantID, categoryID, req)
 	if err != nil {
+		errors.Write(c, err)
 		return
 	}
 
@@ -153,6 +158,7 @@ func (h *PartnerCategoryHandler) SoftDeleteCategory(c *gin.Context) {
 	categoryID := c.Param("id")
 
 	if err := h.usecase.SoftDeleteCategory(c.Request.Context(), tenantID, categoryID); err != nil {
+		errors.Write(c, err)
 		return
 	}
 
@@ -187,6 +193,7 @@ func (h *PartnerCategoryHandler) ToggleCategoryActive(c *gin.Context) {
 	}
 
 	if err := h.usecase.ToggleCategoryActive(c.Request.Context(), tenantID, categoryID, *req.IsActive); err != nil {
+		errors.Write(c, err)
 		return
 	}
 
@@ -218,6 +225,7 @@ func (h *PartnerCategoryHandler) ReorderCategories(c *gin.Context) {
 	}
 
 	if err := h.usecase.ReorderCategories(c.Request.Context(), tenantID, req); err != nil {
+		errors.Write(c, err)
 		return
 	}
 

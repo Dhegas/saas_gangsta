@@ -3,6 +3,7 @@ package http
 import (
 	"net/http"
 
+	"github.com/dhegas/saas_gangsta/internal/common/errors"
 	"github.com/dhegas/saas_gangsta/internal/common/response"
 	"github.com/dhegas/saas_gangsta/internal/domains/order/domain"
 	"github.com/dhegas/saas_gangsta/internal/domains/order/dto"
@@ -67,6 +68,7 @@ func (h *PartnerOrderHandler) GetAllOrders(c *gin.Context) {
 
 	orders, err := h.usecase.GetAllOrders(c.Request.Context(), tenantID, filter)
 	if err != nil {
+		errors.Write(c, err)
 		return
 	}
 
@@ -94,6 +96,7 @@ func (h *PartnerOrderHandler) GetOrderByID(c *gin.Context) {
 
 	order, err := h.usecase.GetOrderByID(c.Request.Context(), tenantID, orderID)
 	if err != nil {
+		errors.Write(c, err)
 		return
 	}
 
@@ -127,6 +130,7 @@ func (h *PartnerOrderHandler) CreateOrder(c *gin.Context) {
 
 	order, err := h.usecase.CreateOrder(c.Request.Context(), tenantID, req)
 	if err != nil {
+		errors.Write(c, err)
 		return
 	}
 
@@ -162,6 +166,7 @@ func (h *PartnerOrderHandler) UpdateOrderStatus(c *gin.Context) {
 
 	order, err := h.usecase.UpdateOrderStatus(c.Request.Context(), tenantID, orderID, req)
 	if err != nil {
+		errors.Write(c, err)
 		return
 	}
 
@@ -187,6 +192,7 @@ func (h *PartnerOrderHandler) SoftDeleteOrder(c *gin.Context) {
 	orderID := c.Param("id")
 
 	if err := h.usecase.SoftDeleteOrder(c.Request.Context(), tenantID, orderID); err != nil {
+		errors.Write(c, err)
 		return
 	}
 

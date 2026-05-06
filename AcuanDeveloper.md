@@ -16,17 +16,22 @@
 7. [Authentication & Authorization (JWT)](#7-authentication--authorization-jwt)
 8. [Database Schema (PostgreSQL Supabase)](#8-database-schema-postgresql-supabase)
 9. [API Endpoints](#9-api-endpoints)
-   - [Health Check](#91-health-check)
-   - [Auth](#92-auth)
-   - [Customer](#93-customer)
-   - [Merchant](#94-merchant)
-   - [Admin](#95-admin)
+
+- [Public & Health](#91-public--health)
+- [Auth](#92-auth)
+- [Users (Partner/Admin)](#93-users-partneradmin)
+- [Tenant Context & Partner](#94-tenant-context--partner)
+- [Catalog (Categories & Menus)](#95-catalog-categories--menus)
+- [Orders & Customers](#96-orders--customers)
+- [Dining Tables](#97-dining-tables)
+- [Reports](#98-reports)
+
 10. [CORS Configuration](#10-cors-configuration)
 11. [Response Schema Convention](#11-response-schema-convention)
 12. [Error Handling Convention](#12-error-handling-convention)
 13. [Docker & Container Setup](#13-docker--container-setup)
 14. [Clean Code Guidelines](#14-clean-code-guidelines)
-15. [Module Structure per Feature](#15-module-structure-per-feature)
+15. [Domain Structure per Feature](#15-domain-structure-per-feature)
 16. [Development Roadmap](#16-development-roadmap)
 17. [Definition of Done](#17-definition-of-done)
 18. [Technical Risks](#18-technical-risks)
@@ -45,9 +50,9 @@ Platform ini menggabungkan kebutuhan utama operasional toko makanan:
 | ------------------------- | ----------------------------------------------- |
 | Digital Menu              | Pelanggan scan QR → lihat menu digital          |
 | Self Ordering             | Pelanggan order dari meja tanpa panggil pelayan |
-| POS / Kasir               | Merchant input order manual via kasir digital   |
+| POS / Kasir               | Partner input order manual via kasir digital    |
 | Manajemen Meja            | Monitor kondisi dan status meja real-time       |
-| Laporan Penjualan         | Rekap harian/mingguan/bulanan per merchant      |
+| Laporan Penjualan         | Rekap harian/mingguan/bulanan per partner       |
 | Membership / Subscription | Admin kelola paket langganan SaaS               |
 
 ### Tiga Role Utama
@@ -55,12 +60,12 @@ Platform ini menggabungkan kebutuhan utama operasional toko makanan:
 | Role         | Deskripsi                                                                |
 | ------------ | ------------------------------------------------------------------------ |
 | **Customer** | Pelanggan toko. Scan QR, lihat menu, order, bayar, cek status, review    |
-| **Merchant** | Pemilik toko. Kelola menu, terima order, POS, laporan, profil toko       |
+| **Partner**  | Pemilik toko. Kelola menu, terima order, POS, laporan, profil toko       |
 | **Admin**    | Pengelola platform SaaS. Kelola tenant, membership, billing, user global |
 
 ### Model Bisnis
 
-Sistem menggunakan model **SaaS multi-tenant**, di mana setiap merchant (tenant) memiliki data yang terisolasi satu sama lain. Merchant berlangganan bulanan untuk mengakses platform.
+Sistem menggunakan model **SaaS multi-tenant**, di mana setiap partner (tenant) memiliki data yang terisolasi satu sama lain. Partner berlangganan bulanan untuk mengakses platform.
 
 ---
 
@@ -101,7 +106,7 @@ Proyek menggunakan pendekatan **Clean Architecture + Modular Monolith** yang coc
                         │  ┌──────────┐  ┌──────────────────┐  │
                         │  │ Middleware│  │  Route Groups    │  │
                         │  │ JWT Auth │  │ /customer        │  │
-                        │  │ CORS     │  │ /merchant        │  │
+                        │  │ CORS     │  │ /partner        │  │
                         │  │ Logging  │  │ /admin           │  │
                         │  │ Recovery │  │ /auth            │  │
                         │  └──────────┘  └──────────────────┘  │
@@ -120,158 +125,9 @@ Proyek menggunakan pendekatan **Clean Architecture + Modular Monolith** yang coc
                         └──────────────────────────────────────┘
 ```
 
-### Prinsip Arsitektur Wajib
-
-- **Multi-tenant first**: Semua tabel bisnis wajib punya `tenantId`. Semua query merchant/customer harus difilter `tenantId`.
-- **Role-separated routes**: Route dipisah per role (`/customer`, `/merchant`, `/admin`).
-- **Tenant context dari JWT**: `tenantId` diambil dari JWT claim, bukan dari input user.
-- **DB transaction untuk flow kritis**: Create order, payment, void transaksi wajib dalam DB transaction.
-- **Idempotency key**: Digunakan untuk endpoint create order dan payment.
-- **Standard response format**: Semua endpoint menggunakan envelope response yang konsisten.
-
 ---
 
 ## 4. Folder Structure
-
-```
-saas_gangsta/
-├── cmd/
-│   └── api/
-│       └── main.go                  # Entry point aplikasi
-│
-├── internal/
-│   ├── bootstrap/
-│   │   └── app.go                   # Registrasi semua dependency (router, db, middleware)
-│   │
-│   ├── common/
-│   │   ├── config/
-│   │   │   └── config.go            # Load & parse env config
-│   │   ├── middleware/
-│   │   │   ├── auth.go              # JWT auth middleware
-│   │   │   ├── role_guard.go        # Role-based access control
-│   │   │   ├── tenant_guard.go      # Tenant context injector
-│   │   │   ├── cors.go              # CORS middleware
-│   │   │   ├── logger.go            # Request logging middleware
-│   │   │   └── recovery.go          # Panic recovery middleware
-│   │   ├── response/
-│   │   │   └── response.go          # Standard response envelope helper
-│   │   ├── errors/
-│   │   │   ├── app_error.go         # Custom error types
-│   │   │   └── error_handler.go     # Global error mapping
-│   │   ├── auth/
-│   │   │   └── jwt.go               # JWT generate & parse helper
-│   │   └── tenant/
-│   │       └── context.go           # Tenant context helper (get tenantId dari ctx)
-│   │
-│   ├── database/
-│   │   └── db.go                    # GORM database connection
-│   │
-│   └── modules/
-│       ├── auth/
-│       │   ├── delivery/http/
-│       │   │   └── auth_handler.go
-│       │   ├── usecase/
-│       │   │   └── auth_usecase.go
-│       │   ├── domain/
-│       │   │   └── auth_domain.go
-│       │   ├── repository/
-│       │   │   └── auth_repository.go
-│       │   └── dto/
-│       │       ├── login_request.go
-│       │       └── auth_response.go
-│       │
-│       ├── customer_menu/
-│       │   ├── delivery/http/
-│       │   ├── usecase/
-│       │   ├── domain/
-│       │   ├── repository/
-│       │   └── dto/
-│       │
-│       ├── customer_order/
-│       │   ├── delivery/http/
-│       │   ├── usecase/
-│       │   ├── domain/
-│       │   ├── repository/
-│       │   └── dto/
-│       │
-│       ├── payment/
-│       │   ├── delivery/http/
-│       │   ├── usecase/
-│       │   ├── domain/
-│       │   ├── repository/
-│       │   └── dto/
-│       │
-│       ├── merchant_menu/
-│       │   ├── delivery/http/
-│       │   ├── usecase/
-│       │   ├── domain/
-│       │   ├── repository/
-│       │   └── dto/
-│       │
-│       ├── merchant_pos/
-│       │   ├── delivery/http/
-│       │   ├── usecase/
-│       │   ├── domain/
-│       │   ├── repository/
-│       │   └── dto/
-│       │
-│       ├── merchant_table/
-│       │   ├── delivery/http/
-│       │   ├── usecase/
-│       │   ├── domain/
-│       │   ├── repository/
-│       │   └── dto/
-│       │
-│       ├── merchant_report/
-│       │   ├── delivery/http/
-│       │   ├── usecase/
-│       │   ├── domain/
-│       │   ├── repository/
-│       │   └── dto/
-│       │
-│       ├── admin_tenant/
-│       │   ├── delivery/http/
-│       │   ├── usecase/
-│       │   ├── domain/
-│       │   ├── repository/
-│       │   └── dto/
-│       │
-│       └── admin_subscription/
-│           ├── delivery/http/
-│           ├── usecase/
-│           ├── domain/
-│           ├── repository/
-│           └── dto/
-│
-├── pkg/
-│   ├── validator/
-│   │   └── validator.go             # Custom validator helper
-│   ├── pagination/
-│   │   └── pagination.go            # Pagination helper
-│   └── logger/
-│       └── logger.go                # Logger instance (wraps slog)
-│
-├── migrations/
-│   └── *.sql                        # SQL migration files (ordered by timestamp)
-│
-├── deployments/
-│   ├── docker-compose.yml           # Docker Compose (api + postgres local dev)
-│   ├── Dockerfile                   # Multi-stage Dockerfile
-│   └── nginx/
-│       └── nginx.conf               # Nginx config untuk API Gateway
-│
-├── docs/
-│   └── openapi.yaml                 # OpenAPI/Swagger documentation
-│
-├── scripts/
-│   └── seed.sql                     # Seed data untuk development
-│
-├── .env                             # Environment variables (jangan di-commit)
-├── .env.example                     # Template environment variables
-├── go.mod
-├── go.sum
-└── README.md
-```
 
 ### Struktur Per Domain (Wajib Konsisten)
 
@@ -318,34 +174,6 @@ HTTP Response
 ---
 
 ## 5. Environment Variables
-
-Buat file `.env` di root folder `saas_gangsta/`:
-
-```env
-# Application
-APP_ENV=development
-APP_PORT=8080
-APP_NAME=saas_gangsta
-
-# Database (Supabase PostgreSQL)
-DATABASE_URL=postgresql://postgres:<password>@<supabase-host>:5432/postgres?sslmode=require
-
-# JWT
-JWT_SECRET=your-very-strong-jwt-secret-key-minimum-32-chars
-JWT_ACCESS_TOKEN_EXPIRY=15m
-JWT_REFRESH_TOKEN_EXPIRY=7d
-
-# CORS
-CORS_ALLOWED_ORIGINS=http://localhost:3000,https://yourdomain.com
-
-# Supabase (jika butuh Supabase client langsung)
-SUPABASE_URL=https://<project-ref>.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
-```
-
-> ⚠️ **PENTING**: Jangan pernah commit `.env` ke repository. Gunakan `.env.example` sebagai template.
->
-> ⚠️ `SUPABASE_SERVICE_ROLE_KEY` hanya boleh ada di backend. **Jangan pernah expose ke frontend.**
 
 ### .env.example
 
@@ -434,7 +262,7 @@ Semua endpoint backend wajib menggunakan prefix:
 /api/v1/
 ```
 
-Contoh: `POST /api/v1/auth/login`, `GET /api/v1/merchant/menus`
+Contoh: `POST /api/v1/auth/login`, `GET /api/v1/partner/menus`
 
 ---
 
@@ -450,438 +278,274 @@ Contoh: `POST /api/v1/auth/login`, `GET /api/v1/merchant/menus`
 5. Handler ambil dari ctx            → gunakan untuk query
 ```
 
-### JWT Payload (Claims)
-
-```json
-{
-  "sub": "user-uuid",
-  "role": "MITRA",
-  "tenantId": "tenant-uuid",
-  "iat": 1700000000,
-  "exp": 1700000900
-}
-```
-
 ### Role Values
 
-| Role    | Keterangan               |
-| ------- | ------------------------ |
-| `BASIC` | Pelanggan toko           |
-| `MITRA` | Pemilik / pengelola toko |
-| `ADMIN` | Admin platform SaaS      |
+| Role       | Keterangan                             |
+| ---------- | -------------------------------------- |
+| `CUSTOMER` | Pelanggan toko (default saat register) |
+| `PARTNER`  | Pemilik / pengelola toko               |
+| `ADMIN`    | Admin platform SaaS                    |
+
+Catatan: endpoint [customer context](#94-tenant-context--partner) masih memakai `RoleGuard("BASIC")` sebagai legacy alias; saat ini berlaku sebagai role customer, namun perlu diseragamkan ke `CUSTOMER`.
 
 ### Middleware Stack per Route Group
 
 ```
-Public Routes (/auth, /health):
+Public:
   → CORS → Logger → Recovery
+  - /swagger/*any, /health, /ready
+  - /api/v1/health, /api/v1/ready
+  - /api/v1/auth/register, /api/v1/auth/login, /api/v1/auth/refresh
 
-Customer Routes (/api/v1/customer/**):
-  → CORS → Logger → Recovery → JWTAuth → RoleGuard("BASIC") → TenantGuard
+Auth-only:
+  → CORS → Logger → Recovery → JWTAuth
+  - /api/v1/auth/logout, /api/v1/auth/me
 
-Merchant Routes (/api/v1/merchant/**):
-  → CORS → Logger → Recovery → JWTAuth → RoleGuard("MITRA") → TenantGuard
+Shared path (role-based access):
+  /api/v1/menus
+    - GET: JWTAuth → RoleGuards("CUSTOMER", "PARTNER", "ADMIN")
+    - POST/PUT/DELETE/PATCH: JWTAuth → RoleGuard("PARTNER") → TenantGuard
+  /api/v1/orders
+    - POST, GET /:id, /:id/customer: JWTAuth → RoleGuards("CUSTOMER", "PARTNER", "ADMIN")
+    - GET, PATCH /:id/status, DELETE /:id: JWTAuth → RoleGuard("PARTNER") → TenantGuard
 
-Admin Routes (/api/v1/admin/**):
-  → CORS → Logger → Recovery → JWTAuth → RoleGuard("ADMIN")
+Partner/Tenant scoped:
+  → CORS → Logger → Recovery → JWTAuth
+  - /api/v1/categories, /api/v1/dining-tables, /api/v1/reports: RoleGuard("PARTNER") → TenantGuard
+  - /api/v1/users: RoleGuards("PARTNER", "ADMIN") → TenantGuard
+  - /api/v1/partner/*: RoleGuard("PARTNER") (+ TenantGuard khusus /partner/me)
+  - /api/v1/customer/me: RoleGuard("BASIC") → TenantGuard
 ```
 
 ---
 
 ## 8. Database Schema (PostgreSQL Supabase)
 
-### Prinsip Schema
+### 8.1 Migrations (Current Tables)
 
-- Semua tabel menggunakan `UUID` sebagai primary key
-- Kolom `tenantId` wajib ada di semua tabel bisnis (kecuali tabel platform-level)
-- Timestamp: `createdAt`, `updatedAt`, dan `deletedAt` (soft delete)
-- Naming convention kolom: **snake_case** di database, **camelCase** di JSON response/request
+Sumber: seluruh file SQL di folder `supabase/migrations`.
 
-### Entitas Inti
+**tenants**
 
-```sql
--- Tabel tenant (data per merchant/toko)
-tenants
-  id UUID PK
-  name VARCHAR
-  slug VARCHAR UNIQUE
-  status VARCHAR  -- active | inactive | suspended
-  created_at TIMESTAMP
-  updated_at TIMESTAMP
+| Column       | Type         | Notes                         |
+| ------------ | ------------ | ----------------------------- |
+| id           | UUID         | PK, default gen_random_uuid() |
+| user_id      | UUID         | FK -> users.id, nullable      |
+| name         | VARCHAR(150) | not null                      |
+| slug         | VARCHAR(80)  | not null, unique              |
+| status       | VARCHAR(20)  | default 'active'              |
+| description  | TEXT         | nullable                      |
+| address      | TEXT         | nullable                      |
+| phone_number | VARCHAR(20)  | nullable                      |
+| open_hours   | VARCHAR(100) | nullable                      |
+| logo_url     | TEXT         | nullable                      |
+| banner_url   | TEXT         | nullable                      |
+| created_at   | TIMESTAMPTZ  | default now()                 |
+| updated_at   | TIMESTAMPTZ  | default now()                 |
+| deleted_at   | TIMESTAMPTZ  | nullable                      |
 
--- User (seluruh platform)
-users
-  id UUID PK
-  tenant_id UUID FK → tenants.id (nullable untuk admin platform)
-  email VARCHAR UNIQUE
-  password_hash VARCHAR
-  role VARCHAR  -- BASIC | MITRA | ADMIN
-  is_active BOOLEAN
-  created_at TIMESTAMP
-  updated_at TIMESTAMP
+**users**
 
--- Profil merchant (data toko)
-merchant_profiles
-  id UUID PK
-  tenant_id UUID FK → tenants.id
-  store_name VARCHAR
-  address TEXT
-  phone VARCHAR
-  logo_url VARCHAR
-  opening_hours JSONB
-  created_at TIMESTAMP
-  updated_at TIMESTAMP
+| Column        | Type         | Notes                                   |
+| ------------- | ------------ | --------------------------------------- |
+| id            | UUID         | PK, default gen_random_uuid()           |
+| email         | VARCHAR(255) | not null, unique                        |
+| password_hash | TEXT         | not null                                |
+| full_name     | VARCHAR(150) | not null                                |
+| role          | VARCHAR(20)  | CHECK in ('CUSTOMER','PARTNER','ADMIN') |
+| is_active     | BOOLEAN      | default true                            |
+| last_login_at | TIMESTAMPTZ  | nullable                                |
+| created_at    | TIMESTAMPTZ  | default now()                           |
+| updated_at    | TIMESTAMPTZ  | default now()                           |
+| deleted_at    | TIMESTAMPTZ  | nullable                                |
 
--- Kategori menu
-categories
-  id UUID PK
-  tenant_id UUID FK
-  name VARCHAR
-  description TEXT
-  sort_order INTEGER
-  is_active BOOLEAN
-  created_at TIMESTAMP
-  updated_at TIMESTAMP
+**categories**
 
--- Menu item
-menus
-  id UUID PK
-  tenant_id UUID FK
-  category_id UUID FK → categories.id
-  name VARCHAR
-  description TEXT
-  price NUMERIC(12,2)
-  image_url VARCHAR
-  is_available BOOLEAN
-  created_at TIMESTAMP
-  updated_at TIMESTAMP
+| Column      | Type         | Notes                         |
+| ----------- | ------------ | ----------------------------- |
+| id          | UUID         | PK, default gen_random_uuid() |
+| tenant_id   | UUID         | FK -> tenants.id              |
+| name        | VARCHAR(120) | not null                      |
+| description | TEXT         | nullable                      |
+| sort_order  | INTEGER      | default 0                     |
+| is_active   | BOOLEAN      | default true                  |
+| created_at  | TIMESTAMPTZ  | default now()                 |
+| updated_at  | TIMESTAMPTZ  | default now()                 |
+| deleted_at  | TIMESTAMPTZ  | nullable                      |
 
--- Meja
-tables
-  id UUID PK
-  tenant_id UUID FK
-  table_number VARCHAR
-  capacity INTEGER
-  status VARCHAR  -- empty | occupied | reserved
-  created_at TIMESTAMP
-  updated_at TIMESTAMP
+**menus**
 
--- Order
-orders
-  id UUID PK
-  tenant_id UUID FK
-  table_id UUID FK → tables.id
-  user_id UUID FK → users.id (nullable untuk guest order)
-  idempotency_key VARCHAR UNIQUE
-  status VARCHAR  -- pending | accepted | cooking | ready | done | canceled
-  subtotal NUMERIC(12,2)
-  tax NUMERIC(12,2)
-  total NUMERIC(12,2)
-  notes TEXT
-  order_source VARCHAR  -- self_order | pos
-  created_at TIMESTAMP
-  updated_at TIMESTAMP
+| Column       | Type          | Notes                         |
+| ------------ | ------------- | ----------------------------- |
+| id           | UUID          | PK, default gen_random_uuid() |
+| tenant_id    | UUID          | FK -> tenants.id              |
+| category_id  | UUID          | FK -> categories.id, nullable |
+| name         | VARCHAR(180)  | not null                      |
+| description  | TEXT          | nullable                      |
+| price        | NUMERIC(12,2) | not null, >= 0                |
+| image_url    | TEXT          | nullable                      |
+| is_available | BOOLEAN       | default true                  |
+| created_at   | TIMESTAMPTZ   | default now()                 |
+| updated_at   | TIMESTAMPTZ   | default now()                 |
+| deleted_at   | TIMESTAMPTZ   | nullable                      |
 
--- Order items
-order_items
-  id UUID PK
-  order_id UUID FK → orders.id
-  menu_id UUID FK → menus.id
-  quantity INTEGER
-  unit_price NUMERIC(12,2)
-  subtotal NUMERIC(12,2)
-  notes TEXT
+**dining_tables**
 
--- Payment
-payments
-  id UUID PK
-  order_id UUID FK → orders.id
-  tenant_id UUID FK
-  idempotency_key VARCHAR UNIQUE
-  method VARCHAR  -- cash | qris | transfer
-  status VARCHAR  -- pending | paid | failed | refunded
-  amount NUMERIC(12,2)
-  paid_at TIMESTAMP
-  created_at TIMESTAMP
-  updated_at TIMESTAMP
+| Column     | Type        | Notes                         |
+| ---------- | ----------- | ----------------------------- |
+| id         | UUID        | PK, default gen_random_uuid() |
+| tenant_id  | UUID        | FK -> tenants.id              |
+| table_name | VARCHAR(50) | not null                      |
+| created_at | TIMESTAMPTZ | default now()                 |
+| updated_at | TIMESTAMPTZ | default now()                 |
+| deleted_at | TIMESTAMPTZ | nullable                      |
 
--- Subscription plans (admin level)
-subscription_plans
-  id UUID PK
-  name VARCHAR
-  description TEXT
-  price NUMERIC(12,2)
-  billing_cycle VARCHAR  -- monthly | yearly
-  features JSONB
-  is_active BOOLEAN
-  created_at TIMESTAMP
-  updated_at TIMESTAMP
+**orders**
 
--- Subscriptions per tenant
-subscriptions
-  id UUID PK
-  tenant_id UUID FK
-  plan_id UUID FK → subscription_plans.id
-  status VARCHAR  -- active | expired | canceled | trial
-  started_at TIMESTAMP
-  expires_at TIMESTAMP
-  created_at TIMESTAMP
-  updated_at TIMESTAMP
+| Column           | Type          | Notes                            |
+| ---------------- | ------------- | -------------------------------- |
+| id               | UUID          | PK, default gen_random_uuid()    |
+| tenant_id        | UUID          | FK -> tenants.id                 |
+| user_id          | UUID          | FK -> users.id, nullable         |
+| dining_tables_id | UUID          | FK -> dining_tables.id, nullable |
+| status           | VARCHAR(20)   | not null                         |
+| total_price      | NUMERIC(12,2) | not null, >= 0                   |
+| created_at       | TIMESTAMPTZ   | default now()                    |
+| updated_at       | TIMESTAMPTZ   | default now()                    |
+| deleted_at       | TIMESTAMPTZ   | nullable                         |
 
--- Audit log
-audit_logs
-  id UUID PK
-  tenant_id UUID FK
-  user_id UUID FK
-  action VARCHAR  -- e.g. MENU_DELETED, ORDER_CANCELED, VOID_TRANSACTION
-  entity_type VARCHAR
-  entity_id UUID
-  metadata JSONB
-  created_at TIMESTAMP
-```
+**order_items**
 
----
+| Column     | Type          | Notes                         |
+| ---------- | ------------- | ----------------------------- |
+| id         | UUID          | PK, default gen_random_uuid() |
+| order_id   | UUID          | FK -> orders.id               |
+| menu_id    | UUID          | FK -> menus.id                |
+| menu_name  | VARCHAR(180)  | not null                      |
+| quantity   | INTEGER       | not null, > 0                 |
+| unit_price | NUMERIC(12,2) | not null, >= 0                |
+| subtotal   | NUMERIC(12,2) | not null, >= 0                |
+| notes      | TEXT          | nullable                      |
+| deleted_at | TIMESTAMPTZ   | nullable                      |
+
+**customers**
+
+| Column       | Type         | Notes                         |
+| ------------ | ------------ | ----------------------------- |
+| id           | UUID         | PK, default gen_random_uuid() |
+| order_id     | UUID         | FK -> orders.id               |
+| tenant_id    | UUID         | FK -> tenants.id              |
+| full_name    | VARCHAR(150) | not null                      |
+| phone_number | VARCHAR(20)  | nullable                      |
+| created_at   | TIMESTAMPTZ  | default now()                 |
+| deleted_at   | TIMESTAMPTZ  | nullable                      |
+
+### 8.2 Legacy / Removed by Migrations
+
+- `tenant_profiles` dibuat pada awalnya, lalu dipindahkan ke `tenants` dan dihapus pada migrasi berikutnya.
 
 ## 9. API Endpoints
 
-Semua endpoint menggunakan prefix `/api/v1/`.
+### 9.1 Public & Health
 
----
-
-### 9.1 Health Check
-
-| Method | Path      | Auth   | Deskripsi                           |
-| ------ | --------- | ------ | ----------------------------------- |
-| GET    | `/health` | Public | Cek status server hidup             |
-| GET    | `/ready`  | Public | Cek readiness (DB connection check) |
-
-**Response `GET /health`:**
-
-```json
-{
-  "status": "ok",
-  "service": "saas_gangsta",
-  "timestamp": "2026-04-15T22:30:00Z"
-}
-```
-
----
+| Method | Endpoint       | Fungsi                       | Role   |
+| ------ | -------------- | ---------------------------- | ------ |
+| GET    | /swagger/\*any | Swagger UI                   | Public |
+| GET    | /health        | Liveness check               | Public |
+| GET    | /ready         | Readiness check (DB + Redis) | Public |
+| GET    | /api/v1/health | API health                   | Public |
+| GET    | /api/v1/ready  | API readiness                | Public |
 
 ### 9.2 Auth
 
-| Method | Path                   | Auth   | Deskripsi                         |
-| ------ | ---------------------- | ------ | --------------------------------- |
-| POST   | `/api/v1/auth/login`   | Public | Login user (semua role)           |
-| POST   | `/api/v1/auth/refresh` | Public | Refresh access token              |
-| POST   | `/api/v1/auth/logout`  | JWT    | Logout & invalidate refresh token |
-| GET    | `/api/v1/auth/me`      | JWT    | Get current user info             |
+| Method | Endpoint              | Fungsi                                  | Role                     |
+| ------ | --------------------- | --------------------------------------- | ------------------------ |
+| POST   | /api/v1/auth/register | Register user (default role `CUSTOMER`) | Public                   |
+| POST   | /api/v1/auth/login    | Login semua role                        | Public                   |
+| POST   | /api/v1/auth/refresh  | Refresh token                           | Public                   |
+| POST   | /api/v1/auth/logout   | Logout user                             | CUSTOMER, PARTNER, ADMIN |
+| GET    | /api/v1/auth/me       | Ambil profil user login                 | CUSTOMER, PARTNER, ADMIN |
 
-**Request `POST /api/v1/auth/login`:**
+### 9.3 Users (Partner/Admin)
 
-```json
-{
-  "email": "merchant@example.com",
-  "password": "secret123"
-}
-```
+| Method | Endpoint                        | Fungsi                 | Role           |
+| ------ | ------------------------------- | ---------------------- | -------------- |
+| GET    | /api/v1/users                   | List user dalam tenant | PARTNER, ADMIN |
+| GET    | /api/v1/users/:id               | Detail user            | PARTNER, ADMIN |
+| PUT    | /api/v1/users/:id               | Update user            | PARTNER, ADMIN |
+| DELETE | /api/v1/users/:id               | Soft delete user       | PARTNER, ADMIN |
+| PATCH  | /api/v1/users/:id/toggle-active | Toggle aktif user      | PARTNER, ADMIN |
 
-**Response `POST /api/v1/auth/login`:**
+### 9.4 Tenant Context & Partner
 
-```json
-{
-  "success": true,
-  "message": "Login berhasil",
-  "data": {
-    "accessToken": "eyJhbG...",
-    "refreshToken": "eyJhbG...",
-    "user": {
-      "id": "uuid",
-      "email": "merchant@example.com",
-      "role": "MITRA",
-      "tenantId": "tenant-uuid"
-    }
-  }
-}
-```
+| Method | Endpoint                | Fungsi                             | Role                 |
+| ------ | ----------------------- | ---------------------------------- | -------------------- |
+| GET    | /api/v1/customer/me     | Validasi context customer + tenant | BASIC (legacy alias) |
+| POST   | /api/v1/partner/tenants | Buat tenant untuk partner          | PARTNER              |
+| GET    | /api/v1/partner/tenants | List tenant milik partner          | PARTNER              |
+| GET    | /api/v1/partner/me      | Validasi context partner + tenant  | PARTNER              |
 
----
+### 9.5 Catalog (Categories & Menus)
 
-### 9.3 Customer
+**Categories (Partner-only + TenantGuard)**
 
-> **Auth required**: Bearer token (role: `BASIC`)
-> **TenantId**: otomatis dari JWT, tidak perlu dikirim di request
+| Method | Endpoint                             | Fungsi                | Role    |
+| ------ | ------------------------------------ | --------------------- | ------- |
+| POST   | /api/v1/categories                   | Create category       | PARTNER |
+| GET    | /api/v1/categories                   | List categories       | PARTNER |
+| GET    | /api/v1/categories/:id               | Detail category       | PARTNER |
+| PUT    | /api/v1/categories/:id               | Update category       | PARTNER |
+| DELETE | /api/v1/categories/:id               | Soft delete category  | PARTNER |
+| PATCH  | /api/v1/categories/:id/toggle-active | Toggle aktif category | PARTNER |
+| PATCH  | /api/v1/categories/reorder           | Reorder category      | PARTNER |
 
-| Method | Path                                   | Deskripsi                                         |
-| ------ | -------------------------------------- | ------------------------------------------------- |
-| GET    | `/api/v1/customer/menus`               | Lihat daftar menu (berdasarkan tenantId dari JWT) |
-| GET    | `/api/v1/customer/menus/:id`           | Detail menu                                       |
-| GET    | `/api/v1/customer/categories`          | Daftar kategori                                   |
-| POST   | `/api/v1/customer/orders`              | Buat order baru (self-order)                      |
-| GET    | `/api/v1/customer/orders/:id`          | Detail order                                      |
-| GET    | `/api/v1/customer/orders/:id/status`   | Cek status order real-time                        |
-| POST   | `/api/v1/customer/payments`            | Buat payment untuk order                          |
-| GET    | `/api/v1/customer/payments/:id/status` | Cek status payment                                |
-| GET    | `/api/v1/customer/transactions`        | Riwayat transaksi customer                        |
-| GET    | `/api/v1/customer/transactions/:id`    | Detail transaksi                                  |
-| POST   | `/api/v1/customer/reviews`             | Submit review/rating                              |
+**Menus (shared path dengan role berbeda)**
 
-**Request `POST /api/v1/customer/orders`:**
+| Method | Endpoint                           | Fungsi                   | Role                     |
+| ------ | ---------------------------------- | ------------------------ | ------------------------ |
+| GET    | /api/v1/menus                      | List menu                | CUSTOMER, PARTNER, ADMIN |
+| GET    | /api/v1/menus/:id                  | Detail menu              | CUSTOMER, PARTNER, ADMIN |
+| POST   | /api/v1/menus                      | Create menu              | PARTNER                  |
+| PUT    | /api/v1/menus/:id                  | Update menu              | PARTNER                  |
+| DELETE | /api/v1/menus/:id                  | Soft delete menu         | PARTNER                  |
+| PATCH  | /api/v1/menus/:id/toggle-available | Toggle ketersediaan menu | PARTNER                  |
 
-```json
-{
-  "tableId": "table-uuid",
-  "idempotencyKey": "client-generated-uuid",
-  "items": [
-    {
-      "menuId": "menu-uuid",
-      "quantity": 2,
-      "notes": "tanpa sambal"
-    }
-  ],
-  "notes": "pesanan meja 3"
-}
-```
+Catatan: endpoint GET menus tidak memakai `TenantGuard`; tenant biasanya diambil dari query param (mis. `tenantId`).
 
----
+### 9.6 Orders & Customers
 
-### 9.4 Merchant
+| Method | Endpoint                    | Fungsi                      | Role                     |
+| ------ | --------------------------- | --------------------------- | ------------------------ |
+| POST   | /api/v1/orders              | Create order                | CUSTOMER, PARTNER, ADMIN |
+| GET    | /api/v1/orders/:id          | Detail order                | CUSTOMER, PARTNER, ADMIN |
+| POST   | /api/v1/orders/:id/customer | Create customer untuk order | CUSTOMER, PARTNER, ADMIN |
+| GET    | /api/v1/orders/:id/customer | Detail customer order       | CUSTOMER, PARTNER, ADMIN |
+| PUT    | /api/v1/orders/:id/customer | Update customer order       | CUSTOMER, PARTNER, ADMIN |
+| GET    | /api/v1/orders              | List order (partner view)   | PARTNER                  |
+| PATCH  | /api/v1/orders/:id/status   | Update status order         | PARTNER                  |
+| DELETE | /api/v1/orders/:id          | Soft delete order           | PARTNER                  |
 
-> **Auth required**: Bearer token (role: `MITRA`)
-> **TenantId**: otomatis dari JWT claim
+Catatan: endpoint order untuk customer tidak memakai `TenantGuard`; tenant biasanya diambil dari query param saat order.
 
-#### 9.4.1 Menu Management
+### 9.7 Dining Tables
 
-| Method | Path                                      | Deskripsi                                                          |
-| ------ | ----------------------------------------- | ------------------------------------------------------------------ |
-| GET    | `/api/v1/merchant/categories`             | Daftar kategori milik tenant                                       |
-| POST   | `/api/v1/merchant/categories`             | Buat kategori baru                                                 |
-| PATCH  | `/api/v1/merchant/categories/:id`         | Update kategori                                                    |
-| DELETE | `/api/v1/merchant/categories/:id`         | Hapus kategori                                                     |
-| GET    | `/api/v1/merchant/menus`                  | Daftar menu (support: `?page`, `?limit`, `?search`, `?categoryId`) |
-| POST   | `/api/v1/merchant/menus`                  | Buat menu baru                                                     |
-| PATCH  | `/api/v1/merchant/menus/:id`              | Update menu                                                        |
-| DELETE | `/api/v1/merchant/menus/:id`              | Hapus menu                                                         |
-| PATCH  | `/api/v1/merchant/menus/:id/availability` | Toggle status tersedia/tidak                                       |
+| Method | Endpoint                         | Fungsi           | Role    |
+| ------ | -------------------------------- | ---------------- | ------- |
+| POST   | /api/v1/dining-tables            | Create meja      | PARTNER |
+| GET    | /api/v1/dining-tables            | List meja        | PARTNER |
+| GET    | /api/v1/dining-tables/:id        | Detail meja      | PARTNER |
+| GET    | /api/v1/dining-tables/:id/status | Status meja      | PARTNER |
+| PUT    | /api/v1/dining-tables/:id        | Update meja      | PARTNER |
+| DELETE | /api/v1/dining-tables/:id        | Soft delete meja | PARTNER |
 
-#### 9.4.2 Table Management
+### 9.8 Reports
 
-| Method | Path                          | Deskripsi        |
-| ------ | ----------------------------- | ---------------- |
-| GET    | `/api/v1/merchant/tables`     | Daftar meja      |
-| POST   | `/api/v1/merchant/tables`     | Tambah meja      |
-| PATCH  | `/api/v1/merchant/tables/:id` | Update info meja |
-| DELETE | `/api/v1/merchant/tables/:id` | Hapus meja       |
-
-#### 9.4.3 Order Board (POS & Incoming Orders)
-
-| Method | Path                                 | Deskripsi                                   |
-| ------ | ------------------------------------ | ------------------------------------------- |
-| GET    | `/api/v1/merchant/orders`            | Daftar order aktif                          |
-| GET    | `/api/v1/merchant/orders/board`      | Order board per meja (untuk tampilan kasir) |
-| GET    | `/api/v1/merchant/orders/:id`        | Detail order                                |
-| PATCH  | `/api/v1/merchant/orders/:id/status` | Update status order                         |
-| POST   | `/api/v1/merchant/pos/orders`        | Buat order manual lewat POS                 |
-
-#### 9.4.4 Transaction
-
-| Method | Path                                | Deskripsi                                         |
-| ------ | ----------------------------------- | ------------------------------------------------- |
-| GET    | `/api/v1/merchant/transactions`     | Daftar transaksi (support filter tanggal, status) |
-| GET    | `/api/v1/merchant/transactions/:id` | Detail transaksi                                  |
-
-#### 9.4.5 Report
-
-| Method | Path                               | Deskripsi                           |
-| ------ | ---------------------------------- | ----------------------------------- |
-| GET    | `/api/v1/merchant/reports/daily`   | Laporan harian (`?date=YYYY-MM-DD`) |
-| GET    | `/api/v1/merchant/reports/weekly`  | Laporan mingguan (`?week=YYYY-WNN`) |
-| GET    | `/api/v1/merchant/reports/monthly` | Laporan bulanan (`?month=YYYY-MM`)  |
-| GET    | `/api/v1/merchant/reports/summary` | Summary dashboard merchant          |
-
-#### 9.4.6 Merchant Profile
-
-| Method | Path                       | Deskripsi          |
-| ------ | -------------------------- | ------------------ |
-| GET    | `/api/v1/merchant/profile` | Get profil toko    |
-| PUT    | `/api/v1/merchant/profile` | Update profil toko |
-
----
-
-### 9.5 Admin
-
-> **Auth required**: Bearer token (role: `admin`)
-> Admin TIDAK terikat tenant → dapat akses semua data platform
-
-#### 9.5.1 Tenant Management
-
-| Method | Path                               | Deskripsi                     |
-| ------ | ---------------------------------- | ----------------------------- |
-| GET    | `/api/v1/admin/tenants`            | Daftar semua tenant           |
-| GET    | `/api/v1/admin/tenants/:id`        | Detail tenant                 |
-| POST   | `/api/v1/admin/tenants`            | Registrasi tenant baru        |
-| PATCH  | `/api/v1/admin/tenants/:id`        | Update info tenant            |
-| PATCH  | `/api/v1/admin/tenants/:id/status` | Aktifkan / nonaktifkan tenant |
-
-#### 9.5.2 Subscription Management
-
-| Method | Path                                     | Deskripsi                                |
-| ------ | ---------------------------------------- | ---------------------------------------- |
-| GET    | `/api/v1/admin/subscription-plans`       | Daftar paket berlangganan                |
-| POST   | `/api/v1/admin/subscription-plans`       | Buat paket baru                          |
-| PUT    | `/api/v1/admin/subscription-plans/:id`   | Update paket                             |
-| DELETE | `/api/v1/admin/subscription-plans/:id`   | Hapus paket                              |
-| GET    | `/api/v1/admin/subscriptions`            | Monitor status berlangganan semua tenant |
-| PATCH  | `/api/v1/admin/tenants/:id/subscription` | Update subscription tenant               |
-
-#### 9.5.3 Admin Dashboard
-
-| Method | Path                             | Deskripsi                                                     |
-| ------ | -------------------------------- | ------------------------------------------------------------- |
-| GET    | `/api/v1/admin/dashboard`        | Overview platform (jumlah tenant aktif, total transaksi, dll) |
-| GET    | `/api/v1/admin/users`            | Daftar user platform                                          |
-| PATCH  | `/api/v1/admin/users/:id/status` | Aktifkan / nonaktifkan user                                   |
-
----
-
-## 10. CORS Configuration
-
-CORS dikonfigurasi di middleware `internal/middleware/cors.go`.
-
-```go
-// Contoh implementasi CORS middleware
-func CORSMiddleware(cfg *config.Config) gin.HandlerFunc {
-    return func(c *gin.Context) {
-        allowedOrigins := cfg.CORSAllowedOrigins // dari env
-
-        c.Writer.Header().Set("Access-Control-Allow-Origin", strings.Join(allowedOrigins, ","))
-        c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
-        c.Writer.Header().Set("Access-Control-Allow-Headers",
-            "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With, X-Idempotency-Key",
-        )
-        c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, PATCH, DELETE")
-        c.Writer.Header().Set("Access-Control-Max-Age", "86400")
-
-        if c.Request.Method == "OPTIONS" {
-            c.AbortWithStatus(204)
-            return
-        }
-
-        c.Next()
-    }
-}
-```
-
-**Aturan CORS:**
-
-| Setting         | Value                                             |
-| --------------- | ------------------------------------------------- |
-| Allowed Origins | Dari env `CORS_ALLOWED_ORIGINS` (comma-separated) |
-| Allowed Methods | GET, POST, PUT, PATCH, DELETE, OPTIONS            |
-| Allowed Headers | Authorization, Content-Type, X-Idempotency-Key    |
-| Credentials     | true                                              |
-| Max Age         | 86400 seconds (24 jam)                            |
-
----
+| Method | Endpoint                        | Fungsi         | Role    |
+| ------ | ------------------------------- | -------------- | ------- |
+| GET    | /api/v1/reports/revenue         | Rekap revenue  | PARTNER |
+| GET    | /api/v1/reports/top-menus       | Top menu       | PARTNER |
+| GET    | /api/v1/reports/orders-by-table | Order per meja | PARTNER |
+| GET    | /api/v1/reports/daily-summary   | Summary harian | PARTNER |
 
 ## 11. Response Schema Convention
 
@@ -969,191 +633,6 @@ Semua error harus dipetakan ke response envelope yang konsisten.
 
 ---
 
-## 13. Docker & Container Setup
-
-### `deployments/Dockerfile`
-
-```dockerfile
-# Stage 1: Builder
-FROM golang:1.23-alpine AS builder
-
-WORKDIR /app
-
-COPY go.mod go.sum ./
-RUN go mod download
-
-COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -o /app/bin/api ./cmd/api/main.go
-
-# Stage 2: Runtime
-FROM alpine:3.19
-
-WORKDIR /app
-
-COPY --from=builder /app/bin/api .
-COPY --from=builder /app/.env.example .env
-
-EXPOSE 8080
-
-CMD ["./api"]
-```
-
-### `deployments/docker-compose.yml`
-
-```yaml
-version: "3.9"
-
-services:
-  nginx:
-    image: nginx:alpine
-    ports:
-      - "80:80"
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-    depends_on:
-      - api
-
-  api:
-    build:
-      context: ..
-      dockerfile: deployments/Dockerfile
-    env_file:
-      - ../.env
-    ports:
-      - "8080:8080"
-    restart: unless-stopped
-    depends_on:
-      - db
-
-  db:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_DB: saas_gangsta_dev
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-    ports:
-      - "5432:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-
-volumes:
-  pgdata:
-```
-
-### Menjalankan dengan Docker
-
-```bash
-# Jalankan semua service
-docker compose -f deployments/docker-compose.yml up --build
-
-# Jalankan di background
-docker compose -f deployments/docker-compose.yml up -d --build
-
-# Stop semua service
-docker compose -f deployments/docker-compose.yml down
-```
-
-### Menjalankan tanpa Docker (Development)
-
-```bash
-# Pastikan .env sudah dikonfigurasi
-cd saas_gangsta/
-
-# Install dependencies
-go mod tidy
-
-# Jalankan server development
-go run ./cmd/api/main.go
-```
-
----
-
-## 14. Clean Code Guidelines
-
-### Prinsip Wajib
-
-1. **Single Responsibility**: Setiap file/struct punya satu tanggung jawab utama
-2. **Dependency Injection**: Semua dependency diinjeksikan via constructor, bukan diakses global
-3. **Interface-driven**: Usecase dan Repository menggunakan interface sehingga mudah di-mock
-4. **No business logic di handler**: Handler hanya bind request → call usecase → return response
-5. **No DB query di usecase**: Query hanya boleh ada di repository layer
-6. **camelCase JSON**: Semua field JSON request/response menggunakan camelCase (`json:"camelCase"`)
-7. **snake_case kolom DB**: Kolom database menggunakan snake_case, mapping via GORM tag
-
-### Naming Convention
-
-| Konteks          | Convention                                | Contoh                                              |
-| ---------------- | ----------------------------------------- | --------------------------------------------------- |
-| Package          | lowercase                                 | `auth`, `middleware`, `config`                      |
-| File Go          | snake_case                                | `auth_handler.go`, `menu_usecase.go`                |
-| Struct/Interface | PascalCase                                | `MenuUsecase`, `OrderRepository`                    |
-| Function/Method  | camelCase (atau PascalCase jika exported) | `getMenuById`, `CreateOrder`                        |
-| Variable lokal   | camelCase                                 | `userId`, `tenantId`, `menuList`                    |
-| Constant         | PascalCase atau SCREAMING_SNAKE_CASE      | `StatusPending`, `MAX_PAGE_SIZE`                    |
-| JSON field       | camelCase                                 | `"tenantId"`, `"createdAt"`, `"isAvailable"`        |
-| DB column        | snake_case                                | `tenant_id`, `created_at`, `is_available`           |
-| Route path       | kebab-case                                | `/merchant/menu-items`, `/admin/subscription-plans` |
-
-### Interface Pattern (Repository & Usecase)
-
-```go
-// domain/menu_domain.go
-type Menu struct {
-    ID          string
-    TenantID    string
-    CategoryID  string
-    Name        string
-    Price       float64
-    IsAvailable bool
-    CreatedAt   time.Time
-}
-
-// repository interface
-type MenuRepository interface {
-    FindAll(ctx context.Context, tenantID string, filter MenuFilter) ([]Menu, int64, error)
-    FindByID(ctx context.Context, tenantID string, id string) (*Menu, error)
-    Create(ctx context.Context, menu *Menu) error
-    Update(ctx context.Context, menu *Menu) error
-    Delete(ctx context.Context, tenantID string, id string) error
-}
-
-// usecase interface
-type MenuUsecase interface {
-    GetMenuList(ctx context.Context, tenantID string, filter MenuFilter) ([]MenuResponse, PaginationMeta, error)
-    GetMenuByID(ctx context.Context, tenantID string, id string) (*MenuResponse, error)
-    CreateMenu(ctx context.Context, tenantID string, req CreateMenuRequest) (*MenuResponse, error)
-    UpdateMenu(ctx context.Context, tenantID string, id string, req UpdateMenuRequest) (*MenuResponse, error)
-    DeleteMenu(ctx context.Context, tenantID string, id string) error
-}
-```
-
-### Context Usage
-
-Semua function yang mengakses DB atau melakukan IO **wajib** menerima `context.Context` sebagai parameter pertama:
-
-```go
-func (r *menuRepository) FindAll(ctx context.Context, tenantID string, filter MenuFilter) ([]Menu, int64, error) {
-    // ...
-}
-```
-
-### Tenant Guard
-
-TenantId selalu diambil dari JWT claim yang sudah divalidasi middleware, **bukan dari parameter request user**:
-
-```go
-// internal/domains/tenant/context.go
-func GetTenantID(c *gin.Context) (string, error) {
-    tenantID, exists := c.Get("tenantId")
-    if !exists {
-        return "", errors.New("tenantId not found in context")
-    }
-    return tenantID.(string), nil
-}
-```
-
----
-
 ## 15. Domain Structure per Feature
 
 ### Contoh Detail: Domain `menu`
@@ -1202,102 +681,6 @@ internal/domains/menu/
     └── menu_response.go
         - struct MenuResponse { ... json:"camelCase" }
 ```
-
----
-
-## 16. Development Roadmap
-
-### Fase 0 — Foundation (Week 1)
-
-- [ ] Bootstrap project structure sesuai folder layout ini
-- [ ] Setup config env loader (`internal/config/config.go`)
-- [ ] Setup GORM connection ke Supabase (`internal/infrastructure/database/db.go`)
-- [ ] Setup base middleware: logger, recovery, CORS
-- [ ] Setup Gin router dengan prefix `/api/v1/`
-- [ ] Implement `GET /health` dan `GET /ready`
-- [ ] Setup Docker + docker-compose (nginx + api)
-- [ ] Setup migration awal (`migrations/001_init_schema.sql`)
-
-### Fase 1 — Auth & Multi-Tenant Core (Week 2)
-
-- [ ] Implement JWT generate & parse (`internal/domains/user/auth/jwt.go`)
-- [ ] Implement `POST /auth/login`, `POST /auth/refresh`, `POST /auth/logout`
-- [ ] Implement JWT auth middleware
-- [ ] Implement role guard middleware (`RoleGuard("MITRA")`)
-- [ ] Implement tenant guard middleware (inject `tenantId` ke context)
-- [ ] Unit test module auth (coverage ≥ 70%)
-
-### Fase 2 — Merchant Menu Management (Week 3)
-
-- [ ] CRUD kategori menu
-- [ ] CRUD menu item
-- [ ] Toggle status tersedia/tidak tersedia
-- [ ] Pagination & search untuk list menu
-- [ ] Filter `tenantId` konsisten di semua query
-- [ ] Integration test CRUD menu
-
-### Fase 3 — Customer Order Flow (Week 4-5)
-
-- [ ] Endpoint customer lihat menu berdasarkan tenant
-- [ ] Cart preview (POST /customer/carts/preview)
-- [ ] Create order (dengan idempotency key)
-- [ ] Order status lifecycle (state machine)
-- [ ] Endpoint cek status order
-
-### Fase 4 — POS & Transaction (Week 6)
-
-- [ ] Merchant create order manual via POS
-- [ ] Sinkron format order dari self-order dan POS
-- [ ] Nomor struk unik per tenant
-- [ ] Endpoint daftar & detail transaksi merchant
-- [ ] Audit log untuk cancel/void transaksi
-
-### Fase 5 — Payment (Week 7)
-
-- [ ] Endpoint create payment intent
-- [ ] Payment status lifecycle
-- [ ] Idempotency untuk payment endpoint
-
-### Fase 6 — Table Management & Real-time Board (Week 8)
-
-- [ ] CRUD meja merchant
-- [ ] Order board per meja
-- [ ] Update status meja otomatis berdasarkan status order
-
-### Fase 7 — Report & Admin Subscription (Week 9-10)
-
-- [ ] Laporan harian/mingguan/bulanan per merchant
-- [ ] Admin: kelola tenant, paket subscription, monitoring membership
-- [ ] Admin dashboard overview
-
----
-
-## 17. Definition of Done
-
-Setiap endpoint/modul dinyatakan **Done** jika memenuhi semua kriteria berikut:
-
-- [ ] Endpoint sesuai spec di README ini (method, path, payload, response)
-- [ ] Semua field response menggunakan **camelCase**
-- [ ] Semua query merchant/customer difilter oleh `tenantId`
-- [ ] Input validation menggunakan `validator.v10` disertai pesan error yang deskriptif
-- [ ] Middleware auth, role guard, dan tenant guard aktif di route yang sesuai
-- [ ] Standard response envelope digunakan konsisten
-- [ ] Logging minimal: request info + error yang relevan
-- [ ] Tidak ada hardcode config (port, secret, dsb) — semua dari env
-- [ ] Unit test untuk usecase (happy path + minimal 1 error path)
-
----
-
-## 18. Technical Risks
-
-| Risiko                                  | Mitigasi                                                             |
-| --------------------------------------- | -------------------------------------------------------------------- |
-| Kebocoran data antar tenant             | Tenant guard di middleware + wajib filter `tenantId` di setiap query |
-| Race condition pada update status order | DB transaction + row-level locking pada flow order kritis            |
-| Double payment akibat webhook retry     | Idempotency key untuk semua endpoint create order & payment          |
-| Query report lambat saat data membesar  | Index pada `tenant_id`, `created_at`, `status` sejak awal            |
-| JWT secret bocor                        | Simpan di env, rotasi berkala, gunakan secret length minimum 32 char |
-| Salah konfigurasi RLS Supabase          | Review RLS policy per role/tenant dengan test otomatis               |
 
 ---
 

@@ -20,6 +20,19 @@ func NewPartnerMenuUsecase(repo domain.PartnerMenuRepository) domain.PartnerMenu
 }
 
 func (u *partnerMenuUsecase) GetAllMenus(ctx context.Context, tenantID string, filter dto.MenuFilterParams) ([]dto.MenuResponse, error) {
+	// 1. Validasi kategori jika ada di filter
+	if filter.CategoryID != "" {
+		isValid, err := u.repo.CategoryExists(ctx, tenantID, filter.CategoryID)
+		if err != nil {
+			// Jika error berasal dari pengecekan kepemilikan (misal: kategori milik orang lain)
+			return nil, apperrors.New("VALIDATION_ERROR", err.Error(), http.StatusBadRequest, nil)
+		}
+		if !isValid {
+			return nil, apperrors.New("NOT_FOUND", "Kategori tidak ditemukan atau bukan milik tenant Anda", http.StatusBadRequest, nil)
+		}
+	}
+
+	// 2. Ambil data menu
 	menus, err := u.repo.FindAllByTenant(ctx, tenantID, filter)
 	if err != nil {
 		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil data menu", http.StatusInternalServerError, err)

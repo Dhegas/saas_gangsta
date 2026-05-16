@@ -39,7 +39,7 @@ func (h *PartnerTenantHandler) CreatePartnerTenant(c *gin.Context) {
 	userIDStr, _ := userID.(string)
 
 	var req dto.CreatePartnerTenantRequest
-	if err := c.ShouldBind(&req); err != nil {
+	if err := c.ShouldBindJSON(&req); err != nil {
 		var validationErrs validator.ValidationErrors
 		details := err.Error()
 		if errors.As(err, &validationErrs) {

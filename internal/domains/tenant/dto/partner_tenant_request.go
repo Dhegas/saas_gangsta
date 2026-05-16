@@ -1,13 +1,11 @@
 package dto
 
-import "mime/multipart"
-
 type CreatePartnerTenantRequest struct {
-	Name        string                `form:"name" binding:"required,min=2,max=150"`
-	Description string                `form:"description"`
-	Address     string                `form:"address"`
-	PhoneNumber string                `form:"phone_number"`
-	OpenHours   string                `form:"open_hours"`
-	Logo        *multipart.FileHeader `form:"logo"`
-	Banner      *multipart.FileHeader `form:"banner"`
+	Name        string `json:"name" binding:"required"`
+	Description string `json:"description"`
+	Address     string `json:"address"`
+	PhoneNumber string `json:"phone_number"`
+	OpenHours   string `json:"open_hours"`
+	LogoURL     string `json:"logo_url"`
+	BannerURL   string `json:"banner_url"`
 }

@@ -33,14 +33,8 @@ func NewPartnerMenuHandler(usecase domain.PartnerMenuUsecase) *PartnerMenuHandle
 func (h *PartnerMenuHandler) GetAllMenus(c *gin.Context) {
 	tenantID, err := tenant.GetTenantID(c)
 	if err != nil {
-		tenantID = c.Query("tenant_id")
-		if tenantID == "" {
-			tenantID = c.GetHeader("X-Tenant-ID")
-		}
-		if tenantID == "" {
-			response.Error(c, http.StatusBadRequest, "Tenant ID diperlukan", gin.H{"code": "TENANT_NOT_FOUND", "details": "Konteks tenant atau parameter tenant_id tidak ditemukan"})
-			return
-		}
+		apperrors.Write(c, apperrors.New("FORBIDDEN", err.Error(), http.StatusForbidden, nil))
+		return
 	}
 
 	var filter dto.MenuFilterParams
@@ -72,14 +66,8 @@ func (h *PartnerMenuHandler) GetAllMenus(c *gin.Context) {
 func (h *PartnerMenuHandler) GetMenuByID(c *gin.Context) {
 	tenantID, err := tenant.GetTenantID(c)
 	if err != nil {
-		tenantID = c.Query("tenant_id")
-		if tenantID == "" {
-			tenantID = c.GetHeader("X-Tenant-ID")
-		}
-		if tenantID == "" {
-			response.Error(c, http.StatusBadRequest, "Tenant ID diperlukan", gin.H{"code": "TENANT_NOT_FOUND", "details": "Konteks tenant atau parameter tenant_id tidak ditemukan"})
-			return
-		}
+		apperrors.Write(c, apperrors.New("FORBIDDEN", err.Error(), http.StatusForbidden, nil))
+		return
 	}
 	menuID := c.Param("id")
 
@@ -107,6 +95,7 @@ func (h *PartnerMenuHandler) GetMenuByID(c *gin.Context) {
 func (h *PartnerMenuHandler) CreateMenu(c *gin.Context) {
 	tenantID, err := tenant.GetTenantID(c)
 	if err != nil {
+		apperrors.Write(c, apperrors.New("FORBIDDEN", err.Error(), http.StatusForbidden, nil))
 		return
 	}
 
@@ -142,6 +131,7 @@ func (h *PartnerMenuHandler) CreateMenu(c *gin.Context) {
 func (h *PartnerMenuHandler) UpdateMenu(c *gin.Context) {
 	tenantID, err := tenant.GetTenantID(c)
 	if err != nil {
+		apperrors.Write(c, apperrors.New("FORBIDDEN", err.Error(), http.StatusForbidden, nil))
 		return
 	}
 	menuID := c.Param("id")
@@ -175,6 +165,7 @@ func (h *PartnerMenuHandler) UpdateMenu(c *gin.Context) {
 func (h *PartnerMenuHandler) SoftDeleteMenu(c *gin.Context) {
 	tenantID, err := tenant.GetTenantID(c)
 	if err != nil {
+		apperrors.Write(c, apperrors.New("FORBIDDEN", err.Error(), http.StatusForbidden, nil))
 		return
 	}
 	menuID := c.Param("id")
@@ -204,6 +195,7 @@ func (h *PartnerMenuHandler) SoftDeleteMenu(c *gin.Context) {
 func (h *PartnerMenuHandler) ToggleMenuAvailable(c *gin.Context) {
 	tenantID, err := tenant.GetTenantID(c)
 	if err != nil {
+		apperrors.Write(c, apperrors.New("FORBIDDEN", err.Error(), http.StatusForbidden, nil))
 		return
 	}
 	menuID := c.Param("id")

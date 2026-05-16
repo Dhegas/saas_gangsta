@@ -10,7 +10,6 @@ import (
 	"github.com/dhegas/saas_gangsta/internal/common/response"
 	"github.com/dhegas/saas_gangsta/internal/config"
 	"github.com/dhegas/saas_gangsta/internal/infrastructure/database"
-	"github.com/dhegas/saas_gangsta/internal/infrastructure/storage"
 	"github.com/dhegas/saas_gangsta/internal/middleware"
 	logpkg "github.com/dhegas/saas_gangsta/pkg/logger"
 	"github.com/gin-gonic/gin"
@@ -23,8 +22,6 @@ type App struct {
 	Logger  *slog.Logger
 	DB      *gorm.DB
 	Redis   *redis.Client
-	Storage storage.StorageService
-	Image   storage.ImageService
 	Router  *gin.Engine
 }
 
@@ -55,10 +52,6 @@ func New() (*App, error) {
 		redisClient = nil
 	}
 
-	storageService := storage.NewSupabaseStorage(cfg.SupabaseURL, cfg.SupabaseServiceRoleKey)
-	imageProcessor := storage.NewImageProcessor()
-	imageService := storage.NewImageService(storageService, imageProcessor)
-
 	router := gin.New()
 	router.HandleMethodNotAllowed = true
 	router.Use(
@@ -80,15 +73,13 @@ func New() (*App, error) {
 		})
 	})
 
-	registerRoutes(router, cfg, db, redisClient, storageService, imageService)
+	registerRoutes(router, cfg, db, redisClient)
 
 	return &App{
-		Config:  cfg,
-		Logger:  log,
-		DB:      db,
-		Redis:   redisClient,
-		Storage: storageService,
-		Image:   imageService,
-		Router:  router,
+		Config: cfg,
+		Logger: log,
+		DB:     db,
+		Redis:  redisClient,
+		Router: router,
 	}, nil
 }

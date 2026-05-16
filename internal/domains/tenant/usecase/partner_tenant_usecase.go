@@ -10,16 +10,14 @@ import (
 	"github.com/dhegas/saas_gangsta/internal/domains/tenant/domain"
 	"github.com/dhegas/saas_gangsta/internal/domains/tenant/dto"
 	"github.com/dhegas/saas_gangsta/internal/domains/tenant/repository"
-	"github.com/dhegas/saas_gangsta/internal/infrastructure/storage"
 )
 
 type partnerTenantUsecase struct {
-	repo  domain.PartnerTenantRepository
-	image storage.ImageService
+	repo domain.PartnerTenantRepository
 }
 
-func NewPartnerTenantUsecase(repo domain.PartnerTenantRepository, image storage.ImageService) domain.PartnerTenantUsecase {
-	return &partnerTenantUsecase{repo: repo, image: image}
+func NewPartnerTenantUsecase(repo domain.PartnerTenantRepository) domain.PartnerTenantUsecase {
+	return &partnerTenantUsecase{repo: repo}
 }
 
 func (u *partnerTenantUsecase) CreatePartnerTenant(ctx context.Context, userID string, req dto.CreatePartnerTenantRequest) (*dto.CreatePartnerTenantResponse, error) {
@@ -32,24 +30,6 @@ func (u *partnerTenantUsecase) CreatePartnerTenant(ctx context.Context, userID s
 		return nil, apperrors.New("VALIDATION_ERROR", "Nama tenant wajib diisi", http.StatusBadRequest, nil)
 	}
 
-	var logoURL, bannerURL string
-
-	if req.Logo != nil {
-		url, err := u.image.UploadOptimizedImage(ctx, "tenants", "tenant_logos", req.Logo)
-		if err != nil {
-			return nil, apperrors.New("INTERNAL_ERROR", "Gagal upload logo ke storage", http.StatusInternalServerError, err.Error())
-		}
-		logoURL = url
-	}
-
-	if req.Banner != nil {
-		url, err := u.image.UploadOptimizedImage(ctx, "tenants", "tenant_banners", req.Banner)
-		if err != nil {
-			return nil, apperrors.New("INTERNAL_ERROR", "Gagal upload banner ke storage", http.StatusInternalServerError, err.Error())
-		}
-		bannerURL = url
-	}
-
 	tenant, err := u.repo.CreateTenantForPartner(ctx, domain.CreatePartnerTenantInput{
 		UserID:      userID,
 		Name:        name,
@@ -57,8 +37,8 @@ func (u *partnerTenantUsecase) CreatePartnerTenant(ctx context.Context, userID s
 		Address:     strings.TrimSpace(req.Address),
 		PhoneNumber: strings.TrimSpace(req.PhoneNumber),
 		OpenHours:   strings.TrimSpace(req.OpenHours),
-		LogoURL:     logoURL,
-		BannerURL:   bannerURL,
+		LogoURL:     req.LogoURL,
+		BannerURL:   req.BannerURL,
 	})
 	if err != nil {
 		switch {

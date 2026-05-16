@@ -9,14 +9,13 @@ import (
 	"github.com/dhegas/saas_gangsta/internal/domains/tenant/repository"
 	"github.com/dhegas/saas_gangsta/internal/domains/tenant/usecase"
 	"github.com/dhegas/saas_gangsta/internal/middleware"
-	"github.com/dhegas/saas_gangsta/internal/infrastructure/storage"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
-func RegisterPartnerRoutes(api *gin.RouterGroup, cfg *config.Config, db *gorm.DB, imageService storage.ImageService) {
+func RegisterPartnerRoutes(api *gin.RouterGroup, cfg *config.Config, db *gorm.DB) {
 	tenantRepo := repository.NewPartnerTenantRepository(db)
-	tenantUsecase := usecase.NewPartnerTenantUsecase(tenantRepo, imageService)
+	tenantUsecase := usecase.NewPartnerTenantUsecase(tenantRepo)
 	tenantHandler := tenanthttp.NewPartnerTenantHandler(tenantUsecase)
 
 	partnerRoutes := api.Group("/partner")

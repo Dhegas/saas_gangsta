@@ -3,6 +3,7 @@ package http
 import (
 	"net/http"
 
+	apperrors "github.com/dhegas/saas_gangsta/internal/common/errors"
 	"github.com/dhegas/saas_gangsta/internal/common/response"
 	"github.com/dhegas/saas_gangsta/internal/domains/menu/domain"
 	"github.com/dhegas/saas_gangsta/internal/domains/menu/dto"
@@ -50,6 +51,7 @@ func (h *PartnerMenuHandler) GetAllMenus(c *gin.Context) {
 
 	menus, err := h.usecase.GetAllMenus(c.Request.Context(), tenantID, filter)
 	if err != nil {
+		apperrors.Write(c, err)
 		return
 	}
 
@@ -83,6 +85,7 @@ func (h *PartnerMenuHandler) GetMenuByID(c *gin.Context) {
 
 	menu, err := h.usecase.GetMenuByID(c.Request.Context(), tenantID, menuID)
 	if err != nil {
+		apperrors.Write(c, err)
 		return
 	}
 
@@ -115,6 +118,7 @@ func (h *PartnerMenuHandler) CreateMenu(c *gin.Context) {
 
 	menu, err := h.usecase.CreateMenu(c.Request.Context(), tenantID, req)
 	if err != nil {
+		apperrors.Write(c, err)
 		return
 	}
 
@@ -150,6 +154,7 @@ func (h *PartnerMenuHandler) UpdateMenu(c *gin.Context) {
 
 	menu, err := h.usecase.UpdateMenu(c.Request.Context(), tenantID, menuID, req)
 	if err != nil {
+		apperrors.Write(c, err)
 		return
 	}
 
@@ -175,6 +180,7 @@ func (h *PartnerMenuHandler) SoftDeleteMenu(c *gin.Context) {
 	menuID := c.Param("id")
 
 	if err := h.usecase.SoftDeleteMenu(c.Request.Context(), tenantID, menuID); err != nil {
+		apperrors.Write(c, err)
 		return
 	}
 
@@ -209,6 +215,7 @@ func (h *PartnerMenuHandler) ToggleMenuAvailable(c *gin.Context) {
 	}
 
 	if err := h.usecase.ToggleMenuAvailable(c.Request.Context(), tenantID, menuID, *req.IsAvailable); err != nil {
+		apperrors.Write(c, err)
 		return
 	}
 

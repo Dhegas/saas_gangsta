@@ -9,13 +9,14 @@ import (
 	"github.com/dhegas/saas_gangsta/internal/domains/tenant/repository"
 	"github.com/dhegas/saas_gangsta/internal/domains/tenant/usecase"
 	"github.com/dhegas/saas_gangsta/internal/middleware"
+	"github.com/dhegas/saas_gangsta/internal/infrastructure/storage"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
-func RegisterPartnerRoutes(api *gin.RouterGroup, cfg *config.Config, db *gorm.DB) {
+func RegisterPartnerRoutes(api *gin.RouterGroup, cfg *config.Config, db *gorm.DB, imageService storage.ImageService) {
 	tenantRepo := repository.NewPartnerTenantRepository(db)
-	tenantUsecase := usecase.NewPartnerTenantUsecase(tenantRepo)
+	tenantUsecase := usecase.NewPartnerTenantUsecase(tenantRepo, imageService)
 	tenantHandler := tenanthttp.NewPartnerTenantHandler(tenantUsecase)
 
 	partnerRoutes := api.Group("/partner")
@@ -26,6 +27,7 @@ func RegisterPartnerRoutes(api *gin.RouterGroup, cfg *config.Config, db *gorm.DB
 
 	partnerRoutes.POST("/tenants", tenantHandler.CreatePartnerTenant)
 	partnerRoutes.GET("/tenants", tenantHandler.ListPartnerTenants)
+	partnerRoutes.DELETE("/tenants/:id", tenantHandler.SoftDeletePartnerTenant)
 
 	partnerTenantScoped := partnerRoutes.Group("")
 	partnerTenantScoped.Use(middleware.TenantGuard())

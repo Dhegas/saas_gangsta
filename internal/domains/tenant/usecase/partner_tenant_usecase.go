@@ -10,14 +10,16 @@ import (
 	"github.com/dhegas/saas_gangsta/internal/domains/tenant/domain"
 	"github.com/dhegas/saas_gangsta/internal/domains/tenant/dto"
 	"github.com/dhegas/saas_gangsta/internal/domains/tenant/repository"
+	"github.com/dhegas/saas_gangsta/internal/infrastructure/storage"
 )
 
 type partnerTenantUsecase struct {
-	repo domain.PartnerTenantRepository
+	repo  domain.PartnerTenantRepository
+	image storage.ImageService
 }
 
-func NewPartnerTenantUsecase(repo domain.PartnerTenantRepository) domain.PartnerTenantUsecase {
-	return &partnerTenantUsecase{repo: repo}
+func NewPartnerTenantUsecase(repo domain.PartnerTenantRepository, image storage.ImageService) domain.PartnerTenantUsecase {
+	return &partnerTenantUsecase{repo: repo, image: image}
 }
 
 func (u *partnerTenantUsecase) CreatePartnerTenant(ctx context.Context, userID string, req dto.CreatePartnerTenantRequest) (*dto.CreatePartnerTenantResponse, error) {
@@ -30,9 +32,33 @@ func (u *partnerTenantUsecase) CreatePartnerTenant(ctx context.Context, userID s
 		return nil, apperrors.New("VALIDATION_ERROR", "Nama tenant wajib diisi", http.StatusBadRequest, nil)
 	}
 
+	var logoURL, bannerURL string
+
+	if req.Logo != nil {
+		url, err := u.image.UploadOptimizedImage(ctx, "tenants", "tenant_logos", req.Logo)
+		if err != nil {
+			return nil, apperrors.New("INTERNAL_ERROR", "Gagal upload logo ke storage", http.StatusInternalServerError, err.Error())
+		}
+		logoURL = url
+	}
+
+	if req.Banner != nil {
+		url, err := u.image.UploadOptimizedImage(ctx, "tenants", "tenant_banners", req.Banner)
+		if err != nil {
+			return nil, apperrors.New("INTERNAL_ERROR", "Gagal upload banner ke storage", http.StatusInternalServerError, err.Error())
+		}
+		bannerURL = url
+	}
+
 	tenant, err := u.repo.CreateTenantForPartner(ctx, domain.CreatePartnerTenantInput{
-		UserID: userID,
-		Name:   name,
+		UserID:      userID,
+		Name:        name,
+		Description: strings.TrimSpace(req.Description),
+		Address:     strings.TrimSpace(req.Address),
+		PhoneNumber: strings.TrimSpace(req.PhoneNumber),
+		OpenHours:   strings.TrimSpace(req.OpenHours),
+		LogoURL:     logoURL,
+		BannerURL:   bannerURL,
 	})
 	if err != nil {
 		switch {
@@ -47,11 +73,17 @@ func (u *partnerTenantUsecase) CreatePartnerTenant(ctx context.Context, userID s
 
 	return &dto.CreatePartnerTenantResponse{
 		Tenant: dto.PartnerTenantResponse{
-			ID:      tenant.ID,
-			Name:    tenant.Name,
-			Slug:    tenant.Slug,
-			Status:  tenant.Status,
-			IsOwner: tenant.IsOwner,
+			ID:          tenant.ID,
+			Name:        tenant.Name,
+			Slug:        tenant.Slug,
+			Status:      tenant.Status,
+			Description: tenant.Description,
+			Address:     tenant.Address,
+			PhoneNumber: tenant.PhoneNumber,
+			OpenHours:   tenant.OpenHours,
+			LogoURL:     tenant.LogoURL,
+			BannerURL:   tenant.BannerURL,
+			IsOwner:     tenant.IsOwner,
 		},
 	}, nil
 }
@@ -80,13 +112,38 @@ func (u *partnerTenantUsecase) ListPartnerTenants(ctx context.Context, userID st
 	items := make([]dto.PartnerTenantResponse, 0, len(tenants))
 	for _, tenant := range tenants {
 		items = append(items, dto.PartnerTenantResponse{
-			ID:      tenant.ID,
-			Name:    tenant.Name,
-			Slug:    tenant.Slug,
-			Status:  tenant.Status,
-			IsOwner: tenant.IsOwner,
+			ID:          tenant.ID,
+			Name:        tenant.Name,
+			Slug:        tenant.Slug,
+			Status:      tenant.Status,
+			Description: tenant.Description,
+			Address:     tenant.Address,
+			PhoneNumber: tenant.PhoneNumber,
+			OpenHours:   tenant.OpenHours,
+			LogoURL:     tenant.LogoURL,
+			BannerURL:   tenant.BannerURL,
+			IsOwner:     tenant.IsOwner,
 		})
 	}
 
 	return &dto.ListPartnerTenantsResponse{Tenants: items}, nil
+}
+
+func (u *partnerTenantUsecase) SoftDeletePartnerTenant(ctx context.Context, userID string, tenantID string) error {
+	if strings.TrimSpace(userID) == "" {
+		return apperrors.New("UNAUTHORIZED", "User tidak valid", http.StatusUnauthorized, nil)
+	}
+	if strings.TrimSpace(tenantID) == "" {
+		return apperrors.New("VALIDATION_ERROR", "ID Tenant wajib diisi", http.StatusBadRequest, nil)
+	}
+
+	err := u.repo.SoftDeleteTenant(ctx, userID, tenantID)
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			return apperrors.New("NOT_FOUND", "Tenant tidak ditemukan atau Anda tidak memiliki akses", http.StatusNotFound, nil)
+		}
+		return apperrors.New("INTERNAL_ERROR", "Gagal menghapus tenant", http.StatusInternalServerError, nil)
+	}
+
+	return nil
 }

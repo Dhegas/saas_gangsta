@@ -49,8 +49,11 @@ func (u *partnerMenuUsecase) GetMenuByID(ctx context.Context, tenantID, menuID s
 func (u *partnerMenuUsecase) CreateMenu(ctx context.Context, tenantID string, req dto.CreateMenuRequest) (*dto.MenuResponse, error) {
 	if req.CategoryID != nil && *req.CategoryID != "" {
 		isValidCategory, err := u.repo.CategoryExists(ctx, tenantID, *req.CategoryID)
-		if err != nil || !isValidCategory {
-			return nil, apperrors.New("VALIDATION_ERROR", "Category tidak valid atau tidak ditemukan", http.StatusBadRequest, err)
+		if err != nil {
+			return nil, apperrors.New("VALIDATION_ERROR", err.Error(), http.StatusBadRequest, nil)
+		}
+		if !isValidCategory {
+			return nil, apperrors.New("VALIDATION_ERROR", "Kategori tidak valid", http.StatusBadRequest, nil)
 		}
 	}
 
@@ -92,8 +95,11 @@ func (u *partnerMenuUsecase) UpdateMenu(ctx context.Context, tenantID, menuID st
 	if req.CategoryID != nil {
 		if *req.CategoryID != "" {
 			isValidCategory, err := u.repo.CategoryExists(ctx, tenantID, *req.CategoryID)
-			if err != nil || !isValidCategory {
-				return nil, apperrors.New("VALIDATION_ERROR", "Category tidak valid atau tidak ditemukan", http.StatusBadRequest, err)
+			if err != nil {
+				return nil, apperrors.New("VALIDATION_ERROR", err.Error(), http.StatusBadRequest, nil)
+			}
+			if !isValidCategory {
+				return nil, apperrors.New("VALIDATION_ERROR", "Kategori tidak valid", http.StatusBadRequest, nil)
 			}
 			menu.CategoryID = req.CategoryID
 		} else {

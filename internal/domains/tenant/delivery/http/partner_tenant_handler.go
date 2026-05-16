@@ -39,7 +39,7 @@ func (h *PartnerTenantHandler) CreatePartnerTenant(c *gin.Context) {
 	userIDStr, _ := userID.(string)
 
 	var req dto.CreatePartnerTenantRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
+	if err := c.ShouldBind(&req); err != nil {
 		var validationErrs validator.ValidationErrors
 		details := err.Error()
 		if errors.As(err, &validationErrs) {
@@ -80,4 +80,31 @@ func (h *PartnerTenantHandler) ListPartnerTenants(c *gin.Context) {
 	}
 
 	response.Success(c, http.StatusOK, "Daftar tenant partner berhasil diambil", res)
+}
+
+// SoftDeletePartnerTenant godoc
+// @Summary Soft delete partner tenant
+// @Description Partner menghapus tenant miliknya secara logis
+// @Tags Partner
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Tenant ID"
+// @Success 200 {object} response.Envelope
+// @Failure 401 {object} response.Envelope
+// @Failure 403 {object} response.Envelope
+// @Failure 404 {object} response.Envelope
+// @Failure 500 {object} response.Envelope
+// @Router /partner/tenants/{id} [delete]
+func (h *PartnerTenantHandler) SoftDeletePartnerTenant(c *gin.Context) {
+	userID, _ := c.Get("userId")
+	userIDStr, _ := userID.(string)
+	tenantID := c.Param("id")
+
+	err := h.usecase.SoftDeletePartnerTenant(c.Request.Context(), userIDStr, tenantID)
+	if err != nil {
+		apperrors.Write(c, err)
+		return
+	}
+
+	response.Success(c, http.StatusOK, "Tenant berhasil dihapus", nil)
 }

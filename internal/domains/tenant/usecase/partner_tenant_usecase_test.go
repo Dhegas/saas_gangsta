@@ -6,7 +6,14 @@ import (
 
 	"github.com/dhegas/saas_gangsta/internal/domains/tenant/domain"
 	"github.com/dhegas/saas_gangsta/internal/domains/tenant/dto"
+	"mime/multipart"
 )
+
+type mockImageService struct{}
+
+func (m *mockImageService) UploadOptimizedImage(_ context.Context, _, _ string, _ *multipart.FileHeader) (string, error) {
+	return "https://example.com/image.png", nil
+}
 
 type mockPartnerTenantRepo struct {
 	partner       *domain.PartnerUser
@@ -29,11 +36,15 @@ func (m *mockPartnerTenantRepo) ListTenantsByPartner(_ context.Context, _ string
 	return m.partnerTenants, m.listErr
 }
 
+func (m *mockPartnerTenantRepo) SoftDeleteTenant(_ context.Context, _ string, _ string) error {
+	return nil
+}
+
 func TestCreatePartnerTenantSuccess(t *testing.T) {
 	repo := &mockPartnerTenantRepo{
 		createdTenant: &domain.PartnerTenant{ID: "t-1", Name: "Warung A", Slug: "warung-a", Status: "active", IsOwner: true},
 	}
-	uc := NewPartnerTenantUsecase(repo)
+	uc := NewPartnerTenantUsecase(repo, &mockImageService{})
 
 	res, err := uc.CreatePartnerTenant(context.Background(), "u-1", dto.CreatePartnerTenantRequest{Name: "Warung A"})
 	if err != nil {
@@ -49,7 +60,7 @@ func TestListPartnerTenantsSuccess(t *testing.T) {
 		partner:       &domain.PartnerUser{ID: "u-1", Role: "PARTNER", IsActive: true},
 		partnerTenants: []domain.PartnerTenant{{ID: "t-1", Name: "Warung A", Slug: "warung-a", Status: "active", IsOwner: true}},
 	}
-	uc := NewPartnerTenantUsecase(repo)
+	uc := NewPartnerTenantUsecase(repo, &mockImageService{})
 
 	res, err := uc.ListPartnerTenants(context.Background(), "u-1")
 	if err != nil {

@@ -16,6 +16,7 @@ import (
 	userrepo "github.com/dhegas/saas_gangsta/internal/domains/user/management/repository"
 	userusecase "github.com/dhegas/saas_gangsta/internal/domains/user/management/usecase"
 	"github.com/dhegas/saas_gangsta/internal/infrastructure/database"
+	"github.com/dhegas/saas_gangsta/internal/infrastructure/storage"
 	"github.com/dhegas/saas_gangsta/internal/middleware"
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
@@ -24,7 +25,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func registerRoutes(router *gin.Engine, cfg *config.Config, db *gorm.DB, redisClient *redis.Client) {
+func registerRoutes(router *gin.Engine, cfg *config.Config, db *gorm.DB, redisClient *redis.Client, storageService storage.StorageService, imageService storage.ImageService) {
 	docs.SwaggerInfo.BasePath = "/api/v1"
 
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
@@ -77,7 +78,7 @@ func registerRoutes(router *gin.Engine, cfg *config.Config, db *gorm.DB, redisCl
 		registerAuthRoutes(api, cfg, authHandler)
 		registerUserRoutes(api, cfg, userHandler)
 		RegisterCustomerRoutes(api, cfg)
-		RegisterPartnerRoutes(api, cfg, db)
+		RegisterPartnerRoutes(api, cfg, db, imageService)
 		RegisterCategoryRoutes(api, cfg, db)
 		RegisterMenuRoutes(api, cfg, db)
 		RegisterTableRoutes(api, cfg, db)

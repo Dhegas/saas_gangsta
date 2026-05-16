@@ -90,12 +90,18 @@ func (r *partnerTenantRepository) CreateTenantForPartner(ctx context.Context, in
 		}
 
 		if err := tx.Raw(
-			`INSERT INTO tenants (name, slug, status, user_id, created_at, updated_at)
-			 VALUES (?, ?, 'active', NULLIF(?, '')::uuid, NOW(), NOW())
-			 RETURNING id::text, name, slug, status`,
+			`INSERT INTO tenants (name, slug, status, user_id, description, address, phone_number, open_hours, logo_url, banner_url, created_at, updated_at)
+			 VALUES (?, ?, 'active', NULLIF(?, '')::uuid, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+			 RETURNING id::text, name, slug, status, description, address, phone_number, open_hours, logo_url, banner_url`,
 			input.Name,
 			tenantSlug,
 			input.UserID,
+			input.Description,
+			input.Address,
+			input.PhoneNumber,
+			input.OpenHours,
+			input.LogoURL,
+			input.BannerURL,
 		).Scan(createdTenant).Error; err != nil {
 			var pgErr *pgconn.PgError
 			if errors.As(err, &pgErr) && pgErr.Code == "23505" {
@@ -121,7 +127,7 @@ func (r *partnerTenantRepository) ListTenantsByPartner(ctx context.Context, user
 
 	tenants := make([]domain.PartnerTenant, 0)
 	err := r.db.WithContext(ctx).Raw(
-		`SELECT t.id::text AS id, t.name, t.slug, t.status, TRUE AS is_owner
+		`SELECT t.id::text AS id, t.name, t.slug, t.status, t.description, t.address, t.phone_number, t.open_hours, t.logo_url, t.banner_url, TRUE AS is_owner
 		 FROM tenants t
 		 WHERE t.user_id = NULLIF(?, '')::uuid AND t.deleted_at IS NULL
 		 ORDER BY t.created_at DESC`,
@@ -132,6 +138,32 @@ func (r *partnerTenantRepository) ListTenantsByPartner(ctx context.Context, user
 	}
 
 	return tenants, nil
+}
+
+func (r *partnerTenantRepository) SoftDeleteTenant(ctx context.Context, userID string, tenantID string) error {
+	if r.db == nil {
+		return fmt.Errorf("database is not initialized")
+	}
+
+	result := r.db.WithContext(ctx).Exec(
+		`UPDATE tenants 
+		 SET deleted_at = NOW(), updated_at = NOW() 
+		 WHERE id = NULLIF(?, '')::uuid 
+		   AND user_id = NULLIF(?, '')::uuid 
+		   AND deleted_at IS NULL`,
+		tenantID,
+		userID,
+	)
+
+	if result.Error != nil {
+		return fmt.Errorf("soft delete tenant: %w", result.Error)
+	}
+
+	if result.RowsAffected == 0 {
+		return fmt.Errorf("tenant not found or already deleted")
+	}
+
+	return nil
 }
 
 func decodeRole(role string) string {

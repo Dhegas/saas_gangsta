@@ -2,6 +2,8 @@ package repository
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"time"
 
 	"github.com/dhegas/saas_gangsta/internal/domains/category/domain"
@@ -101,12 +103,24 @@ func (r *partnerMenuRepository) CheckNameExists(ctx context.Context, tenantID, n
 }
 
 func (r *partnerMenuRepository) CategoryExists(ctx context.Context, tenantID, categoryID string) (bool, error) {
-	var count int64
-	err := r.db.WithContext(ctx).Model(&domain.CategoryEntity{}).
-		Where("id = ? AND tenant_id = ? AND deleted_at IS NULL", categoryID, tenantID).
-		Count(&count).Error
+	var category domain.CategoryEntity
+	
+	// 1. Cek apakah kategori ada (tanpa filter tenant_id dulu)
+	err := r.db.WithContext(ctx).
+		Where("id = ? AND deleted_at IS NULL", categoryID).
+		First(&category).Error
+
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return false, fmt.Errorf("kategori dengan ID tersebut tidak ditemukan")
+		}
 		return false, err
 	}
-	return count > 0, nil
+
+	// 2. Jika ada, cek apakah milik tenant yang sesuai
+	if category.TenantID != tenantID {
+		return false, fmt.Errorf("kategori ini bukan milik tenant Anda")
+	}
+
+	return true, nil
 }

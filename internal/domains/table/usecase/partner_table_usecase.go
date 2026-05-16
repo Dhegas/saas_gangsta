@@ -83,7 +83,7 @@ func (u *partnerTableUsecase) CreateTable(ctx context.Context, tenantID string, 
 
 	entity := &domain.DiningTableEntity{
 		TenantID:  tenantID,
-		Name: req.TableName,
+		Name:      req.TableName,
 	}
 
 	if err := u.repo.Create(ctx, entity); err != nil {

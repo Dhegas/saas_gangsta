@@ -29,3 +29,7 @@ type ListAllTenantsResponse struct {
 	Tenants    []AdminTenantResponse `json:"tenants"`
 	Pagination PaginationResponse    `json:"pagination"`
 }
+
+type GetTenantsByUserIDResponse struct {
+	Tenants []AdminTenantResponse `json:"tenants"`
+}

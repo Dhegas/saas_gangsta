@@ -115,3 +115,53 @@ func (u *adminTenantUsecase) ListAllTenants(ctx context.Context, req dto.ListAll
 		},
 	}, nil
 }
+
+func (u *adminTenantUsecase) SoftDeleteTenant(ctx context.Context, tenantID string) error {
+	tenantID = strings.TrimSpace(tenantID)
+	if tenantID == "" {
+		return apperrors.New("VALIDATION_ERROR", "ID tenant wajib diisi", http.StatusBadRequest, nil)
+	}
+
+	err := u.repo.SoftDeleteTenant(ctx, tenantID)
+	if err != nil {
+		if errors.Is(err, repository.ErrTenantNotFound) {
+			return apperrors.New("NOT_FOUND", "Tenant ID tidak ditemukan", http.StatusNotFound, nil)
+		}
+		return apperrors.New("INTERNAL_ERROR", "Gagal menghapus tenant oleh admin", http.StatusInternalServerError, nil)
+	}
+
+	return nil
+}
+
+func (u *adminTenantUsecase) GetTenantsByUserID(ctx context.Context, userID string) (*dto.GetTenantsByUserIDResponse, error) {
+	userID = strings.TrimSpace(userID)
+	if userID == "" {
+		return nil, apperrors.New("VALIDATION_ERROR", "User ID partner wajib diisi", http.StatusBadRequest, nil)
+	}
+
+	tenants, err := u.repo.GetTenantsByUserID(ctx, userID)
+	if err != nil {
+		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil data tenant berdasarkan User ID", http.StatusInternalServerError, nil)
+	}
+
+	items := make([]dto.AdminTenantResponse, 0, len(tenants))
+	for _, tenant := range tenants {
+		items = append(items, dto.AdminTenantResponse{
+			ID:          tenant.ID,
+			Name:        tenant.Name,
+			Slug:        tenant.Slug,
+			Status:      tenant.Status,
+			Description: tenant.Description,
+			Address:     tenant.Address,
+			PhoneNumber: tenant.PhoneNumber,
+			OpenHours:   tenant.OpenHours,
+			LogoURL:     tenant.LogoURL,
+			BannerURL:   tenant.BannerURL,
+			UserID:      tenant.UserID,
+		})
+	}
+
+	return &dto.GetTenantsByUserIDResponse{
+		Tenants: items,
+	}, nil
+}

@@ -9,11 +9,15 @@ import (
 type AdminTenantUsecase interface {
 	CreateAdminTenant(ctx context.Context, req dto.CreateAdminTenantRequest) (*dto.CreateAdminTenantResponse, error)
 	ListAllTenants(ctx context.Context, req dto.ListAllTenantsRequest) (*dto.ListAllTenantsResponse, error)
+	SoftDeleteTenant(ctx context.Context, tenantID string) error
+	GetTenantsByUserID(ctx context.Context, userID string) (*dto.GetTenantsByUserIDResponse, error)
 }
 
 type AdminTenantRepository interface {
 	CreateTenantForAdmin(ctx context.Context, input CreateAdminTenantInput) (*AdminTenant, error)
 	ListAllTenants(ctx context.Context, limit, offset int) ([]AdminTenant, int64, error)
+	SoftDeleteTenant(ctx context.Context, tenantID string) error
+	GetTenantsByUserID(ctx context.Context, userID string) ([]AdminTenant, error)
 }
 
 type AdminTenant struct {

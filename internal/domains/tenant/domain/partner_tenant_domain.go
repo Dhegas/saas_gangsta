@@ -9,12 +9,14 @@ import (
 type PartnerTenantUsecase interface {
 	CreatePartnerTenant(ctx context.Context, userID string, req dto.CreatePartnerTenantRequest) (*dto.CreatePartnerTenantResponse, error)
 	ListPartnerTenants(ctx context.Context, userID string) (*dto.ListPartnerTenantsResponse, error)
+	SoftDeletePartnerTenant(ctx context.Context, userID string, tenantID string) error
 }
 
 type PartnerTenantRepository interface {
 	FindPartnerByID(ctx context.Context, userID string) (*PartnerUser, error)
 	CreateTenantForPartner(ctx context.Context, input CreatePartnerTenantInput) (*PartnerTenant, error)
 	ListTenantsByPartner(ctx context.Context, userID string) ([]PartnerTenant, error)
+	SoftDeleteTenant(ctx context.Context, userID string, tenantID string) error
 }
 
 type PartnerUser struct {
@@ -24,14 +26,26 @@ type PartnerUser struct {
 }
 
 type PartnerTenant struct {
-	ID      string
-	Name    string
-	Slug    string
-	Status  string
-	IsOwner bool
+	ID          string
+	Name        string
+	Slug        string
+	Status      string
+	Description string
+	Address     string
+	PhoneNumber string
+	OpenHours   string
+	LogoURL     string
+	BannerURL   string
+	IsOwner     bool
 }
 
 type CreatePartnerTenantInput struct {
-	UserID string
-	Name   string
+	UserID      string
+	Name        string
+	Description string
+	Address     string
+	PhoneNumber string
+	OpenHours   string
+	LogoURL     string
+	BannerURL   string
 }

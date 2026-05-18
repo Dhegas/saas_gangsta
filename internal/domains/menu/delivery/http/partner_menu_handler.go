@@ -3,7 +3,7 @@ package http
 import (
 	"net/http"
 
-	"github.com/dhegas/saas_gangsta/internal/common/errors"
+	apperrors "github.com/dhegas/saas_gangsta/internal/common/errors"
 	"github.com/dhegas/saas_gangsta/internal/common/response"
 	"github.com/dhegas/saas_gangsta/internal/domains/menu/domain"
 	"github.com/dhegas/saas_gangsta/internal/domains/menu/dto"
@@ -33,14 +33,8 @@ func NewPartnerMenuHandler(usecase domain.PartnerMenuUsecase) *PartnerMenuHandle
 func (h *PartnerMenuHandler) GetAllMenus(c *gin.Context) {
 	tenantID, err := tenant.GetTenantID(c)
 	if err != nil {
-		tenantID = c.Query("tenant_id")
-		if tenantID == "" {
-			tenantID = c.GetHeader("X-Tenant-ID")
-		}
-		if tenantID == "" {
-			response.Error(c, http.StatusBadRequest, "Tenant ID diperlukan", gin.H{"code": "TENANT_NOT_FOUND", "details": "Konteks tenant atau parameter tenant_id tidak ditemukan"})
-			return
-		}
+		apperrors.Write(c, apperrors.New("FORBIDDEN", err.Error(), http.StatusForbidden, nil))
+		return
 	}
 
 	var filter dto.MenuFilterParams
@@ -51,7 +45,7 @@ func (h *PartnerMenuHandler) GetAllMenus(c *gin.Context) {
 
 	menus, err := h.usecase.GetAllMenus(c.Request.Context(), tenantID, filter)
 	if err != nil {
-		errors.Write(c, err)
+		apperrors.Write(c, err)
 		return
 	}
 
@@ -72,20 +66,14 @@ func (h *PartnerMenuHandler) GetAllMenus(c *gin.Context) {
 func (h *PartnerMenuHandler) GetMenuByID(c *gin.Context) {
 	tenantID, err := tenant.GetTenantID(c)
 	if err != nil {
-		tenantID = c.Query("tenant_id")
-		if tenantID == "" {
-			tenantID = c.GetHeader("X-Tenant-ID")
-		}
-		if tenantID == "" {
-			response.Error(c, http.StatusBadRequest, "Tenant ID diperlukan", gin.H{"code": "TENANT_NOT_FOUND", "details": "Konteks tenant atau parameter tenant_id tidak ditemukan"})
-			return
-		}
+		apperrors.Write(c, apperrors.New("FORBIDDEN", err.Error(), http.StatusForbidden, nil))
+		return
 	}
 	menuID := c.Param("id")
 
 	menu, err := h.usecase.GetMenuByID(c.Request.Context(), tenantID, menuID)
 	if err != nil {
-		errors.Write(c, err)
+		apperrors.Write(c, err)
 		return
 	}
 
@@ -107,6 +95,7 @@ func (h *PartnerMenuHandler) GetMenuByID(c *gin.Context) {
 func (h *PartnerMenuHandler) CreateMenu(c *gin.Context) {
 	tenantID, err := tenant.GetTenantID(c)
 	if err != nil {
+		apperrors.Write(c, apperrors.New("FORBIDDEN", err.Error(), http.StatusForbidden, nil))
 		return
 	}
 
@@ -118,7 +107,7 @@ func (h *PartnerMenuHandler) CreateMenu(c *gin.Context) {
 
 	menu, err := h.usecase.CreateMenu(c.Request.Context(), tenantID, req)
 	if err != nil {
-		errors.Write(c, err)
+		apperrors.Write(c, err)
 		return
 	}
 
@@ -142,6 +131,7 @@ func (h *PartnerMenuHandler) CreateMenu(c *gin.Context) {
 func (h *PartnerMenuHandler) UpdateMenu(c *gin.Context) {
 	tenantID, err := tenant.GetTenantID(c)
 	if err != nil {
+		apperrors.Write(c, apperrors.New("FORBIDDEN", err.Error(), http.StatusForbidden, nil))
 		return
 	}
 	menuID := c.Param("id")
@@ -154,7 +144,7 @@ func (h *PartnerMenuHandler) UpdateMenu(c *gin.Context) {
 
 	menu, err := h.usecase.UpdateMenu(c.Request.Context(), tenantID, menuID, req)
 	if err != nil {
-		errors.Write(c, err)
+		apperrors.Write(c, err)
 		return
 	}
 
@@ -175,12 +165,13 @@ func (h *PartnerMenuHandler) UpdateMenu(c *gin.Context) {
 func (h *PartnerMenuHandler) SoftDeleteMenu(c *gin.Context) {
 	tenantID, err := tenant.GetTenantID(c)
 	if err != nil {
+		apperrors.Write(c, apperrors.New("FORBIDDEN", err.Error(), http.StatusForbidden, nil))
 		return
 	}
 	menuID := c.Param("id")
 
 	if err := h.usecase.SoftDeleteMenu(c.Request.Context(), tenantID, menuID); err != nil {
-		errors.Write(c, err)
+		apperrors.Write(c, err)
 		return
 	}
 
@@ -204,6 +195,7 @@ func (h *PartnerMenuHandler) SoftDeleteMenu(c *gin.Context) {
 func (h *PartnerMenuHandler) ToggleMenuAvailable(c *gin.Context) {
 	tenantID, err := tenant.GetTenantID(c)
 	if err != nil {
+		apperrors.Write(c, apperrors.New("FORBIDDEN", err.Error(), http.StatusForbidden, nil))
 		return
 	}
 	menuID := c.Param("id")
@@ -215,7 +207,7 @@ func (h *PartnerMenuHandler) ToggleMenuAvailable(c *gin.Context) {
 	}
 
 	if err := h.usecase.ToggleMenuAvailable(c.Request.Context(), tenantID, menuID, *req.IsAvailable); err != nil {
-		errors.Write(c, err)
+		apperrors.Write(c, err)
 		return
 	}
 

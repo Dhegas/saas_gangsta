@@ -31,8 +31,14 @@ func (u *partnerTenantUsecase) CreatePartnerTenant(ctx context.Context, userID s
 	}
 
 	tenant, err := u.repo.CreateTenantForPartner(ctx, domain.CreatePartnerTenantInput{
-		UserID: userID,
-		Name:   name,
+		UserID:      userID,
+		Name:        name,
+		Description: strings.TrimSpace(req.Description),
+		Address:     strings.TrimSpace(req.Address),
+		PhoneNumber: strings.TrimSpace(req.PhoneNumber),
+		OpenHours:   strings.TrimSpace(req.OpenHours),
+		LogoURL:     req.LogoURL,
+		BannerURL:   req.BannerURL,
 	})
 	if err != nil {
 		switch {
@@ -47,11 +53,17 @@ func (u *partnerTenantUsecase) CreatePartnerTenant(ctx context.Context, userID s
 
 	return &dto.CreatePartnerTenantResponse{
 		Tenant: dto.PartnerTenantResponse{
-			ID:      tenant.ID,
-			Name:    tenant.Name,
-			Slug:    tenant.Slug,
-			Status:  tenant.Status,
-			IsOwner: tenant.IsOwner,
+			ID:          tenant.ID,
+			Name:        tenant.Name,
+			Slug:        tenant.Slug,
+			Status:      tenant.Status,
+			Description: tenant.Description,
+			Address:     tenant.Address,
+			PhoneNumber: tenant.PhoneNumber,
+			OpenHours:   tenant.OpenHours,
+			LogoURL:     tenant.LogoURL,
+			BannerURL:   tenant.BannerURL,
+			IsOwner:     tenant.IsOwner,
 		},
 	}, nil
 }
@@ -80,13 +92,38 @@ func (u *partnerTenantUsecase) ListPartnerTenants(ctx context.Context, userID st
 	items := make([]dto.PartnerTenantResponse, 0, len(tenants))
 	for _, tenant := range tenants {
 		items = append(items, dto.PartnerTenantResponse{
-			ID:      tenant.ID,
-			Name:    tenant.Name,
-			Slug:    tenant.Slug,
-			Status:  tenant.Status,
-			IsOwner: tenant.IsOwner,
+			ID:          tenant.ID,
+			Name:        tenant.Name,
+			Slug:        tenant.Slug,
+			Status:      tenant.Status,
+			Description: tenant.Description,
+			Address:     tenant.Address,
+			PhoneNumber: tenant.PhoneNumber,
+			OpenHours:   tenant.OpenHours,
+			LogoURL:     tenant.LogoURL,
+			BannerURL:   tenant.BannerURL,
+			IsOwner:     tenant.IsOwner,
 		})
 	}
 
 	return &dto.ListPartnerTenantsResponse{Tenants: items}, nil
+}
+
+func (u *partnerTenantUsecase) SoftDeletePartnerTenant(ctx context.Context, userID string, tenantID string) error {
+	if strings.TrimSpace(userID) == "" {
+		return apperrors.New("UNAUTHORIZED", "User tidak valid", http.StatusUnauthorized, nil)
+	}
+	if strings.TrimSpace(tenantID) == "" {
+		return apperrors.New("VALIDATION_ERROR", "ID Tenant wajib diisi", http.StatusBadRequest, nil)
+	}
+
+	err := u.repo.SoftDeleteTenant(ctx, userID, tenantID)
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			return apperrors.New("NOT_FOUND", "Tenant tidak ditemukan atau Anda tidak memiliki akses", http.StatusNotFound, nil)
+		}
+		return apperrors.New("INTERNAL_ERROR", "Gagal menghapus tenant", http.StatusInternalServerError, nil)
+	}
+
+	return nil
 }

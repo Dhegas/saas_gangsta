@@ -9,12 +9,12 @@ import (
 )
 
 type mockPartnerTenantRepo struct {
-	partner       *domain.PartnerUser
-	createdTenant *domain.PartnerTenant
+	partner        *domain.PartnerUser
+	createdTenant  *domain.PartnerTenant
 	partnerTenants []domain.PartnerTenant
-	findErr       error
-	createErr     error
-	listErr       error
+	findErr        error
+	createErr      error
+	listErr        error
 }
 
 func (m *mockPartnerTenantRepo) FindPartnerByID(_ context.Context, _ string) (*domain.PartnerUser, error) {
@@ -27,6 +27,10 @@ func (m *mockPartnerTenantRepo) CreateTenantForPartner(_ context.Context, _ doma
 
 func (m *mockPartnerTenantRepo) ListTenantsByPartner(_ context.Context, _ string) ([]domain.PartnerTenant, error) {
 	return m.partnerTenants, m.listErr
+}
+
+func (m *mockPartnerTenantRepo) SoftDeleteTenant(_ context.Context, _ string, _ string) error {
+	return nil
 }
 
 func TestCreatePartnerTenantSuccess(t *testing.T) {
@@ -46,7 +50,7 @@ func TestCreatePartnerTenantSuccess(t *testing.T) {
 
 func TestListPartnerTenantsSuccess(t *testing.T) {
 	repo := &mockPartnerTenantRepo{
-		partner:       &domain.PartnerUser{ID: "u-1", Role: "PARTNER", IsActive: true},
+		partner:        &domain.PartnerUser{ID: "u-1", Role: "PARTNER", IsActive: true},
 		partnerTenants: []domain.PartnerTenant{{ID: "t-1", Name: "Warung A", Slug: "warung-a", Status: "active", IsOwner: true}},
 	}
 	uc := NewPartnerTenantUsecase(repo)

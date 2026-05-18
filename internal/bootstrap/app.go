@@ -18,11 +18,11 @@ import (
 )
 
 type App struct {
-	Config *config.Config
-	Logger *slog.Logger
-	DB     *gorm.DB
-	Redis  *redis.Client
-	Router *gin.Engine
+	Config  *config.Config
+	Logger  *slog.Logger
+	DB      *gorm.DB
+	Redis   *redis.Client
+	Router  *gin.Engine
 }
 
 func New() (*App, error) {

@@ -27,6 +27,10 @@ func (m *mockPartnerTenantUsecase) ListPartnerTenants(_ context.Context, _ strin
 	return m.listTenantsRes, m.listTenantsErr
 }
 
+func (m *mockPartnerTenantUsecase) SoftDeletePartnerTenant(_ context.Context, _ string, _ string) error {
+	return nil
+}
+
 func TestCreatePartnerTenantHandlerSuccess(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	r := gin.New()

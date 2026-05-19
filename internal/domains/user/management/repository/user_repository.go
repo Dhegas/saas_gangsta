@@ -29,6 +29,8 @@ type UserRepository interface {
 	UpdateByIDAndTenant(ctx context.Context, tenantID, userID string, input UpdateUserInput) (*domain.User, error)
 	SoftDeleteByIDAndTenant(ctx context.Context, tenantID, userID string) error
 	ToggleActiveByIDAndTenant(ctx context.Context, tenantID, userID string) (*domain.User, error)
+	ListAllUsersForAdmin(ctx context.Context, roleFilter string, limit, offset int) ([]domain.User, int64, error)
+	FindByIDForAdmin(ctx context.Context, userID string) (*domain.User, error)
 }
 
 type userRepository struct {
@@ -251,6 +253,103 @@ func (r *userRepository) ToggleActiveByIDAndTenant(ctx context.Context, tenantID
 	).Scan(&row).Error
 	if err != nil {
 		return nil, fmt.Errorf("toggle active user by id and tenant: %w", err)
+	}
+	if row.ID == "" {
+		return nil, ErrUserNotFound
+	}
+
+	return &domain.User{
+		ID:       row.ID,
+		TenantID: row.TenantID,
+		Email:    row.Email,
+		FullName: row.FullName,
+		Role:     decodeRole(row.Role),
+		IsActive: row.IsActive,
+	}, nil
+}
+
+func (r *userRepository) ListAllUsersForAdmin(ctx context.Context, roleFilter string, limit, offset int) ([]domain.User, int64, error) {
+	if r.db == nil {
+		return nil, 0, fmt.Errorf("database is not initialized")
+	}
+
+	// 1. Hitung total items
+	var totalItems int64
+	countQuery := `SELECT COUNT(*) FROM users u WHERE u.deleted_at IS NULL AND u.role::text != 'ADMIN'`
+	var countArgs []interface{}
+	if roleFilter != "" {
+		countQuery += " AND u.role::text = ?"
+		countArgs = append(countArgs, encodeRole(roleFilter))
+	}
+	if err := r.db.WithContext(ctx).Raw(countQuery, countArgs...).Scan(&totalItems).Error; err != nil {
+		return nil, 0, fmt.Errorf("count all users for admin: %w", err)
+	}
+
+	// 2. Ambil data dengan LIMIT dan OFFSET
+	var rows []struct {
+		ID       string `gorm:"column:id"`
+		TenantID string `gorm:"column:tenant_id"`
+		Email    string `gorm:"column:email"`
+		FullName string `gorm:"column:full_name"`
+		Role     string `gorm:"column:role"`
+		IsActive bool   `gorm:"column:is_active"`
+	}
+
+	query := `SELECT u.id::text,
+	                 '' AS tenant_id,
+	                 u.email,
+	                 u.full_name,
+	                 u.role,
+	                 u.is_active
+	          FROM users u
+	          WHERE u.deleted_at IS NULL AND u.role::text != 'ADMIN'`
+
+	var args []interface{}
+	if roleFilter != "" {
+		query += " AND u.role::text = ?"
+		args = append(args, encodeRole(roleFilter))
+	}
+	query += " ORDER BY u.created_at DESC LIMIT ? OFFSET ?"
+	args = append(args, limit, offset)
+
+	err := r.db.WithContext(ctx).Raw(query, args...).Scan(&rows).Error
+	if err != nil {
+		return nil, 0, fmt.Errorf("list all users for admin: %w", err)
+	}
+
+	users := make([]domain.User, 0, len(rows))
+	for _, row := range rows {
+		users = append(users, domain.User{
+			ID:       row.ID,
+			TenantID: row.TenantID,
+			Email:    row.Email,
+			FullName: row.FullName,
+			Role:     decodeRole(row.Role),
+			IsActive: row.IsActive,
+		})
+	}
+
+	return users, totalItems, nil
+}
+
+func (r *userRepository) FindByIDForAdmin(ctx context.Context, userID string) (*domain.User, error) {
+	if r.db == nil {
+		return nil, fmt.Errorf("database is not initialized")
+	}
+
+	var row userRow
+	query := `SELECT u.id::text,
+	                 '' AS tenant_id,
+	                 u.email,
+	                 u.full_name,
+	                 u.role,
+	                 u.is_active
+	          FROM users u
+	          WHERE u.id = ? AND u.deleted_at IS NULL AND u.role::text != 'ADMIN'`
+
+	err := r.db.WithContext(ctx).Raw(query, userID).Scan(&row).Error
+	if err != nil {
+		return nil, fmt.Errorf("find user by id for admin: %w", err)
 	}
 	if row.ID == "" {
 		return nil, ErrUserNotFound

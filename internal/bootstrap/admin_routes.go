@@ -5,6 +5,9 @@ import (
 	tenanthttp "github.com/dhegas/saas_gangsta/internal/domains/tenant/delivery/http"
 	"github.com/dhegas/saas_gangsta/internal/domains/tenant/repository"
 	"github.com/dhegas/saas_gangsta/internal/domains/tenant/usecase"
+	userhttp "github.com/dhegas/saas_gangsta/internal/domains/user/management/delivery/http"
+	userrepo "github.com/dhegas/saas_gangsta/internal/domains/user/management/repository"
+	userusecase "github.com/dhegas/saas_gangsta/internal/domains/user/management/usecase"
 	"github.com/dhegas/saas_gangsta/internal/middleware"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -14,6 +17,10 @@ func RegisterAdminRoutes(api *gin.RouterGroup, cfg *config.Config, db *gorm.DB) 
 	tenantRepo := repository.NewAdminTenantRepository(db)
 	tenantUsecase := usecase.NewAdminTenantUsecase(tenantRepo)
 	tenantHandler := tenanthttp.NewAdminTenantHandler(tenantUsecase)
+
+	userRepo := userrepo.NewUserRepository(db)
+	userUsecase := userusecase.NewUserUsecase(userRepo)
+	userHandler := userhttp.NewUserHandler(userUsecase)
 
 	adminRoutes := api.Group("/admin")
 	adminRoutes.Use(
@@ -26,4 +33,7 @@ func RegisterAdminRoutes(api *gin.RouterGroup, cfg *config.Config, db *gorm.DB) 
 	adminRoutes.DELETE("/tenants/:id", tenantHandler.SoftDeleteTenant)
 	adminRoutes.GET("/tenants/:id", tenantHandler.GetTenantByID)
 	adminRoutes.GET("/tenants/users/:userId", tenantHandler.GetTenantsByUserID)
+
+	adminRoutes.GET("/users", userHandler.ListAllUsersForAdmin)
+	adminRoutes.GET("/users/:id", userHandler.GetUserDetailForAdmin)
 }

@@ -29,6 +29,10 @@ func (m *mockPartnerTenantRepo) ListTenantsByPartner(_ context.Context, _ string
 	return m.partnerTenants, m.listErr
 }
 
+func (m *mockPartnerTenantRepo) GetTenantByIDAndPartner(_ context.Context, _ string, _ string) (*domain.PartnerTenant, error) {
+	return m.createdTenant, m.createErr
+}
+
 func (m *mockPartnerTenantRepo) SoftDeleteTenant(_ context.Context, _ string, _ string) error {
 	return nil
 }

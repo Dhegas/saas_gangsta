@@ -127,3 +127,37 @@ func (u *partnerTenantUsecase) SoftDeletePartnerTenant(ctx context.Context, user
 
 	return nil
 }
+
+func (u *partnerTenantUsecase) GetPartnerTenantByID(ctx context.Context, userID string, tenantID string) (*dto.PartnerTenantResponse, error) {
+	userID = strings.TrimSpace(userID)
+	if userID == "" {
+		return nil, apperrors.New("UNAUTHORIZED", "User tidak valid", http.StatusUnauthorized, nil)
+	}
+
+	tenantID = strings.TrimSpace(tenantID)
+	if tenantID == "" {
+		return nil, apperrors.New("VALIDATION_ERROR", "ID Tenant wajib diisi", http.StatusBadRequest, nil)
+	}
+
+	tenant, err := u.repo.GetTenantByIDAndPartner(ctx, userID, tenantID)
+	if err != nil {
+		if errors.Is(err, repository.ErrTenantNotFound) {
+			return nil, apperrors.New("NOT_FOUND", "Tenant ID tidak ditemukan atau Anda tidak memiliki akses", http.StatusNotFound, nil)
+		}
+		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil detail tenant", http.StatusInternalServerError, nil)
+	}
+
+	return &dto.PartnerTenantResponse{
+		ID:          tenant.ID,
+		Name:        tenant.Name,
+		Slug:        tenant.Slug,
+		Status:      tenant.Status,
+		Description: tenant.Description,
+		Address:     tenant.Address,
+		PhoneNumber: tenant.PhoneNumber,
+		OpenHours:   tenant.OpenHours,
+		LogoURL:     tenant.LogoURL,
+		BannerURL:   tenant.BannerURL,
+		IsOwner:     tenant.IsOwner,
+	}, nil
+}

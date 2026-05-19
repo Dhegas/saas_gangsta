@@ -136,3 +136,28 @@ func (h *AdminTenantHandler) GetTenantsByUserID(c *gin.Context) {
 
 	response.Success(c, http.StatusOK, "Tenant berdasarkan user ID berhasil diambil oleh admin", res)
 }
+
+// GetTenantByID godoc
+// @Summary Get tenant detail by ID
+// @Description Admin mengambil detail satu tenant berdasarkan ID
+// @Tags Admin
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Tenant ID"
+// @Success 200 {object} response.Envelope{data=dto.AdminTenantResponse}
+// @Failure 400 {object} response.Envelope
+// @Failure 401 {object} response.Envelope
+// @Failure 403 {object} response.Envelope
+// @Failure 404 {object} response.Envelope
+// @Failure 500 {object} response.Envelope
+// @Router /admin/tenants/{id} [get]
+func (h *AdminTenantHandler) GetTenantByID(c *gin.Context) {
+	tenantID := c.Param("id")
+	res, err := h.usecase.GetTenantByID(c.Request.Context(), tenantID)
+	if err != nil {
+		apperrors.Write(c, err)
+		return
+	}
+
+	response.Success(c, http.StatusOK, "Detail tenant berhasil diambil oleh admin", res)
+}

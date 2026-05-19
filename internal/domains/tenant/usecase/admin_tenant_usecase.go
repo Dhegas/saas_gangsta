@@ -165,3 +165,32 @@ func (u *adminTenantUsecase) GetTenantsByUserID(ctx context.Context, userID stri
 		Tenants: items,
 	}, nil
 }
+
+func (u *adminTenantUsecase) GetTenantByID(ctx context.Context, tenantID string) (*dto.AdminTenantResponse, error) {
+	tenantID = strings.TrimSpace(tenantID)
+	if tenantID == "" {
+		return nil, apperrors.New("VALIDATION_ERROR", "ID Tenant wajib diisi", http.StatusBadRequest, nil)
+	}
+
+	tenant, err := u.repo.GetTenantByID(ctx, tenantID)
+	if err != nil {
+		if errors.Is(err, repository.ErrTenantNotFound) {
+			return nil, apperrors.New("NOT_FOUND", "Tenant ID tidak ditemukan", http.StatusNotFound, nil)
+		}
+		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil detail tenant oleh admin", http.StatusInternalServerError, nil)
+	}
+
+	return &dto.AdminTenantResponse{
+		ID:          tenant.ID,
+		Name:        tenant.Name,
+		Slug:        tenant.Slug,
+		Status:      tenant.Status,
+		Description: tenant.Description,
+		Address:     tenant.Address,
+		PhoneNumber: tenant.PhoneNumber,
+		OpenHours:   tenant.OpenHours,
+		LogoURL:     tenant.LogoURL,
+		BannerURL:   tenant.BannerURL,
+		UserID:      tenant.UserID,
+	}, nil
+}

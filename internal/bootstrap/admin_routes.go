@@ -23,4 +23,7 @@ func RegisterAdminRoutes(api *gin.RouterGroup, cfg *config.Config, db *gorm.DB) 
 
 	adminRoutes.POST("/tenants", tenantHandler.CreateAdminTenant)
 	adminRoutes.GET("/tenants", tenantHandler.ListAllTenants)
+	adminRoutes.DELETE("/tenants/:id", tenantHandler.SoftDeleteTenant)
+	adminRoutes.GET("/tenants/:id", tenantHandler.GetTenantByID)
+	adminRoutes.GET("/tenants/users/:userId", tenantHandler.GetTenantsByUserID)
 }

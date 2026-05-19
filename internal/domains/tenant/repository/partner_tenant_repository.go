@@ -180,3 +180,29 @@ func generateTenantSlug(name string) string {
 
 	return fmt.Sprintf("%s-%d", slug, time.Now().UTC().UnixNano())
 }
+
+func (r *partnerTenantRepository) GetTenantByIDAndPartner(ctx context.Context, userID string, tenantID string) (*domain.PartnerTenant, error) {
+	if r.db == nil {
+		return nil, fmt.Errorf("database is not initialized")
+	}
+
+	var tenant domain.PartnerTenant
+	err := r.db.WithContext(ctx).Raw(
+		`SELECT t.id::text AS id, t.name, t.slug, t.status, t.description, t.address, t.phone_number, t.open_hours, t.logo_url, t.banner_url, TRUE AS is_owner
+		 FROM tenants t
+		 WHERE t.id = NULLIF(?, '')::uuid 
+		   AND t.user_id = NULLIF(?, '')::uuid 
+		   AND t.deleted_at IS NULL`,
+		tenantID,
+		userID,
+	).Scan(&tenant).Error
+	if err != nil {
+		return nil, fmt.Errorf("get tenant by id and partner: %w", err)
+	}
+
+	if tenant.ID == "" {
+		return nil, ErrTenantNotFound
+	}
+
+	return &tenant, nil
+}

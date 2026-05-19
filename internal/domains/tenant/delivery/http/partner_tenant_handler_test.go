@@ -27,8 +27,16 @@ func (m *mockPartnerTenantUsecase) ListPartnerTenants(_ context.Context, _ strin
 	return m.listTenantsRes, m.listTenantsErr
 }
 
+
 func (m *mockPartnerTenantUsecase) SoftDeletePartnerTenant(_ context.Context, _ string, _ string) error {
 	return nil
+}
+
+func (m *mockPartnerTenantUsecase) GetPartnerTenantByID(_ context.Context, _ string, _ string) (*dto.PartnerTenantResponse, error) {
+	if m.createTenantRes != nil {
+		return &m.createTenantRes.Tenant, nil
+	}
+	return nil, nil
 }
 
 func TestCreatePartnerTenantHandlerSuccess(t *testing.T) {

@@ -11,6 +11,8 @@ import (
 	"gorm.io/gorm"
 )
 
+var ErrTenantNotFound = errors.New("tenant not found or already deleted")
+
 type adminTenantRepository struct {
 	db *gorm.DB
 }
@@ -112,4 +114,69 @@ func (r *adminTenantRepository) ListAllTenants(ctx context.Context, limit, offse
 	}
 
 	return tenants, totalItems, nil
+}
+
+func (r *adminTenantRepository) SoftDeleteTenant(ctx context.Context, tenantID string) error {
+	if r.db == nil {
+		return fmt.Errorf("database is not initialized")
+	}
+
+	res := r.db.WithContext(ctx).Exec(
+		`UPDATE tenants 
+		 SET deleted_at = NOW(), updated_at = NOW() 
+		 WHERE id = NULLIF(?, '')::uuid AND deleted_at IS NULL`,
+		tenantID,
+	)
+	if res.Error != nil {
+		return fmt.Errorf("soft delete tenant: %w", res.Error)
+	}
+
+	if res.RowsAffected == 0 {
+		return ErrTenantNotFound
+	}
+
+	return nil
+}
+
+func (r *adminTenantRepository) GetTenantsByUserID(ctx context.Context, userID string) ([]domain.AdminTenant, error) {
+	if r.db == nil {
+		return nil, fmt.Errorf("database is not initialized")
+	}
+
+	tenants := make([]domain.AdminTenant, 0)
+	err := r.db.WithContext(ctx).Raw(
+		`SELECT t.id::text AS id, t.name, t.slug, t.status, t.description, t.address, t.phone_number, t.open_hours, t.logo_url, t.banner_url, t.user_id::text AS user_id
+		 FROM tenants t
+		 WHERE t.user_id = NULLIF(?, '')::uuid AND t.deleted_at IS NULL
+		 ORDER BY t.created_at DESC`,
+		userID,
+	).Scan(&tenants).Error
+	if err != nil {
+		return nil, fmt.Errorf("get tenants by user id: %w", err)
+	}
+
+	return tenants, nil
+}
+
+func (r *adminTenantRepository) GetTenantByID(ctx context.Context, tenantID string) (*domain.AdminTenant, error) {
+	if r.db == nil {
+		return nil, fmt.Errorf("database is not initialized")
+	}
+
+	var tenant domain.AdminTenant
+	err := r.db.WithContext(ctx).Raw(
+		`SELECT t.id::text AS id, t.name, t.slug, t.status, t.description, t.address, t.phone_number, t.open_hours, t.logo_url, t.banner_url, t.user_id::text AS user_id
+		 FROM tenants t
+		 WHERE t.id = NULLIF(?, '')::uuid AND t.deleted_at IS NULL`,
+		tenantID,
+	).Scan(&tenant).Error
+	if err != nil {
+		return nil, fmt.Errorf("get tenant by id: %w", err)
+	}
+
+	if tenant.ID == "" {
+		return nil, ErrTenantNotFound
+	}
+
+	return &tenant, nil
 }

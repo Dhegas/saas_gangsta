@@ -27,6 +27,7 @@ func RegisterPartnerRoutes(api *gin.RouterGroup, cfg *config.Config, db *gorm.DB
 	partnerRoutes.POST("/tenants", tenantHandler.CreatePartnerTenant)
 	partnerRoutes.GET("/tenants", tenantHandler.ListPartnerTenants)
 	partnerRoutes.DELETE("/tenants/:id", tenantHandler.SoftDeletePartnerTenant)
+	partnerRoutes.GET("/tenants/:id", tenantHandler.GetPartnerTenantByID)
 
 	partnerTenantScoped := partnerRoutes.Group("")
 	partnerTenantScoped.Use(middleware.TenantGuard())

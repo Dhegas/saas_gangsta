@@ -17,6 +17,8 @@ type UserUsecase interface {
 	UpdateUserByTenant(ctx context.Context, tenantID, userID string, req dto.UpdateUserRequest) (*dto.UpdateUserResponse, error)
 	SoftDeleteUserByTenant(ctx context.Context, tenantID, userID string) (*dto.DeleteUserResponse, error)
 	ToggleUserActiveByTenant(ctx context.Context, tenantID, userID string) (*dto.ToggleActiveUserResponse, error)
+	ListAllUsersForAdmin(ctx context.Context, req dto.ListAllUsersRequest) (*dto.ListAdminUsersResponse, error)
+	GetUserDetailForAdmin(ctx context.Context, userID string) (*dto.AdminUserDetailResponse, error)
 }
 
 type userUsecase struct {
@@ -144,4 +146,72 @@ func (u *userUsecase) ToggleUserActiveByTenant(ctx context.Context, tenantID, us
 		Role:     user.Role,
 		IsActive: user.IsActive,
 	}}, nil
+}
+
+func (u *userUsecase) ListAllUsersForAdmin(ctx context.Context, req dto.ListAllUsersRequest) (*dto.ListAdminUsersResponse, error) {
+	page := req.Page
+	if page < 1 {
+		page = 1
+	}
+
+	limit := req.Limit
+	if limit < 1 {
+		limit = 10 // Default to 10
+	} else if limit > 50 {
+		limit = 50 // Maksimal 50 sesuai keinginan user
+	}
+
+	offset := (page - 1) * limit
+
+	roleFilter := strings.ToUpper(strings.TrimSpace(req.Role))
+	users, totalItems, err := u.repo.ListAllUsersForAdmin(ctx, roleFilter, limit, offset)
+	if err != nil {
+		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil daftar seluruh user oleh admin", http.StatusInternalServerError, nil)
+	}
+
+	totalPages := 0
+	if totalItems > 0 {
+		totalPages = int((totalItems + int64(limit) - 1) / int64(limit))
+	}
+
+	items := make([]dto.AdminUserResponse, 0, len(users))
+	for _, user := range users {
+		items = append(items, dto.AdminUserResponse{
+			ID:       user.ID,
+			Email:    user.Email,
+			FullName: user.FullName,
+			Role:     user.Role,
+			IsActive: user.IsActive,
+		})
+	}
+
+	return &dto.ListAdminUsersResponse{
+		Users: items,
+		Pagination: dto.PaginationResponse{
+			Page:       page,
+			Limit:      limit,
+			TotalItems: totalItems,
+			TotalPages: totalPages,
+		},
+	}, nil
+}
+
+func (u *userUsecase) GetUserDetailForAdmin(ctx context.Context, userID string) (*dto.AdminUserDetailResponse, error) {
+	user, err := u.repo.FindByIDForAdmin(ctx, userID)
+	if err != nil {
+		if errors.Is(err, repository.ErrUserNotFound) {
+			return nil, apperrors.New("NOT_FOUND", "User tidak ditemukan", http.StatusNotFound, nil)
+		}
+		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil detail user oleh admin", http.StatusInternalServerError, nil)
+	}
+
+	return &dto.AdminUserDetailResponse{
+		User: dto.AdminUserResponse{
+			ID:       user.ID,
+			Email:    user.Email,
+			FullName: user.FullName,
+			Role:     user.Role,
+			IsActive: user.IsActive,
+		},
+	}, nil
 }

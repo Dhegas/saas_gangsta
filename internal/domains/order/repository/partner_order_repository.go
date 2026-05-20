@@ -91,7 +91,7 @@ func (r *partnerOrderRepository) SoftDelete(ctx context.Context, tenantID, order
 	return nil
 }
 
-func (r *partnerOrderRepository) GetMenuDetails(ctx context.Context, menuIDs []string) (map[string]orderdomain.MenuDetail, error) {
+func (r *partnerOrderRepository) GetMenuDetails(ctx context.Context, tenantID string, menuIDs []string) (map[string]orderdomain.MenuDetail, error) {
 	var menus []struct {
 		ID    string
 		Name  string
@@ -100,7 +100,7 @@ func (r *partnerOrderRepository) GetMenuDetails(ctx context.Context, menuIDs []s
 
 	err := r.db.WithContext(ctx).Table("menus").
 		Select("id, name, price").
-		Where("id IN ?", menuIDs).
+		Where("tenant_id = ? AND id IN ? AND is_available = true AND deleted_at IS NULL", tenantID, menuIDs).
 		Find(&menus).Error
 
 	if err != nil {
@@ -117,3 +117,41 @@ func (r *partnerOrderRepository) GetMenuDetails(ctx context.Context, menuIDs []s
 	}
 	return result, nil
 }
+
+func (r *partnerOrderRepository) CheckTableExists(ctx context.Context, tenantID, tableID string) (bool, error) {
+	var count int64
+	err := r.db.WithContext(ctx).Table("dining_tables").
+		Where("id = ? AND tenant_id = ? AND deleted_at IS NULL", tableID, tenantID).
+		Count(&count).Error
+	if err != nil {
+		return false, err
+	}
+	return count > 0, nil
+}
+
+func (r *partnerOrderRepository) CreateWithItemsAndCustomer(ctx context.Context, order *orderdomain.OrderEntity, items []orderdomain.OrderItemEntity, customer *orderdomain.CustomerEntity) error {
+	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		// 1. Simpan order
+		if err := tx.Create(order).Error; err != nil {
+			return err
+		}
+
+		// 2. Set OrderID ke masing-masing item, lalu simpan ke database
+		for i := range items {
+			items[i].OrderID = order.ID
+		}
+		if err := tx.Create(&items).Error; err != nil {
+			return err
+		}
+
+		// 3. Set OrderID ke data customer, lalu simpan ke database
+		customer.OrderID = order.ID
+		if err := tx.Create(customer).Error; err != nil {
+			return err
+		}
+
+		order.Items = items
+		return nil
+	})
+}
+

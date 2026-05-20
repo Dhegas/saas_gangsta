@@ -46,14 +46,23 @@ func (u *partnerOrderUsecase) GetOrderByID(ctx context.Context, tenantID, orderI
 }
 
 func (u *partnerOrderUsecase) CreateOrder(ctx context.Context, tenantID string, req dto.CreateOrderRequest) (*dto.OrderResponse, error) {
-	// Kumpulkan ID menu yang dipesan
+	// 1. Validasi meja makan milik tenant
+	tableExists, err := u.repo.CheckTableExists(ctx, tenantID, req.DiningTablesID)
+	if err != nil {
+		return nil, apperrors.New("INTERNAL_ERROR", "Gagal memvalidasi meja makan", http.StatusInternalServerError, err)
+	}
+	if !tableExists {
+		return nil, apperrors.New("BAD_REQUEST", "Meja makan tidak ditemukan atau bukan milik tenant ini", http.StatusBadRequest, nil)
+	}
+
+	// 2. Kumpulkan ID menu yang dipesan
 	menuIDs := make([]string, 0, len(req.Items))
 	for _, item := range req.Items {
 		menuIDs = append(menuIDs, item.MenuID)
 	}
 
-	// Ambil detail harga dan nama menu dari database untuk validasi & kalkulasi
-	menuDetails, err := u.repo.GetMenuDetails(ctx, menuIDs)
+	// 3. Ambil detail harga dan nama menu dari database untuk validasi & kalkulasi harga aman (tenant-isolated)
+	menuDetails, err := u.repo.GetMenuDetails(ctx, tenantID, menuIDs)
 	if err != nil {
 		return nil, apperrors.New("INTERNAL_ERROR", "Gagal memvalidasi item pesanan", http.StatusInternalServerError, err)
 	}
@@ -61,11 +70,11 @@ func (u *partnerOrderUsecase) CreateOrder(ctx context.Context, tenantID string, 
 	var totalOrderPrice float64
 	var orderItems []domain.OrderItemEntity
 
-	// Bangun order_items dan kalkulasi subtotal menggunakan data valid dari DB
+	// 4. Bangun order_items dan kalkulasi subtotal menggunakan data valid dari DB
 	for _, reqItem := range req.Items {
 		detail, exists := menuDetails[reqItem.MenuID]
 		if !exists {
-			return nil, apperrors.New("BAD_REQUEST", "Salah satu menu yang dipesan tidak valid atau tidak tersedia", http.StatusBadRequest, nil)
+			return nil, apperrors.New("BAD_REQUEST", "Salah satu menu yang dipesan tidak valid, tidak tersedia, atau bukan milik tenant ini", http.StatusBadRequest, nil)
 		}
 
 		subtotal := float64(reqItem.Quantity) * detail.Price
@@ -81,16 +90,31 @@ func (u *partnerOrderUsecase) CreateOrder(ctx context.Context, tenantID string, 
 		})
 	}
 
+		// 5. Bangun entitas Order
 	orderEntity := &domain.OrderEntity{
 		TenantID:       tenantID,
+		UserID:         req.UserID,
 		DiningTablesID: req.DiningTablesID,
 		Status:         "PENDING",
 		TotalPrice:     totalOrderPrice,
 	}
 
-	// Simpan ke database dengan transaksi (Order + Items)
-	if err := u.repo.CreateWithItems(ctx, orderEntity, orderItems); err != nil {
-		return nil, apperrors.New("INTERNAL_ERROR", "Gagal menyimpan pesanan", http.StatusInternalServerError, err)
+	// 6. Simpan secara transaksional
+	if req.Customer != nil {
+		// Jika ada profil customer (Guest Mode / Self-Order QR)
+		customerEntity := &domain.CustomerEntity{
+			TenantID:    tenantID,
+			FullName:    req.Customer.FullName,
+			PhoneNumber: req.Customer.PhoneNumber,
+		}
+		if err := u.repo.CreateWithItemsAndCustomer(ctx, orderEntity, orderItems, customerEntity); err != nil {
+			return nil, apperrors.New("INTERNAL_ERROR", "Gagal menyimpan pesanan", http.StatusInternalServerError, err)
+		}
+	} else {
+		// Jika tidak ada profil customer (Normal / Private Mode)
+		if err := u.repo.CreateWithItems(ctx, orderEntity, orderItems); err != nil {
+			return nil, apperrors.New("INTERNAL_ERROR", "Gagal menyimpan pesanan", http.StatusInternalServerError, err)
+		}
 	}
 
 	response := toOrderResponse(orderEntity)

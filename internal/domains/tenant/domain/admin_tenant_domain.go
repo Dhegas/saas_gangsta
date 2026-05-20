@@ -34,6 +34,7 @@ type AdminTenant struct {
 	LogoURL     string
 	BannerURL   string
 	UserID      string
+	OwnerName   string
 }
 
 type CreateAdminTenantInput struct {

@@ -61,6 +61,15 @@ func (u *adminTenantUsecase) CreateAdminTenant(ctx context.Context, req dto.Crea
 			LogoURL:     tenant.LogoURL,
 			BannerURL:   tenant.BannerURL,
 			UserID:      tenant.UserID,
+			User: func() *dto.TenantUserResponse {
+				if tenant.UserID == "" {
+					return nil
+				}
+				return &dto.TenantUserResponse{
+					ID:       tenant.UserID,
+					FullName: tenant.OwnerName,
+				}
+			}(),
 		},
 	}, nil
 }
@@ -97,6 +106,15 @@ func (u *adminTenantUsecase) ListAllTenants(ctx context.Context, req dto.ListAll
 			LogoURL:     tenant.LogoURL,
 			BannerURL:   tenant.BannerURL,
 			UserID:      tenant.UserID,
+			User: func() *dto.TenantUserResponse {
+				if tenant.UserID == "" {
+					return nil
+				}
+				return &dto.TenantUserResponse{
+					ID:       tenant.UserID,
+					FullName: tenant.OwnerName,
+				}
+			}(),
 		})
 	}
 
@@ -158,6 +176,15 @@ func (u *adminTenantUsecase) GetTenantsByUserID(ctx context.Context, userID stri
 			LogoURL:     tenant.LogoURL,
 			BannerURL:   tenant.BannerURL,
 			UserID:      tenant.UserID,
+			User: func() *dto.TenantUserResponse {
+				if tenant.UserID == "" {
+					return nil
+				}
+				return &dto.TenantUserResponse{
+					ID:       tenant.UserID,
+					FullName: tenant.OwnerName,
+				}
+			}(),
 		})
 	}
 
@@ -192,5 +219,14 @@ func (u *adminTenantUsecase) GetTenantByID(ctx context.Context, tenantID string)
 		LogoURL:     tenant.LogoURL,
 		BannerURL:   tenant.BannerURL,
 		UserID:      tenant.UserID,
+		User: func() *dto.TenantUserResponse {
+			if tenant.UserID == "" {
+				return nil
+			}
+			return &dto.TenantUserResponse{
+				ID:       tenant.UserID,
+				FullName: tenant.OwnerName,
+			}
+		}(),
 	}, nil
 }

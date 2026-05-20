@@ -38,10 +38,11 @@ func (r *adminTenantRepository) CreateTenantForAdmin(ctx context.Context, input 
 			ID       string `gorm:"column:id"`
 			Role     string `gorm:"column:role"`
 			IsActive bool   `gorm:"column:is_active"`
+			FullName string `gorm:"column:full_name"`
 		}
 
 		if err := tx.Raw(
-			`SELECT id::text, role, is_active
+			`SELECT id::text, role, is_active, full_name
 			 FROM users
 			 WHERE id = NULLIF(?, '')::uuid
 			 FOR UPDATE`,
@@ -78,6 +79,7 @@ func (r *adminTenantRepository) CreateTenantForAdmin(ctx context.Context, input 
 			return fmt.Errorf("create tenant: %w", err)
 		}
 
+		createdTenant.OwnerName = userRow.FullName
 		return nil
 	})
 	if txErr != nil {
@@ -101,8 +103,9 @@ func (r *adminTenantRepository) ListAllTenants(ctx context.Context, limit, offse
 
 	tenants := make([]domain.AdminTenant, 0)
 	err := r.db.WithContext(ctx).Raw(
-		`SELECT t.id::text AS id, t.name, t.slug, t.status, t.description, t.address, t.phone_number, t.open_hours, t.logo_url, t.banner_url, t.user_id::text AS user_id
+		`SELECT t.id::text AS id, t.name, t.slug, t.status, t.description, t.address, t.phone_number, t.open_hours, t.logo_url, t.banner_url, t.user_id::text AS user_id, u.full_name AS owner_name
 		 FROM tenants t
+		 LEFT JOIN users u ON t.user_id = u.id
 		 WHERE t.deleted_at IS NULL
 		 ORDER BY t.created_at DESC
 		 LIMIT ? OFFSET ?`,
@@ -145,8 +148,9 @@ func (r *adminTenantRepository) GetTenantsByUserID(ctx context.Context, userID s
 
 	tenants := make([]domain.AdminTenant, 0)
 	err := r.db.WithContext(ctx).Raw(
-		`SELECT t.id::text AS id, t.name, t.slug, t.status, t.description, t.address, t.phone_number, t.open_hours, t.logo_url, t.banner_url, t.user_id::text AS user_id
+		`SELECT t.id::text AS id, t.name, t.slug, t.status, t.description, t.address, t.phone_number, t.open_hours, t.logo_url, t.banner_url, t.user_id::text AS user_id, u.full_name AS owner_name
 		 FROM tenants t
+		 LEFT JOIN users u ON t.user_id = u.id
 		 WHERE t.user_id = NULLIF(?, '')::uuid AND t.deleted_at IS NULL
 		 ORDER BY t.created_at DESC`,
 		userID,
@@ -165,8 +169,9 @@ func (r *adminTenantRepository) GetTenantByID(ctx context.Context, tenantID stri
 
 	var tenant domain.AdminTenant
 	err := r.db.WithContext(ctx).Raw(
-		`SELECT t.id::text AS id, t.name, t.slug, t.status, t.description, t.address, t.phone_number, t.open_hours, t.logo_url, t.banner_url, t.user_id::text AS user_id
+		`SELECT t.id::text AS id, t.name, t.slug, t.status, t.description, t.address, t.phone_number, t.open_hours, t.logo_url, t.banner_url, t.user_id::text AS user_id, u.full_name AS owner_name
 		 FROM tenants t
+		 LEFT JOIN users u ON t.user_id = u.id
 		 WHERE t.id = NULLIF(?, '')::uuid AND t.deleted_at IS NULL`,
 		tenantID,
 	).Scan(&tenant).Error

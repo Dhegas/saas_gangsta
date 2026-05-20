@@ -30,7 +30,7 @@ func NewPublicResourcesHandler(db *gorm.DB) *PublicResourcesHandler {
 // @Failure 400 {object} response.Envelope
 // @Failure 404 {object} response.Envelope
 // @Failure 500 {object} response.Envelope
-// @Router /public/t/{tenantSlug}/categories [get]
+// @Router /public/tenant/{tenantSlug}/categories [get]
 func (h *PublicResourcesHandler) GetPublicCategories(c *gin.Context) {
 	tenantID := c.GetString("tenantId")
 	if tenantID == "" {
@@ -68,7 +68,7 @@ func (h *PublicResourcesHandler) GetPublicCategories(c *gin.Context) {
 // @Failure 400 {object} response.Envelope
 // @Failure 404 {object} response.Envelope
 // @Failure 500 {object} response.Envelope
-// @Router /public/t/{tenantSlug}/menus [get]
+// @Router /public/tenant/{tenantSlug}/menus [get]
 func (h *PublicResourcesHandler) GetPublicMenus(c *gin.Context) {
 	tenantID := c.GetString("tenantId")
 	if tenantID == "" {

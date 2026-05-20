@@ -39,9 +39,15 @@ func TenantResolver(db *gorm.DB) gin.HandlerFunc {
 
 		// Inject tenant context into gin.Context
 		c.Set("tenantId", tenant.ID)
+		c.Set("tenantID", tenant.ID)
 		c.Set("tenantSlug", tenant.Slug)
 		c.Set("tenantName", tenant.Name)
 
 		c.Next()
 	}
+}
+
+// TenantResolverMiddleware resolves the tenant slug, validates it, and injects context (alias for TenantResolver).
+func TenantResolverMiddleware(db *gorm.DB) gin.HandlerFunc {
+	return TenantResolver(db)
 }

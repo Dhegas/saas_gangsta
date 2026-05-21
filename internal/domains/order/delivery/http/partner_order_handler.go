@@ -128,6 +128,13 @@ func (h *PartnerOrderHandler) CreateOrder(c *gin.Context) {
 		return
 	}
 
+	// ADAPTER: Map/Wrap JWT claims (userId) into the unified CreateOrderRequest
+	if userIDVal, exists := c.Get("userId"); exists {
+		if uID, ok := userIDVal.(string); ok && uID != "" {
+			req.UserID = &uID
+		}
+	}
+
 	order, err := h.usecase.CreateOrder(c.Request.Context(), tenantID, req)
 	if err != nil {
 		errors.Write(c, err)

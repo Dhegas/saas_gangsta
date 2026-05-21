@@ -20,10 +20,8 @@ func RegisterOrderRoutes(api *gin.RouterGroup, cfg *config.Config, db *gorm.DB) 
 	customerUC := orderusecase.NewCustomerUsecase(customerRepo)
 	customerHandler := orderhttp.NewCustomerHandler(customerUC)
 
-	// Customer Order (Self-Order publik dari QR code / slug)
-	custOrderRepo := orderrepo.NewCustomerOrderRepository(db)
-	custOrderUC := orderusecase.NewCustomerOrderUsecase(custOrderRepo)
-	custOrderHandler := orderhttp.NewCustomerOrderHandler(custOrderUC)
+	// Customer Order (Self-Order publik dari QR code / slug) menggunakan unified usecase
+	custOrderHandler := orderhttp.NewCustomerOrderHandler(orderUC)
 
 	// Register rute publik untuk customer membuat order
 	publicTenantOrderRoutes := api.Group("/public/tenant/:tenantSlug", middleware.TenantResolver(db))
@@ -35,7 +33,7 @@ func RegisterOrderRoutes(api *gin.RouterGroup, cfg *config.Config, db *gorm.DB) 
 		middleware.JWTAuth(cfg), // Tetap butuh auth (token login customer atau guest token), atur sesuai kebutuhan sistem
 		middleware.RoleGuards("CUSTOMER", "PARTNER", "ADMIN"),
 	)
-	customerOrderRoutes.POST("", orderHandler.CreateOrder)
+	customerOrderRoutes.POST("/tenant/:tenantSlug", middleware.TenantResolver(db), orderHandler.CreateOrder)
 	customerOrderRoutes.GET("/:id", orderHandler.GetOrderByID) // Customer mungkin butuh melihat struk detailnya
 
 	// Customer sub-resource routes: POST, GET, PUT /api/orders/:id/customer

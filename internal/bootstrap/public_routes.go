@@ -26,6 +26,8 @@ func RegisterPublicRoutes(api *gin.RouterGroup, cfg *config.Config, db *gorm.DB)
 		{
 			resolvedRoutes.GET("/categories", resourcesHandler.GetPublicCategories)
 			resolvedRoutes.GET("/menus", resourcesHandler.GetPublicMenus)
+			resolvedRoutes.GET("/tables", resourcesHandler.GetPublicTables)
+			resolvedRoutes.GET("/dining-tables", resourcesHandler.GetPublicTables)
 		}
 	}
 }

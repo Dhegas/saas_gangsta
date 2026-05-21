@@ -116,3 +116,59 @@ func (h *PublicResourcesHandler) GetPublicMenus(c *gin.Context) {
 
 	response.Success(c, http.StatusOK, "Menu list fetched successfully", menus)
 }
+
+// GetPublicTables godoc
+// @Summary List active dining tables for a tenant
+// @Description Mengambil daftar meja aktif dalam context tenant beserta status keterisiannya
+// @Tags Public
+// @Produce json
+// @Param tenantSlug path string true "Tenant Slug"
+// @Success 200 {object} response.Envelope
+// @Failure 400 {object} response.Envelope
+// @Failure 404 {object} response.Envelope
+// @Failure 500 {object} response.Envelope
+// @Router /public/tenant/{tenantSlug}/tables [get]
+func (h *PublicResourcesHandler) GetPublicTables(c *gin.Context) {
+	tenantID := c.GetString("tenantId")
+	if tenantID == "" {
+		apperrors.Write(c, apperrors.New("VALIDATION_ERROR", "Tenant context tidak ditemukan", http.StatusBadRequest, nil))
+		return
+	}
+
+	type PublicTableResponse struct {
+		ID        string `json:"id" gorm:"column:id"`
+		TenantID  string `json:"tenantId" gorm:"column:tenant_id"`
+		TableName string `json:"tableName" gorm:"column:table_name"`
+		Status    string `json:"status" gorm:"column:status"`
+	}
+
+	var tables []PublicTableResponse
+	err := h.db.WithContext(c.Request.Context()).
+		Table("dining_tables dt").
+		Select(`
+			dt.id::text AS id, 
+			dt.tenant_id::text AS tenant_id, 
+			dt.table_name,
+			CASE 
+				WHEN EXISTS (
+					SELECT 1 FROM orders o 
+					WHERE o.dining_tables_id = dt.id 
+					  AND o.status NOT IN ('COMPLETED', 'CANCELLED') 
+					  AND o.deleted_at IS NULL
+				) THEN 'occupied'
+				ELSE 'kosong'
+			END AS status
+		`).
+		Where("dt.tenant_id = ?", tenantID).
+		Where("dt.deleted_at IS NULL").
+		Order("dt.table_name ASC").
+		Scan(&tables).Error
+
+	if err != nil {
+		apperrors.Write(c, apperrors.New("INTERNAL_ERROR", "Gagal mengambil daftar meja", http.StatusInternalServerError, err.Error()))
+		return
+	}
+
+	response.Success(c, http.StatusOK, "Table list fetched successfully", tables)
+}
+

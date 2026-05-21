@@ -17,6 +17,12 @@ func Connect(databaseURL string) (*gorm.DB, error) {
 	if err != nil {
 		return nil, fmt.Errorf("connect database: %w", err)
 	}
+
+	// Safely auto-migrate schema additions
+	_ = db.Exec(`ALTER TABLE tenants ADD COLUMN IF NOT EXISTS is_public BOOLEAN DEFAULT true`)
+	_ = db.Exec(`UPDATE tenants SET is_public = true WHERE is_public IS NULL`)
+	_ = db.Exec(`CREATE INDEX IF NOT EXISTS idx_tenants_is_public ON tenants (is_public) WHERE deleted_at IS NULL`)
+
 	return db, nil
 }
 

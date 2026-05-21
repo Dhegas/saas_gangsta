@@ -76,8 +76,10 @@ func registerRoutes(router *gin.Engine, cfg *config.Config, db *gorm.DB, redisCl
 	{
 		registerAuthRoutes(api, cfg, authHandler)
 		registerUserRoutes(api, cfg, userHandler)
+		RegisterPublicRoutes(api, cfg, db)
 		RegisterCustomerRoutes(api, cfg)
 		RegisterPartnerRoutes(api, cfg, db)
+		RegisterAdminRoutes(api, cfg, db)
 		RegisterCategoryRoutes(api, cfg, db)
 		RegisterMenuRoutes(api, cfg, db)
 		RegisterTableRoutes(api, cfg, db)

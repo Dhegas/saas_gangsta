@@ -19,21 +19,44 @@ func NewPartnerMenuHandler(usecase domain.PartnerMenuUsecase) *PartnerMenuHandle
 	return &PartnerMenuHandler{usecase: usecase}
 }
 
+func (h *PartnerMenuHandler) extractTenantID(c *gin.Context) (string, error) {
+	manualID := c.GetHeader("X-Tenant-ID")
+	if manualID == "" {
+		manualID = c.Query("tenantId")
+	}
+
+	contextTenantID, _ := c.Get(tenant.TenantIDKey)
+	contextID, _ := contextTenantID.(string)
+	if contextID != "" {
+		if manualID != "" && manualID != contextID {
+			return "", apperrors.New("FORBIDDEN", "tenantId yang Anda kirimkan tidak sesuai dengan hak akses token Anda", http.StatusForbidden, nil)
+		}
+		return contextID, nil
+	}
+
+	if manualID == "" {
+		return "", apperrors.New("TENANT_NOT_FOUND", "Tenant ID diperlukan", http.StatusBadRequest, nil)
+	}
+
+	return manualID, nil
+}
+
 // GetAllMenus godoc
 // @Summary      List Menus
 // @Description  Mengambil daftar menu per tenant (mendukung filter category_id dan is_available)
 // @Tags         Menu Management
 // @Produce      json
 // @Security     BearerAuth
+// @Param        tenantId     query     string  false  "Tenant ID (Wajib untuk CUSTOMER)"
 // @Param        category_id   query     string  false  "Filter berdasarkan Category ID"
 // @Param        is_available  query     bool    false  "Filter berdasarkan ketersediaan (true/false)"
 // @Success      200  {object}  map[string]interface{}
 // @Failure      500  {object}  map[string]interface{}
 // @Router       /menus [get]
 func (h *PartnerMenuHandler) GetAllMenus(c *gin.Context) {
-	tenantID, err := tenant.GetTenantID(c)
+	tenantID, err := h.extractTenantID(c)
 	if err != nil {
-		apperrors.Write(c, apperrors.New("FORBIDDEN", err.Error(), http.StatusForbidden, nil))
+		apperrors.Write(c, err)
 		return
 	}
 
@@ -59,14 +82,15 @@ func (h *PartnerMenuHandler) GetAllMenus(c *gin.Context) {
 // @Produce      json
 // @Security     BearerAuth
 // @Param        id  path      string  true  "Menu ID"
+// @Param        tenantId query     string  false  "Tenant ID (Wajib untuk CUSTOMER)"
 // @Success      200  {object}  map[string]interface{}
 // @Failure      404  {object}  map[string]interface{}
 // @Failure      500  {object}  map[string]interface{}
 // @Router       /menus/{id} [get]
 func (h *PartnerMenuHandler) GetMenuByID(c *gin.Context) {
-	tenantID, err := tenant.GetTenantID(c)
+	tenantID, err := h.extractTenantID(c)
 	if err != nil {
-		apperrors.Write(c, apperrors.New("FORBIDDEN", err.Error(), http.StatusForbidden, nil))
+		apperrors.Write(c, err)
 		return
 	}
 	menuID := c.Param("id")

@@ -20,6 +20,15 @@ func RegisterOrderRoutes(api *gin.RouterGroup, cfg *config.Config, db *gorm.DB) 
 	customerUC := orderusecase.NewCustomerUsecase(customerRepo)
 	customerHandler := orderhttp.NewCustomerHandler(customerUC)
 
+	// Customer Order (Self-Order publik dari QR code / slug)
+	custOrderRepo := orderrepo.NewCustomerOrderRepository(db)
+	custOrderUC := orderusecase.NewCustomerOrderUsecase(custOrderRepo)
+	custOrderHandler := orderhttp.NewCustomerOrderHandler(custOrderUC)
+
+	// Register rute publik untuk customer membuat order
+	publicTenantOrderRoutes := api.Group("/public/tenant/:tenantSlug", middleware.TenantResolver(db))
+	publicTenantOrderRoutes.POST("/orders", custOrderHandler.CreateOrder)
+
 	// Customer Routes (untuk membuat order dari QR code)
 	customerOrderRoutes := api.Group("/orders")
 	customerOrderRoutes.Use(

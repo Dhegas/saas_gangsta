@@ -155,3 +155,74 @@ func (h *UserHandler) ToggleActiveUser(c *gin.Context) {
 
 	response.Success(c, http.StatusOK, "Status user berhasil diubah", res)
 }
+
+// ListAllUsersForAdmin godoc
+// @Summary List all users in the system (Admin only)
+// @Description Admin mengambil daftar seluruh user dengan opsi filter role (CUSTOMER / PARTNER)
+// @Tags Admin
+// @Produce json
+// @Security BearerAuth
+// @Param role query string false "Filter by Role (CUSTOMER / PARTNER)"
+// @Param page query int false "Page number"
+// @Param limit query int false "Items per page (max 50)"
+// @Success 200 {object} response.Envelope{data=dto.ListAdminUsersResponse}
+// @Failure 400 {object} response.Envelope
+// @Failure 401 {object} response.Envelope
+// @Failure 403 {object} response.Envelope
+// @Failure 500 {object} response.Envelope
+// @Router /admin/users [get]
+func (h *UserHandler) ListAllUsersForAdmin(c *gin.Context) {
+	var req dto.ListAllUsersRequest
+	if err := c.ShouldBindQuery(&req); err != nil {
+		var validationErrs validator.ValidationErrors
+		details := err.Error()
+		if errors.As(err, &validationErrs) {
+			details = validationErrs.Error()
+		}
+		apperrors.Write(c, apperrors.New("VALIDATION_ERROR", "Parameter query filter role tidak valid", http.StatusBadRequest, details))
+		return
+	}
+
+	res, err := h.usecase.ListAllUsersForAdmin(c.Request.Context(), req)
+	if err != nil {
+		apperrors.Write(c, err)
+		return
+	}
+
+	response.Success(c, http.StatusOK, "Seluruh daftar user berhasil diambil oleh admin", res)
+}
+
+// GetUserDetailForAdmin godoc
+// @Summary Get user details (Admin only)
+// @Description Admin mengambil detail informasi seorang user berdasarkan ID
+// @Tags Admin
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "User ID (UUID)"
+// @Success 200 {object} response.Envelope{data=dto.AdminUserDetailResponse}
+// @Failure 400 {object} response.Envelope
+// @Failure 401 {object} response.Envelope
+// @Failure 403 {object} response.Envelope
+// @Failure 404 {object} response.Envelope
+// @Failure 500 {object} response.Envelope
+// @Router /admin/users/{id} [get]
+func (h *UserHandler) GetUserDetailForAdmin(c *gin.Context) {
+	var uri dto.UserIDParam
+	if err := c.ShouldBindUri(&uri); err != nil {
+		var validationErrs validator.ValidationErrors
+		details := err.Error()
+		if errors.As(err, &validationErrs) {
+			details = validationErrs.Error()
+		}
+		apperrors.Write(c, apperrors.New("VALIDATION_ERROR", "Parameter user id tidak valid", http.StatusBadRequest, details))
+		return
+	}
+
+	res, err := h.usecase.GetUserDetailForAdmin(c.Request.Context(), uri.ID)
+	if err != nil {
+		apperrors.Write(c, err)
+		return
+	}
+
+	response.Success(c, http.StatusOK, "Detail user berhasil diambil oleh admin", res)
+}

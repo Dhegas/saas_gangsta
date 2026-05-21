@@ -108,3 +108,30 @@ func (h *PartnerTenantHandler) SoftDeletePartnerTenant(c *gin.Context) {
 
 	response.Success(c, http.StatusOK, "Tenant berhasil dihapus", nil)
 }
+
+// GetPartnerTenantByID godoc
+// @Summary Get partner tenant detail
+// @Description Mengambil detail satu tenant berdasarkan ID (hanya jika milik partner bersangkutan)
+// @Tags Partner
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Tenant ID"
+// @Success 200 {object} response.Envelope{data=dto.PartnerTenantResponse}
+// @Failure 401 {object} response.Envelope
+// @Failure 403 {object} response.Envelope
+// @Failure 404 {object} response.Envelope
+// @Failure 500 {object} response.Envelope
+// @Router /partner/tenants/{id} [get]
+func (h *PartnerTenantHandler) GetPartnerTenantByID(c *gin.Context) {
+	userID, _ := c.Get("userId")
+	userIDStr, _ := userID.(string)
+	tenantID := c.Param("id")
+
+	res, err := h.usecase.GetPartnerTenantByID(c.Request.Context(), userIDStr, tenantID)
+	if err != nil {
+		apperrors.Write(c, err)
+		return
+	}
+
+	response.Success(c, http.StatusOK, "Detail tenant berhasil diambil", res)
+}

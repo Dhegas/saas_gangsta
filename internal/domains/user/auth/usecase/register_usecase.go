@@ -15,6 +15,21 @@ func (u *authUsecase) Register(ctx context.Context, req dto.RegisterRequest) (*d
 	email := strings.TrimSpace(req.Email)
 	password := strings.TrimSpace(req.Password)
 	fullName := strings.TrimSpace(req.FullName)
+	role := strings.ToUpper(strings.TrimSpace(req.Role))
+
+	// Jika role tidak dikirimkan, gunakan default "CUSTOMER"
+	if role == "" {
+		role = "CUSTOMER"
+	}
+
+	// Validasi role yang diperbolehkan untuk registrasi publik.
+	// Membatasi registrasi ADMIN secara publik untuk alasan keamanan.
+	if role != "CUSTOMER" && role != "PARTNER" {
+		if role == "ADMIN" {
+			return nil, apperrors.New("VALIDATION_ERROR", "Registrasi sebagai ADMIN tidak diperbolehkan secara publik", http.StatusBadRequest, nil)
+		}
+		return nil, apperrors.New("VALIDATION_ERROR", "Role tidak valid. Harus salah satu dari: CUSTOMER atau PARTNER", http.StatusBadRequest, nil)
+	}
 
 	existing, err := u.repo.FindByEmail(ctx, email)
 	if err != nil {
@@ -34,7 +49,7 @@ func (u *authUsecase) Register(ctx context.Context, req dto.RegisterRequest) (*d
 		Email:        email,
 		FullName:     fullName,
 		PasswordHash: string(passwordHash),
-		Role:         "CUSTOMER",
+		Role:         role,
 		IsActive:     true,
 		TenantStatus: "active",
 	}

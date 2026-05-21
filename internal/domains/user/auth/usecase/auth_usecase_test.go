@@ -97,6 +97,57 @@ func TestRegisterSuccess(t *testing.T) {
 	if res.User.ID == "" {
 		t.Fatalf("expected created user id")
 	}
+	if res.User.Role != "CUSTOMER" {
+		t.Fatalf("expected default role CUSTOMER, got %s", res.User.Role)
+	}
+}
+
+func TestRegisterRoleSuccess(t *testing.T) {
+	repo := &mockAuthRepo{}
+	uc := newAuthUsecaseForTest(repo)
+
+	res, err := uc.Register(context.Background(), dto.RegisterRequest{
+		Email:    "new_partner@test.local",
+		Password: "secret123",
+		FullName: "New Partner",
+		Role:     "partner", // case insensitive check
+	})
+	if err != nil {
+		t.Fatalf("expected nil error, got %v", err)
+	}
+	if res.User.Role != "PARTNER" {
+		t.Fatalf("expected role PARTNER, got %s", res.User.Role)
+	}
+}
+
+func TestRegisterRoleForbiddenAdmin(t *testing.T) {
+	repo := &mockAuthRepo{}
+	uc := newAuthUsecaseForTest(repo)
+
+	_, err := uc.Register(context.Background(), dto.RegisterRequest{
+		Email:    "admin@test.local",
+		Password: "secret123",
+		FullName: "Admin Attempt",
+		Role:     "ADMIN",
+	})
+	if err == nil {
+		t.Fatalf("expected error for admin registration")
+	}
+}
+
+func TestRegisterRoleInvalid(t *testing.T) {
+	repo := &mockAuthRepo{}
+	uc := newAuthUsecaseForTest(repo)
+
+	_, err := uc.Register(context.Background(), dto.RegisterRequest{
+		Email:    "invalid@test.local",
+		Password: "secret123",
+		FullName: "Invalid Role Attempt",
+		Role:     "SUPERUSER",
+	})
+	if err == nil {
+		t.Fatalf("expected error for invalid role registration")
+	}
 }
 
 func TestRegisterConflictEmail(t *testing.T) {

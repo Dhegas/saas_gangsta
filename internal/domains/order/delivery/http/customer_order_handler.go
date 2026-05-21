@@ -2,6 +2,7 @@ package http
 
 import (
 	"net/http"
+	"strings"
 
 	apperrors "github.com/dhegas/saas_gangsta/internal/common/errors"
 	"github.com/dhegas/saas_gangsta/internal/common/response"
@@ -11,11 +12,11 @@ import (
 )
 
 type CustomerOrderHandler struct {
-	usecase domain.CustomerOrderUsecase
+	usecase domain.PartnerOrderUsecase
 }
 
 // NewCustomerOrderHandler konstruktor untuk CustomerOrderHandler
-func NewCustomerOrderHandler(usecase domain.CustomerOrderUsecase) *CustomerOrderHandler {
+func NewCustomerOrderHandler(usecase domain.PartnerOrderUsecase) *CustomerOrderHandler {
 	return &CustomerOrderHandler{usecase: usecase}
 }
 
@@ -52,11 +53,37 @@ func (h *CustomerOrderHandler) CreateOrder(c *gin.Context) {
 		return
 	}
 
-	res, err := h.usecase.CreateCustomerOrder(c.Request.Context(), tenantID, req)
+	// ADAPTER: Map CreateCustomerOrderRequest (guest mode) to unified CreateOrderRequest
+	items := make([]dto.CreateOrderItemRequest, 0, len(req.Items))
+	for _, item := range req.Items {
+		items = append(items, dto.CreateOrderItemRequest{
+			MenuID:    item.MenuID,
+			Quantity:  item.Quantity,
+			Notes:     item.Notes,
+		})
+	}
+
+	adaptedReq := dto.CreateOrderRequest{
+		DiningTablesID: req.DiningTableID,
+		Items:          items,
+		Customer: &dto.CreateCustomerDetailsRequest{
+			FullName:    req.Customer.FullName,
+			PhoneNumber: req.Customer.PhoneNumber,
+		},
+	}
+
+	// Panggil usecase terpadu (Unified CreateOrder)
+	res, err := h.usecase.CreateOrder(c.Request.Context(), tenantID, adaptedReq)
 	if err != nil {
 		apperrors.Write(c, err)
 		return
 	}
 
-	response.Success(c, http.StatusCreated, "Order created successfully", res)
+	// ADAPTER: Map unified OrderResponse ke CreateCustomerOrderResponse (camelCase)
+	response.Success(c, http.StatusCreated, "Order created successfully", dto.CreateCustomerOrderResponse{
+		OrderID:    res.ID,
+		Status:     strings.ToLower(res.Status),
+		TotalPrice: res.TotalPrice,
+	})
 }
+

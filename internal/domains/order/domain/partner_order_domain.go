@@ -21,9 +21,11 @@ type PartnerOrderRepository interface {
 	FindAll(ctx context.Context, tenantID string, filter dto.OrderFilterParams) ([]OrderEntity, error)
 	FindByID(ctx context.Context, tenantID, orderID string) (*OrderEntity, error)
 	CreateWithItems(ctx context.Context, order *OrderEntity, items []OrderItemEntity) error
+	CreateWithItemsAndCustomer(ctx context.Context, order *OrderEntity, items []OrderItemEntity, customer *CustomerEntity) error
 	UpdateStatus(ctx context.Context, tenantID, orderID, status string) error
 	SoftDelete(ctx context.Context, tenantID, orderID string) error
-	GetMenuDetails(ctx context.Context, menuIDs []string) (map[string]MenuDetail, error)
+	GetMenuDetails(ctx context.Context, tenantID string, menuIDs []string) (map[string]MenuDetail, error)
+	CheckTableExists(ctx context.Context, tenantID, tableID string) (bool, error)
 }
 
 type MenuDetail struct {

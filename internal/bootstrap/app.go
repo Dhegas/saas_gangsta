@@ -46,11 +46,13 @@ func New() (*App, error) {
 		db = nil
 	}
 
-	redisClient, err := database.ConnectRedis(cfg.RedisURL)
-	if err != nil {
-		log.Warn("bootstrap redis: continuing without redis", "error", err)
-		redisClient = nil
-	}
+	// Comment out Redis connection so it doesn't run
+	// redisClient, err := database.ConnectRedis(cfg.RedisURL)
+	// if err != nil {
+	// 	log.Warn("bootstrap redis: continuing without redis", "error", err)
+	// 	redisClient = nil
+	// }
+	var redisClient *redis.Client = nil
 
 	router := gin.New()
 	router.HandleMethodNotAllowed = true

@@ -46,15 +46,16 @@ func registerRoutes(router *gin.Engine, cfg *config.Config, db *gorm.DB, redisCl
 			return
 		}
 
-		if redisClient == nil {
-			apperrors.Write(c, apperrors.New("INTERNAL_ERROR", "Redis is not configured or not reachable", http.StatusInternalServerError, nil))
-			return
-		}
+		// Redis is commented out, so we skip Redis readiness checks
+		// if redisClient == nil {
+		// 	apperrors.Write(c, apperrors.New("INTERNAL_ERROR", "Redis is not configured or not reachable", http.StatusInternalServerError, nil))
+		// 	return
+		// }
 
-		if err := database.IsRedisReady(ctx, redisClient); err != nil {
-			apperrors.Write(c, apperrors.New("INTERNAL_ERROR", "Redis is not ready", http.StatusInternalServerError, nil))
-			return
-		}
+		// if err := database.IsRedisReady(ctx, redisClient); err != nil {
+		// 	apperrors.Write(c, apperrors.New("INTERNAL_ERROR", "Redis is not ready", http.StatusInternalServerError, nil))
+		// 	return
+		// }
 
 		response.Success(c, http.StatusOK, "Service is ready", gin.H{
 			"status":    "ok",

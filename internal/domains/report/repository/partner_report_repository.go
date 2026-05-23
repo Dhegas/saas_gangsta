@@ -59,12 +59,12 @@ func (r *partnerReportRepository) FetchOrdersByTable(ctx context.Context, tenant
 	query := r.db.WithContext(ctx).
 		Table("orders o").
 		Select(`o.dining_tables_id AS table_id,
-			COALESCE(dt.table_number, 'N/A') AS table_number,
+			COALESCE(dt.table_name, 'N/A') AS table_number,
 			COUNT(o.id) AS total_orders,
 			COALESCE(SUM(o.total_price), 0) AS total_revenue`).
 		Joins("LEFT JOIN dining_tables dt ON dt.id = o.dining_tables_id").
 		Where("o.tenant_id = ? AND o.status = 'COMPLETED' AND o.deleted_at IS NULL AND o.dining_tables_id IS NOT NULL", tenantID).
-		Group("o.dining_tables_id, dt.table_number").
+		Group("o.dining_tables_id, dt.table_name").
 		Order("total_orders DESC")
 
 	if from != "" && to != "" {

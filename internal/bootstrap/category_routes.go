@@ -19,7 +19,7 @@ func RegisterCategoryRoutes(api *gin.RouterGroup, cfg *config.Config, db *gorm.D
 	categoryRoutes.Use(
 		middleware.JWTAuth(cfg),
 		middleware.RoleGuard("PARTNER"),
-		middleware.TenantGuard(),
+		middleware.TenantGuard(db),
 	)
 
 	categoryRoutes.POST("", categoryHandler.CreateCategory)

@@ -19,7 +19,7 @@ func RegisterTableRoutes(api *gin.RouterGroup, cfg *config.Config, db *gorm.DB) 
 	tableRoutes.Use(
 		middleware.JWTAuth(cfg),
 		middleware.RoleGuard("PARTNER"),
-		middleware.TenantGuard(),
+		middleware.TenantGuard(db),
 	)
 
 	tableRoutes.POST("", tableHandler.CreateTable)

@@ -30,7 +30,7 @@ func RegisterPartnerRoutes(api *gin.RouterGroup, cfg *config.Config, db *gorm.DB
 	partnerRoutes.GET("/tenants/:id", tenantHandler.GetPartnerTenantByID)
 
 	partnerTenantScoped := partnerRoutes.Group("")
-	partnerTenantScoped.Use(middleware.TenantGuard())
+	partnerTenantScoped.Use(middleware.TenantGuard(db))
 	partnerTenantScoped.GET("/me", func(c *gin.Context) {
 		response.Success(c, http.StatusOK, "Partner context valid", gin.H{
 			"role":     "PARTNER",

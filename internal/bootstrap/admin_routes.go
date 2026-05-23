@@ -19,7 +19,7 @@ func RegisterAdminRoutes(api *gin.RouterGroup, cfg *config.Config, db *gorm.DB) 
 	tenantHandler := tenanthttp.NewAdminTenantHandler(tenantUsecase)
 
 	userRepo := userrepo.NewUserRepository(db)
-	userUsecase := userusecase.NewUserUsecase(userRepo)
+	userUsecase := userusecase.NewUserUsecase(userRepo, tenantRepo)
 	userHandler := userhttp.NewUserHandler(userUsecase)
 
 	adminRoutes := api.Group("/admin")

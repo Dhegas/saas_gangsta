@@ -9,6 +9,7 @@ import (
 	apperrors "github.com/dhegas/saas_gangsta/internal/common/errors"
 	"github.com/dhegas/saas_gangsta/internal/common/response"
 	"github.com/dhegas/saas_gangsta/internal/config"
+	tenantrepo "github.com/dhegas/saas_gangsta/internal/domains/tenant/repository"
 	authhttp "github.com/dhegas/saas_gangsta/internal/domains/user/auth/delivery/http"
 	authrepo "github.com/dhegas/saas_gangsta/internal/domains/user/auth/repository"
 	authusecase "github.com/dhegas/saas_gangsta/internal/domains/user/auth/usecase"
@@ -69,8 +70,9 @@ func registerRoutes(router *gin.Engine, cfg *config.Config, db *gorm.DB, redisCl
 	authRepository := authrepo.NewAuthRepository(db)
 	authUC := authusecase.NewAuthUsecase(authRepository, cfg)
 	authHandler := authhttp.NewAuthHandler(authUC)
+	tenantRepo := tenantrepo.NewAdminTenantRepository(db)
 	userRepository := userrepo.NewUserRepository(db)
-	userUC := userusecase.NewUserUsecase(userRepository)
+	userUC := userusecase.NewUserUsecase(userRepository, tenantRepo)
 	userHandler := userhttp.NewUserHandler(userUC)
 
 	api := router.Group("/api/v1")

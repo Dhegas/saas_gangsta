@@ -29,12 +29,26 @@ type DeleteUserResponse struct {
 	Deleted bool `json:"deleted"`
 }
 
+type UserTenantResponse struct {
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	Slug        string `json:"slug"`
+	Status      string `json:"status"`
+	Description string `json:"description"`
+	Address     string `json:"address"`
+	PhoneNumber string `json:"phone_number"`
+	OpenHours   string `json:"open_hours"`
+	LogoURL     string `json:"logo_url"`
+	BannerURL   string `json:"banner_url"`
+}
+
 type AdminUserResponse struct {
-	ID       string `json:"id"`
-	Email    string `json:"email"`
-	FullName string `json:"fullName"`
-	Role     string `json:"role"`
-	IsActive bool   `json:"isActive"`
+	ID       string                `json:"id"`
+	Email    string                `json:"email"`
+	FullName string                `json:"fullName"`
+	Role     string                `json:"role"`
+	IsActive bool                  `json:"isActive"`
+	Tenants  *[]UserTenantResponse `json:"tenants,omitempty"`
 }
 
 type PaginationResponse struct {

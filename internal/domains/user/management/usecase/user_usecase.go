@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	apperrors "github.com/dhegas/saas_gangsta/internal/common/errors"
+	tenantDomain "github.com/dhegas/saas_gangsta/internal/domains/tenant/domain"
 	"github.com/dhegas/saas_gangsta/internal/domains/user/management/dto"
 	"github.com/dhegas/saas_gangsta/internal/domains/user/management/repository"
 )
@@ -22,11 +23,15 @@ type UserUsecase interface {
 }
 
 type userUsecase struct {
-	repo repository.UserRepository
+	repo       repository.UserRepository
+	tenantRepo tenantDomain.AdminTenantRepository
 }
 
-func NewUserUsecase(repo repository.UserRepository) UserUsecase {
-	return &userUsecase{repo: repo}
+func NewUserUsecase(repo repository.UserRepository, tenantRepo tenantDomain.AdminTenantRepository) UserUsecase {
+	return &userUsecase{
+		repo:       repo,
+		tenantRepo: tenantRepo,
+	}
 }
 
 func (u *userUsecase) ListUsersByTenant(ctx context.Context, tenantID string) (*dto.ListUsersResponse, error) {
@@ -205,6 +210,31 @@ func (u *userUsecase) GetUserDetailForAdmin(ctx context.Context, userID string) 
 		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil detail user oleh admin", http.StatusInternalServerError, nil)
 	}
 
+	var tenantsList *[]dto.UserTenantResponse
+	if user.Role == "PARTNER" {
+		tenants, err := u.tenantRepo.GetTenantsByUserID(ctx, userID)
+		if err != nil {
+			return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil detail tenant untuk partner", http.StatusInternalServerError, nil)
+		}
+
+		list := make([]dto.UserTenantResponse, 0, len(tenants))
+		for _, t := range tenants {
+			list = append(list, dto.UserTenantResponse{
+				ID:          t.ID,
+				Name:        t.Name,
+				Slug:        t.Slug,
+				Status:      t.Status,
+				Description: t.Description,
+				Address:     t.Address,
+				PhoneNumber: t.PhoneNumber,
+				OpenHours:   t.OpenHours,
+				LogoURL:     t.LogoURL,
+				BannerURL:   t.BannerURL,
+			})
+		}
+		tenantsList = &list
+	}
+
 	return &dto.AdminUserDetailResponse{
 		User: dto.AdminUserResponse{
 			ID:       user.ID,
@@ -212,6 +242,7 @@ func (u *userUsecase) GetUserDetailForAdmin(ctx context.Context, userID string) 
 			FullName: user.FullName,
 			Role:     user.Role,
 			IsActive: user.IsActive,
+			Tenants:  tenantsList,
 		},
 	}, nil
 }

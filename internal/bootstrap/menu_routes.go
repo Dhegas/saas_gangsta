@@ -29,7 +29,7 @@ func RegisterMenuRoutes(api *gin.RouterGroup, cfg *config.Config, db *gorm.DB) {
 	partnerMenuRoutes.Use(
 		middleware.JWTAuth(cfg),
 		middleware.RoleGuard("PARTNER"),
-		middleware.TenantGuard(),
+		middleware.TenantGuard(db),
 	)
 	partnerMenuRoutes.POST("", menuHandler.CreateMenu)
 	partnerMenuRoutes.PUT("/:id", menuHandler.UpdateMenu)

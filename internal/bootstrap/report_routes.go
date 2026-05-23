@@ -19,7 +19,7 @@ func RegisterReportRoutes(api *gin.RouterGroup, cfg *config.Config, db *gorm.DB)
 	reportRoutes.Use(
 		middleware.JWTAuth(cfg),
 		middleware.RoleGuard("PARTNER"),
-		middleware.TenantGuard(),
+		middleware.TenantGuard(db),
 	)
 
 	reportRoutes.GET("/revenue", reportHandler.GetRevenue)

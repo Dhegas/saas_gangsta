@@ -1,7 +1,8 @@
-package http
+apackage http
 
 import (
 	"net/http"
+	"strings"
 
 	apperrors "github.com/dhegas/saas_gangsta/internal/common/errors"
 	"github.com/dhegas/saas_gangsta/internal/common/response"
@@ -25,6 +26,24 @@ func (h *PartnerMenuHandler) extractTenantID(c *gin.Context) (string, error) {
 		manualID = c.Query("tenantId")
 	}
 
+	roleVal, _ := c.Get("role")
+	roleStr, _ := roleVal.(string)
+
+	// Jika role adalah PARTNER atau ADMIN, mereka boleh mengakses tenant mana pun
+	if strings.EqualFold(roleStr, "PARTNER") || strings.EqualFold(roleStr, "ADMIN") {
+		if manualID != "" {
+			return manualID, nil
+		}
+		// Fallback ke tenantId dari context
+		contextTenantID, _ := c.Get(tenant.TenantIDKey)
+		contextID, _ := contextTenantID.(string)
+		if contextID != "" {
+			return contextID, nil
+		}
+		return "", apperrors.New("TENANT_NOT_FOUND", "Tenant ID diperlukan", http.StatusBadRequest, nil)
+	}
+
+	// Untuk CUSTOMER / BASIC
 	contextTenantID, _ := c.Get(tenant.TenantIDKey)
 	contextID, _ := contextTenantID.(string)
 	if contextID != "" {

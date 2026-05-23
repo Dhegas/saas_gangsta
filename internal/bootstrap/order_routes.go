@@ -46,7 +46,7 @@ func RegisterOrderRoutes(api *gin.RouterGroup, cfg *config.Config, db *gorm.DB) 
 	partnerOrderRoutes.Use(
 		middleware.JWTAuth(cfg),
 		middleware.RoleGuard("PARTNER"),
-		middleware.TenantGuard(),
+		middleware.TenantGuard(db),
 	)
 	partnerOrderRoutes.GET("", orderHandler.GetAllOrders)
 	partnerOrderRoutes.PATCH("/:id/status", orderHandler.UpdateOrderStatus)

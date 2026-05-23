@@ -76,9 +76,9 @@ func registerRoutes(router *gin.Engine, cfg *config.Config, db *gorm.DB, redisCl
 	api := router.Group("/api/v1")
 	{
 		registerAuthRoutes(api, cfg, authHandler)
-		registerUserRoutes(api, cfg, userHandler)
+		registerUserRoutes(api, cfg, db, userHandler)
 		RegisterPublicRoutes(api, cfg, db)
-		RegisterCustomerRoutes(api, cfg)
+		RegisterCustomerRoutes(api, cfg, db)
 		RegisterPartnerRoutes(api, cfg, db)
 		RegisterAdminRoutes(api, cfg, db)
 		RegisterCategoryRoutes(api, cfg, db)
@@ -115,9 +115,9 @@ func registerAuthRoutes(api *gin.RouterGroup, cfg *config.Config, authHandler *a
 	}
 }
 
-func registerUserRoutes(api *gin.RouterGroup, cfg *config.Config, userHandler *userhttp.UserHandler) {
+func registerUserRoutes(api *gin.RouterGroup, cfg *config.Config, db *gorm.DB, userHandler *userhttp.UserHandler) {
 	userRoutes := api.Group("/users")
-	userRoutes.Use(middleware.JWTAuth(cfg), middleware.TenantGuard(), middleware.RoleGuards("PARTNER", "ADMIN"))
+	userRoutes.Use(middleware.JWTAuth(cfg), middleware.TenantGuard(db), middleware.RoleGuards("PARTNER", "ADMIN"))
 	{
 		userRoutes.GET("", userHandler.ListUsers)
 		userRoutes.GET("/:id", userHandler.GetUserDetail)

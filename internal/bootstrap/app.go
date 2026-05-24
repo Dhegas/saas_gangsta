@@ -55,6 +55,7 @@ func New() (*App, error) {
 	var redisClient *redis.Client = nil
 
 	router := gin.New()
+	router.RedirectTrailingSlash = false
 	router.HandleMethodNotAllowed = true
 	router.Use(
 		middleware.CORS(cfg),

@@ -14,6 +14,8 @@ type PartnerOrderUsecase interface {
 	CreateOrder(ctx context.Context, tenantID string, req dto.CreateOrderRequest) (*dto.OrderResponse, error)
 	UpdateOrderStatus(ctx context.Context, tenantID, orderID string, req dto.UpdateOrderStatusRequest) (*dto.OrderResponse, error)
 	SoftDeleteOrder(ctx context.Context, tenantID, orderID string) error
+	GetPublicOrderStatus(ctx context.Context, tenantID, orderID string) (*dto.PublicOrderDetailsResponse, error)
+	GetPublicOrdersList(ctx context.Context, tenantID string, filter dto.PublicOrderFilterParams) ([]dto.PublicOrderDetailsResponse, error)
 }
 
 // PartnerOrderRepository kontrak interaksi database
@@ -26,6 +28,8 @@ type PartnerOrderRepository interface {
 	SoftDelete(ctx context.Context, tenantID, orderID string) error
 	GetMenuDetails(ctx context.Context, tenantID string, menuIDs []string) (map[string]MenuDetail, error)
 	CheckTableExists(ctx context.Context, tenantID, tableID string) (bool, error)
+	GetPublicOrderDetails(ctx context.Context, tenantID, orderID string) (*OrderEntity, *CustomerEntity, string, error)
+	FindAllPublicOrders(ctx context.Context, tenantID string, filter dto.PublicOrderFilterParams) ([]OrderEntity, []CustomerEntity, map[string]string, error)
 }
 
 type MenuDetail struct {

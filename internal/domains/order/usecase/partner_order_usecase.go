@@ -173,3 +173,86 @@ func toOrderResponse(entity *domain.OrderEntity) dto.OrderResponse {
 		Items:          itemsResp,
 	}
 }
+
+func (u *partnerOrderUsecase) GetPublicOrderStatus(ctx context.Context, tenantID, orderID string) (*dto.PublicOrderDetailsResponse, error) {
+	order, customer, tableName, err := u.repo.GetPublicOrderDetails(ctx, tenantID, orderID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, apperrors.New("NOT_FOUND", "Pesanan tidak ditemukan", http.StatusNotFound, nil)
+		}
+		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil status pesanan", http.StatusInternalServerError, err)
+	}
+
+	var customerResp dto.PublicCustomerDetails
+	if customer != nil {
+		customerResp.FullName = customer.FullName
+	}
+
+	itemsResp := make([]dto.PublicOrderItemResponse, 0, len(order.Items))
+	for _, item := range order.Items {
+		itemsResp = append(itemsResp, dto.PublicOrderItemResponse{
+			MenuName: item.MenuName,
+			Quantity: item.Quantity,
+			Notes:    item.Notes,
+			Subtotal: item.Subtotal,
+		})
+	}
+
+	return &dto.PublicOrderDetailsResponse{
+		ID:         order.ID,
+		Status:     order.Status,
+		TotalPrice: order.TotalPrice,
+		CreatedAt:  order.CreatedAt,
+		Customer:   customerResp,
+		DiningTable: dto.PublicDiningTableDetails{
+			TableName: tableName,
+		},
+		Items: itemsResp,
+	}, nil
+}
+
+func (u *partnerOrderUsecase) GetPublicOrdersList(ctx context.Context, tenantID string, filter dto.PublicOrderFilterParams) ([]dto.PublicOrderDetailsResponse, error) {
+	orders, customers, tableNames, err := u.repo.FindAllPublicOrders(ctx, tenantID, filter)
+	if err != nil {
+		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil daftar pesanan", http.StatusInternalServerError, err)
+	}
+
+	customerMap := make(map[string]*domain.CustomerEntity)
+	for i := range customers {
+		customerMap[customers[i].OrderID] = &customers[i]
+	}
+
+	result := make([]dto.PublicOrderDetailsResponse, 0, len(orders))
+	for _, o := range orders {
+		var customerResp dto.PublicCustomerDetails
+		if cust, exists := customerMap[o.ID]; exists && cust != nil {
+			customerResp.FullName = cust.FullName
+		}
+
+		itemsResp := make([]dto.PublicOrderItemResponse, 0, len(o.Items))
+		for _, item := range o.Items {
+			itemsResp = append(itemsResp, dto.PublicOrderItemResponse{
+				MenuName: item.MenuName,
+				Quantity: item.Quantity,
+				Notes:    item.Notes,
+				Subtotal: item.Subtotal,
+			})
+		}
+
+		result = append(result, dto.PublicOrderDetailsResponse{
+			ID:         o.ID,
+			Status:     o.Status,
+			TotalPrice: o.TotalPrice,
+			CreatedAt:  o.CreatedAt,
+			Customer:   customerResp,
+			DiningTable: dto.PublicDiningTableDetails{
+				TableName: tableNames[o.DiningTablesID],
+			},
+			Items: itemsResp,
+		})
+	}
+
+	return result, nil
+}
+
+

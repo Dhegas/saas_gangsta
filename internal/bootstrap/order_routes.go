@@ -26,6 +26,8 @@ func RegisterOrderRoutes(api *gin.RouterGroup, cfg *config.Config, db *gorm.DB) 
 	// Register rute publik untuk customer membuat order
 	publicTenantOrderRoutes := api.Group("/public/tenant/:tenantSlug", middleware.TenantResolver(db))
 	publicTenantOrderRoutes.POST("/orders", custOrderHandler.CreateOrder)
+	publicTenantOrderRoutes.GET("/orders", custOrderHandler.GetPublicOrders)
+	publicTenantOrderRoutes.GET("/orders/:orderId", custOrderHandler.GetOrderStatus)
 
 	// Customer Routes (untuk membuat order dari QR code)
 	customerOrderRoutes := api.Group("/orders")

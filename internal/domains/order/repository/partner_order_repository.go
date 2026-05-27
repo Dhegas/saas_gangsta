@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	orderdomain "github.com/dhegas/saas_gangsta/internal/domains/order/domain"
@@ -154,4 +155,100 @@ func (r *partnerOrderRepository) CreateWithItemsAndCustomer(ctx context.Context,
 		return nil
 	})
 }
+
+func (r *partnerOrderRepository) GetPublicOrderDetails(ctx context.Context, tenantID, orderID string) (*orderdomain.OrderEntity, *orderdomain.CustomerEntity, string, error) {
+	var order orderdomain.OrderEntity
+	err := r.db.WithContext(ctx).Preload("Items").
+		Where("id = ? AND tenant_id = ? AND deleted_at IS NULL", orderID, tenantID).
+		First(&order).Error
+	if err != nil {
+		return nil, nil, "", err
+	}
+
+	var customer orderdomain.CustomerEntity
+	err = r.db.WithContext(ctx).
+		Where("order_id = ? AND tenant_id = ? AND deleted_at IS NULL", orderID, tenantID).
+		First(&customer).Error
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil, "", err
+	}
+
+	var tableName string
+	if order.DiningTablesID != "" {
+		err = r.db.WithContext(ctx).Table("dining_tables").
+			Select("table_name").
+			Where("id = ? AND tenant_id = ? AND deleted_at IS NULL", order.DiningTablesID, tenantID).
+			Scan(&tableName).Error
+		if err != nil {
+			return nil, nil, "", err
+		}
+	}
+
+	var customerPtr *orderdomain.CustomerEntity
+	if customer.ID != "" {
+		customerPtr = &customer
+	}
+
+	return &order, customerPtr, tableName, nil
+}
+
+func (r *partnerOrderRepository) FindAllPublicOrders(ctx context.Context, tenantID string, filter dto.PublicOrderFilterParams) ([]orderdomain.OrderEntity, []orderdomain.CustomerEntity, map[string]string, error) {
+	var orders []orderdomain.OrderEntity
+	query := r.db.WithContext(ctx).Preload("Items").Where("tenant_id = ? AND deleted_at IS NULL", tenantID)
+
+	if filter.Status != "" {
+		query = query.Where("status = ?", filter.Status)
+	}
+	if filter.TableID != "" {
+		query = query.Where("dining_tables_id = ?", filter.TableID)
+	}
+
+	err := query.Order("created_at DESC").Find(&orders).Error
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	if len(orders) == 0 {
+		return nil, nil, make(map[string]string), nil
+	}
+
+	orderIDs := make([]string, 0, len(orders))
+	tableIDs := make([]string, 0, len(orders))
+	for _, o := range orders {
+		orderIDs = append(orderIDs, o.ID)
+		if o.DiningTablesID != "" {
+			tableIDs = append(tableIDs, o.DiningTablesID)
+		}
+	}
+
+	var customers []orderdomain.CustomerEntity
+	err = r.db.WithContext(ctx).
+		Where("order_id IN ? AND tenant_id = ? AND deleted_at IS NULL", orderIDs, tenantID).
+		Find(&customers).Error
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	tableNames := make(map[string]string)
+	if len(tableIDs) > 0 {
+		var tables []struct {
+			ID        string
+			TableName string `gorm:"column:table_name"`
+		}
+		err = r.db.WithContext(ctx).Table("dining_tables").
+			Select("id, table_name").
+			Where("id IN ? AND tenant_id = ? AND deleted_at IS NULL", tableIDs, tenantID).
+			Scan(&tables).Error
+		if err != nil {
+			return nil, nil, nil, err
+		}
+		for _, t := range tables {
+			tableNames[t.ID] = t.TableName
+		}
+	}
+
+	return orders, customers, tableNames, nil
+}
+
+
 

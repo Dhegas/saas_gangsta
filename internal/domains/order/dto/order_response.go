@@ -22,4 +22,5 @@ type OrderResponse struct {
 	CreatedAt      time.Time           `json:"created_at"`
 	UpdatedAt      time.Time           `json:"updated_at"`
 	Items          []OrderItemResponse `json:"items,omitempty"`
+	AccessToken    string              `json:"access_token,omitempty"`
 }

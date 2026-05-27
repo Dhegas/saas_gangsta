@@ -5,6 +5,7 @@ import (
 	orderhttp "github.com/dhegas/saas_gangsta/internal/domains/order/delivery/http"
 	orderrepo "github.com/dhegas/saas_gangsta/internal/domains/order/repository"
 	orderusecase "github.com/dhegas/saas_gangsta/internal/domains/order/usecase"
+	authrepo "github.com/dhegas/saas_gangsta/internal/domains/user/auth/repository"
 	"github.com/dhegas/saas_gangsta/internal/middleware"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -12,7 +13,8 @@ import (
 
 func RegisterOrderRoutes(api *gin.RouterGroup, cfg *config.Config, db *gorm.DB) {
 	orderRepo := orderrepo.NewPartnerOrderRepository(db)
-	orderUC := orderusecase.NewPartnerOrderUsecase(orderRepo)
+	authRepo := authrepo.NewAuthRepository(db)
+	orderUC := orderusecase.NewPartnerOrderUsecase(orderRepo, authRepo, cfg)
 	orderHandler := orderhttp.NewPartnerOrderHandler(orderUC)
 
 	// Customer Management routes (per order)

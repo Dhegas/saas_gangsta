@@ -68,6 +68,8 @@ func (h *CustomerOrderHandler) CreateOrder(c *gin.Context) {
 		Items:          items,
 		Customer: &dto.CreateCustomerDetailsRequest{
 			FullName:    req.Customer.FullName,
+			Email:       req.Customer.Email,
+			Password:    req.Customer.Password,
 			PhoneNumber: req.Customer.PhoneNumber,
 		},
 	}
@@ -81,9 +83,10 @@ func (h *CustomerOrderHandler) CreateOrder(c *gin.Context) {
 
 	// ADAPTER: Map unified OrderResponse ke CreateCustomerOrderResponse (camelCase)
 	response.Success(c, http.StatusCreated, "Order created successfully", dto.CreateCustomerOrderResponse{
-		OrderID:    res.ID,
-		Status:     strings.ToLower(res.Status),
-		TotalPrice: res.TotalPrice,
+		OrderID:     res.ID,
+		Status:      strings.ToLower(res.Status),
+		TotalPrice:  res.TotalPrice,
+		AccessToken: res.AccessToken,
 	})
 }
 

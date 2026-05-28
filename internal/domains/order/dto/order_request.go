@@ -24,4 +24,5 @@ type UpdateOrderStatusRequest struct {
 type OrderFilterParams struct {
 	Status  string `form:"status" binding:"omitempty,oneof=PENDING PROCESSING COMPLETED CANCELLED"`
 	TableID string `form:"table_id" binding:"omitempty,uuid"`
+	UserID  string `form:"-"`
 }

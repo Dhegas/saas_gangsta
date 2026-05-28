@@ -19,13 +19,16 @@ func NewPartnerOrderRepository(db *gorm.DB) orderdomain.PartnerOrderRepository {
 
 func (r *partnerOrderRepository) FindAll(ctx context.Context, tenantID string, filter dto.OrderFilterParams) ([]orderdomain.OrderEntity, error) {
 	var orders []orderdomain.OrderEntity
-	query := r.db.WithContext(ctx).Preload("Items").Preload("Customer").Where("tenant_id = ? AND deleted_at IS NULL", tenantID)
+	query := r.db.WithContext(ctx).Preload("Items").Preload("User").Where("tenant_id = ? AND deleted_at IS NULL", tenantID)
 
 	if filter.Status != "" {
 		query = query.Where("status = ?", filter.Status)
 	}
 	if filter.TableID != "" {
 		query = query.Where("dining_tables_id = ?", filter.TableID)
+	}
+	if filter.UserID != "" {
+		query = query.Where("user_id = ?", filter.UserID)
 	}
 
 	err := query.Order("created_at DESC").Find(&orders).Error
@@ -34,7 +37,7 @@ func (r *partnerOrderRepository) FindAll(ctx context.Context, tenantID string, f
 
 func (r *partnerOrderRepository) FindByID(ctx context.Context, tenantID, orderID string) (*orderdomain.OrderEntity, error) {
 	var order orderdomain.OrderEntity
-	err := r.db.WithContext(ctx).Preload("Items").Preload("Customer").
+	err := r.db.WithContext(ctx).Preload("Items").Preload("User").
 		Where("id = ? AND tenant_id = ? AND deleted_at IS NULL", orderID, tenantID).
 		First(&order).Error
 	if err != nil {
@@ -129,29 +132,78 @@ func (r *partnerOrderRepository) CheckTableExists(ctx context.Context, tenantID,
 	return count > 0, nil
 }
 
-func (r *partnerOrderRepository) CreateWithItemsAndCustomer(ctx context.Context, order *orderdomain.OrderEntity, items []orderdomain.OrderItemEntity, customer *orderdomain.CustomerEntity) error {
-	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		// 1. Simpan order
-		if err := tx.Create(order).Error; err != nil {
-			return err
-		}
+func (r *partnerOrderRepository) GetPublicOrderDetails(ctx context.Context, tenantID, orderID string) (*orderdomain.OrderEntity, string, error) {
+	var order orderdomain.OrderEntity
+	err := r.db.WithContext(ctx).Preload("Items").
+		Where("id = ? AND tenant_id = ? AND deleted_at IS NULL", orderID, tenantID).
+		First(&order).Error
+	if err != nil {
+		return nil, "", err
+	}
 
-		// 2. Set OrderID ke masing-masing item, lalu simpan ke database
-		for i := range items {
-			items[i].OrderID = order.ID
+	var tableName string
+	if order.DiningTablesID != "" {
+		err = r.db.WithContext(ctx).Table("dining_tables").
+			Select("table_name").
+			Where("id = ? AND tenant_id = ? AND deleted_at IS NULL", order.DiningTablesID, tenantID).
+			Scan(&tableName).Error
+		if err != nil {
+			return nil, "", err
 		}
-		if err := tx.Create(&items).Error; err != nil {
-			return err
-		}
+	}
 
-		// 3. Set OrderID ke data customer, lalu simpan ke database
-		customer.OrderID = order.ID
-		if err := tx.Create(customer).Error; err != nil {
-			return err
-		}
-
-		order.Items = items
-		return nil
-	})
+	return &order, tableName, nil
 }
+
+func (r *partnerOrderRepository) FindAllPublicOrders(ctx context.Context, tenantID string, filter dto.PublicOrderFilterParams) ([]orderdomain.OrderEntity, map[string]string, error) {
+	var orders []orderdomain.OrderEntity
+	query := r.db.WithContext(ctx).Preload("Items").Where("tenant_id = ? AND deleted_at IS NULL", tenantID)
+
+	if filter.Status != "" {
+		query = query.Where("status = ?", filter.Status)
+	}
+	if filter.TableID != "" {
+		query = query.Where("dining_tables_id = ?", filter.TableID)
+	}
+
+	err := query.Order("created_at DESC").Find(&orders).Error
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if len(orders) == 0 {
+		return nil, make(map[string]string), nil
+	}
+
+	orderIDs := make([]string, 0, len(orders))
+	tableIDs := make([]string, 0, len(orders))
+	for _, o := range orders {
+		orderIDs = append(orderIDs, o.ID)
+		if o.DiningTablesID != "" {
+			tableIDs = append(tableIDs, o.DiningTablesID)
+		}
+	}
+
+	tableNames := make(map[string]string)
+	if len(tableIDs) > 0 {
+		var tables []struct {
+			ID        string
+			TableName string `gorm:"column:table_name"`
+		}
+		err = r.db.WithContext(ctx).Table("dining_tables").
+			Select("id, table_name").
+			Where("id IN ? AND tenant_id = ? AND deleted_at IS NULL", tableIDs, tenantID).
+			Scan(&tables).Error
+		if err != nil {
+			return nil, nil, err
+		}
+		for _, t := range tables {
+			tableNames[t.ID] = t.TableName
+		}
+	}
+
+	return orders, tableNames, nil
+}
+
+
 

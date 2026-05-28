@@ -18,6 +18,8 @@ type mockAuthRepo struct {
 	createErr       error
 	errEmail        error
 	errUserID       error
+	phoneNumber     string
+	errPhoneNumber  error
 }
 
 func (m *mockAuthRepo) FindByEmail(_ context.Context, _ string) (*domain.User, error) {
@@ -36,6 +38,10 @@ func (m *mockAuthRepo) CreateUser(_ context.Context, user *domain.User) error {
 		user.ID = "created-user-id"
 	}
 	return nil
+}
+
+func (m *mockAuthRepo) FindPhoneNumber(_ context.Context, _ string, _ string) (string, error) {
+	return m.phoneNumber, m.errPhoneNumber
 }
 
 func mustHash(t *testing.T, plain string) string {
@@ -264,4 +270,3 @@ func TestLogoutSuccess(t *testing.T) {
 		t.Fatalf("expected nil error, got %v", err)
 	}
 }
-

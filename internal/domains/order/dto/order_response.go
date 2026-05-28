@@ -23,4 +23,5 @@ type OrderResponse struct {
 	UpdatedAt      time.Time           `json:"updated_at"`
 	Items          []OrderItemResponse `json:"items,omitempty"`
 	CustomerName   string              `json:"customer_name,omitempty"`
+	AccessToken    string              `json:"access_token,omitempty"`
 }

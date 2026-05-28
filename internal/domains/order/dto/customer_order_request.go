@@ -10,6 +10,8 @@ type CreateCustomerOrderItemRequest struct {
 // CreateCustomerDetailsRequest payload detail customer dalam pemesanan publik
 type CreateCustomerDetailsRequest struct {
 	FullName    string `json:"fullName" binding:"required,min=2,max=150"`
+	Email       string `json:"email" binding:"omitempty,email"`
+	Password    string `json:"password" binding:"omitempty,min=6"`
 	PhoneNumber string `json:"phoneNumber" binding:"omitempty,max=20"`
 }
 

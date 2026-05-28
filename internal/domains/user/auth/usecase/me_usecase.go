@@ -26,12 +26,16 @@ func (u *authUsecase) Me(ctx context.Context, userID string) (*dto.MeResponse, e
 		return nil, err
 	}
 
+	phoneNumber, _ := u.repo.FindPhoneNumber(ctx, userID, user.Role)
+
 	return &dto.MeResponse{
 		User: dto.UserResponse{
-			ID:       user.ID,
-			Email:    user.Email,
-			Role:     user.Role,
-			TenantID: user.TenantID,
+			ID:          user.ID,
+			Email:       user.Email,
+			Role:        user.Role,
+			FullName:    user.FullName,
+			PhoneNumber: phoneNumber,
+			TenantID:    user.TenantID,
 		},
 	}, nil
 }

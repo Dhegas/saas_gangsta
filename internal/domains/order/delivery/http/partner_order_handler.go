@@ -66,6 +66,17 @@ func (h *PartnerOrderHandler) GetAllOrders(c *gin.Context) {
 		return
 	}
 
+	// Injeksi user ID dari JWT context jika role adalah CUSTOMER
+	if roleVal, exists := c.Get("role"); exists {
+		if role, ok := roleVal.(string); ok && role == "CUSTOMER" {
+			if userIDVal, exists := c.Get("userId"); exists {
+				if uID, ok := userIDVal.(string); ok && uID != "" {
+					filter.UserID = uID
+				}
+			}
+		}
+	}
+
 	orders, err := h.usecase.GetAllOrders(c.Request.Context(), tenantID, filter)
 	if err != nil {
 		errors.Write(c, err)
@@ -98,6 +109,20 @@ func (h *PartnerOrderHandler) GetOrderByID(c *gin.Context) {
 	if err != nil {
 		errors.Write(c, err)
 		return
+	}
+
+	// Proteksi anti-IDOR jika role adalah CUSTOMER
+	if roleVal, exists := c.Get("role"); exists {
+		if role, ok := roleVal.(string); ok && role == "CUSTOMER" {
+			if userIDVal, exists := c.Get("userId"); exists {
+				if uID, ok := userIDVal.(string); ok && uID != "" {
+					if order.UserID == nil || *order.UserID != uID {
+						response.Error(c, http.StatusForbidden, "Akses ditolak", gin.H{"code": "FORBIDDEN", "details": "Anda tidak memiliki akses ke pesanan ini"})
+						return
+					}
+				}
+			}
+		}
 	}
 
 	response.Success(c, http.StatusOK, "Berhasil mengambil detail pesanan", order)

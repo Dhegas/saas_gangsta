@@ -15,6 +15,7 @@ type AuthRepository interface {
 	FindByEmail(ctx context.Context, email string) (*domain.User, error)
 	FindByID(ctx context.Context, id string) (*domain.User, error)
 	CreateUser(ctx context.Context, user *domain.User) error
+	FindPhoneNumber(ctx context.Context, userID string, role string) (string, error)
 }
 
 type authRepository struct {
@@ -25,6 +26,7 @@ type authUserRow struct {
 	ID           string `gorm:"column:id"`
 	TenantID     string `gorm:"column:tenant_id"`
 	Email        string `gorm:"column:email"`
+	FullName     string `gorm:"column:full_name"`
 	PasswordHash string `gorm:"column:password_hash"`
 	Role         string `gorm:"column:role"`
 	IsActive     bool   `gorm:"column:is_active"`
@@ -52,7 +54,7 @@ func (r *authRepository) FindByEmail(ctx context.Context, email string) (*domain
 	err := r.db.WithContext(ctx).
 		Table("users u").
 		Select(
-			"u.id, COALESCE(t.id::text, '') AS tenant_id, u.email, u.password_hash, u.role, u.is_active, COALESCE(t.status, 'active') AS tenant_status",
+			"u.id, COALESCE(t.id::text, '') AS tenant_id, u.email, u.full_name, u.password_hash, u.role, u.is_active, COALESCE(t.status, 'active') AS tenant_status",
 		).
 		Joins("LEFT JOIN LATERAL (SELECT id, status FROM tenants WHERE user_id = u.id AND deleted_at IS NULL ORDER BY created_at DESC LIMIT 1) t ON true").
 		Where("LOWER(u.email) = LOWER(?)", email).
@@ -69,6 +71,7 @@ func (r *authRepository) FindByEmail(ctx context.Context, email string) (*domain
 		ID:           row.ID,
 		TenantID:     row.TenantID,
 		Email:        row.Email,
+		FullName:     row.FullName,
 		PasswordHash: row.PasswordHash,
 		Role:         decodeRole(row.Role),
 		IsActive:     row.IsActive,
@@ -85,7 +88,7 @@ func (r *authRepository) FindByID(ctx context.Context, id string) (*domain.User,
 	err := r.db.WithContext(ctx).
 		Table("users u").
 		Select(
-			"u.id, COALESCE(t.id::text, '') AS tenant_id, u.email, u.password_hash, u.role, u.is_active, COALESCE(t.status, 'active') AS tenant_status",
+			"u.id, COALESCE(t.id::text, '') AS tenant_id, u.email, u.full_name, u.password_hash, u.role, u.is_active, COALESCE(t.status, 'active') AS tenant_status",
 		).
 		Joins("LEFT JOIN LATERAL (SELECT id, status FROM tenants WHERE user_id = u.id AND deleted_at IS NULL ORDER BY created_at DESC LIMIT 1) t ON true").
 		Where("u.id = ?", id).
@@ -102,7 +105,7 @@ func (r *authRepository) FindByID(ctx context.Context, id string) (*domain.User,
 		ID:           row.ID,
 		TenantID:     row.TenantID,
 		Email:        row.Email,
-		FullName:     "",
+		FullName:     row.FullName,
 		PasswordHash: row.PasswordHash,
 		Role:         decodeRole(row.Role),
 		IsActive:     row.IsActive,
@@ -140,5 +143,40 @@ func (r *authRepository) CreateUser(ctx context.Context, user *domain.User) erro
 	user.IsActive = true
 
 	return nil
+}
+
+func (r *authRepository) FindPhoneNumber(ctx context.Context, userID string, role string) (string, error) {
+	if r.db == nil {
+		return "", fmt.Errorf("database is not initialized")
+	}
+
+	var phoneNumber string
+	var err error
+
+	if strings.ToUpper(role) == "PARTNER" {
+		err = r.db.WithContext(ctx).
+			Table("tenants").
+			Select("phone_number").
+			Where("user_id = ? AND deleted_at IS NULL", userID).
+			Order("created_at DESC").
+			Limit(1).
+			Scan(&phoneNumber).
+			Error
+	} else if strings.ToUpper(role) == "CUSTOMER" {
+		err = r.db.WithContext(ctx).
+			Table("customers c").
+			Select("c.phone_number").
+			Joins("JOIN orders o ON c.order_id = o.id").
+			Where("o.user_id = ? AND c.deleted_at IS NULL AND o.deleted_at IS NULL", userID).
+			Order("c.created_at DESC").
+			Limit(1).
+			Scan(&phoneNumber).
+			Error
+	}
+
+	if err != nil {
+		return "", err
+	}
+	return phoneNumber, nil
 }
 

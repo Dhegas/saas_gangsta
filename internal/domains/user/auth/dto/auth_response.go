@@ -1,10 +1,12 @@
 package dto
 
 type UserResponse struct {
-	ID       string `json:"id"`
-	Email    string `json:"email"`
-	Role     string `json:"role"`
-	TenantID string `json:"tenantId,omitempty"`
+	ID          string `json:"id"`
+	Email       string `json:"email"`
+	Role        string `json:"role"`
+	FullName    string `json:"fullName,omitempty"`
+	PhoneNumber string `json:"phoneNumber,omitempty"`
+	TenantID    string `json:"tenantId,omitempty"`
 }
 
 type LoginResponse struct {

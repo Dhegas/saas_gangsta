@@ -38,7 +38,8 @@ func RegisterOrderRoutes(api *gin.RouterGroup, cfg *config.Config, db *gorm.DB) 
 		middleware.RoleGuards("CUSTOMER", "PARTNER", "ADMIN"),
 	)
 	customerOrderRoutes.POST("/tenant/:tenantSlug", middleware.TenantResolver(db), orderHandler.CreateOrder)
-	customerOrderRoutes.GET("/:id", orderHandler.GetOrderByID) // Customer mungkin butuh melihat struk detailnya
+	customerOrderRoutes.GET("", middleware.TenantGuard(db), orderHandler.GetAllOrders)
+	customerOrderRoutes.GET("/:id", middleware.TenantGuard(db), orderHandler.GetOrderByID) // Customer mungkin butuh melihat struk detailnya
 
 	// Customer sub-resource routes: POST, GET, PUT /api/orders/:id/customer
 	customerOrderRoutes.POST("/:id/customer", customerHandler.CreateCustomer)
@@ -52,7 +53,6 @@ func RegisterOrderRoutes(api *gin.RouterGroup, cfg *config.Config, db *gorm.DB) 
 		middleware.RoleGuard("PARTNER"),
 		middleware.TenantGuard(db),
 	)
-	partnerOrderRoutes.GET("", orderHandler.GetAllOrders)
 	partnerOrderRoutes.PATCH("/:id/status", orderHandler.UpdateOrderStatus)
 	partnerOrderRoutes.DELETE("/:id", orderHandler.SoftDeleteOrder)
 }

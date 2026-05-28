@@ -28,6 +28,9 @@ func (r *partnerOrderRepository) FindAll(ctx context.Context, tenantID string, f
 	if filter.TableID != "" {
 		query = query.Where("dining_tables_id = ?", filter.TableID)
 	}
+	if filter.UserID != "" {
+		query = query.Where("user_id = ?", filter.UserID)
+	}
 
 	err := query.Order("created_at DESC").Find(&orders).Error
 	return orders, err

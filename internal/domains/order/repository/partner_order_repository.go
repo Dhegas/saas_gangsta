@@ -19,7 +19,7 @@ func NewPartnerOrderRepository(db *gorm.DB) orderdomain.PartnerOrderRepository {
 
 func (r *partnerOrderRepository) FindAll(ctx context.Context, tenantID string, filter dto.OrderFilterParams) ([]orderdomain.OrderEntity, error) {
 	var orders []orderdomain.OrderEntity
-	query := r.db.WithContext(ctx).Preload("Items").Where("tenant_id = ? AND deleted_at IS NULL", tenantID)
+	query := r.db.WithContext(ctx).Preload("Items").Preload("Customer").Where("tenant_id = ? AND deleted_at IS NULL", tenantID)
 
 	if filter.Status != "" {
 		query = query.Where("status = ?", filter.Status)
@@ -34,7 +34,7 @@ func (r *partnerOrderRepository) FindAll(ctx context.Context, tenantID string, f
 
 func (r *partnerOrderRepository) FindByID(ctx context.Context, tenantID, orderID string) (*orderdomain.OrderEntity, error) {
 	var order orderdomain.OrderEntity
-	err := r.db.WithContext(ctx).Preload("Items").
+	err := r.db.WithContext(ctx).Preload("Items").Preload("Customer").
 		Where("id = ? AND tenant_id = ? AND deleted_at IS NULL", orderID, tenantID).
 		First(&order).Error
 	if err != nil {

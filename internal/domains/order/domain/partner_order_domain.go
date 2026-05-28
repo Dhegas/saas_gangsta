@@ -46,6 +46,7 @@ type OrderEntity struct {
 	UpdatedAt      time.Time         `gorm:"autoUpdateTime"`
 	DeletedAt      *time.Time        `gorm:"index"`
 	Items          []OrderItemEntity `gorm:"foreignKey:OrderID"`
+	Customer       *CustomerEntity   `gorm:"foreignKey:OrderID"`
 }
 
 func (OrderEntity) TableName() string {

@@ -161,6 +161,11 @@ func toOrderResponse(entity *domain.OrderEntity) dto.OrderResponse {
 		}
 	}
 
+	var customerName string
+	if entity.Customer != nil {
+		customerName = entity.Customer.FullName
+	}
+
 	return dto.OrderResponse{
 		ID:             entity.ID,
 		TenantID:       entity.TenantID,
@@ -171,5 +176,6 @@ func toOrderResponse(entity *domain.OrderEntity) dto.OrderResponse {
 		CreatedAt:      entity.CreatedAt,
 		UpdatedAt:      entity.UpdatedAt,
 		Items:          itemsResp,
+		CustomerName:   customerName,
 	}
 }

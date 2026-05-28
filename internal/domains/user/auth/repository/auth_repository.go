@@ -163,15 +163,7 @@ func (r *authRepository) FindPhoneNumber(ctx context.Context, userID string, rol
 			Scan(&phoneNumber).
 			Error
 	} else if strings.ToUpper(role) == "CUSTOMER" {
-		err = r.db.WithContext(ctx).
-			Table("customers c").
-			Select("c.phone_number").
-			Joins("JOIN orders o ON c.order_id = o.id").
-			Where("o.user_id = ? AND c.deleted_at IS NULL AND o.deleted_at IS NULL", userID).
-			Order("c.created_at DESC").
-			Limit(1).
-			Scan(&phoneNumber).
-			Error
+		phoneNumber = ""
 	}
 
 	if err != nil {

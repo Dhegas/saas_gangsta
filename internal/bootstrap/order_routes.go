@@ -17,11 +17,6 @@ func RegisterOrderRoutes(api *gin.RouterGroup, cfg *config.Config, db *gorm.DB) 
 	orderUC := orderusecase.NewPartnerOrderUsecase(orderRepo, authRepo, cfg)
 	orderHandler := orderhttp.NewPartnerOrderHandler(orderUC)
 
-	// Customer Management routes (per order)
-	customerRepo := orderrepo.NewCustomerRepository(db)
-	customerUC := orderusecase.NewCustomerUsecase(customerRepo)
-	customerHandler := orderhttp.NewCustomerHandler(customerUC)
-
 	// Customer Order (Self-Order publik dari QR code / slug) menggunakan unified usecase
 	custOrderHandler := orderhttp.NewCustomerOrderHandler(orderUC)
 
@@ -40,11 +35,6 @@ func RegisterOrderRoutes(api *gin.RouterGroup, cfg *config.Config, db *gorm.DB) 
 	customerOrderRoutes.POST("/tenant/:tenantSlug", middleware.TenantResolver(db), orderHandler.CreateOrder)
 	customerOrderRoutes.GET("", middleware.TenantGuard(db), orderHandler.GetAllOrders)
 	customerOrderRoutes.GET("/:id", middleware.TenantGuard(db), orderHandler.GetOrderByID) // Customer mungkin butuh melihat struk detailnya
-
-	// Customer sub-resource routes: POST, GET, PUT /api/orders/:id/customer
-	customerOrderRoutes.POST("/:id/customer", customerHandler.CreateCustomer)
-	customerOrderRoutes.GET("/:id/customer", customerHandler.GetCustomer)
-	customerOrderRoutes.PUT("/:id/customer", customerHandler.UpdateCustomer)
 
 	// Partner specific routes (untuk memanajemen pesanan masuk)
 	partnerOrderRoutes := api.Group("/orders")

@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	orderdomain "github.com/dhegas/saas_gangsta/internal/domains/order/domain"
@@ -133,47 +132,13 @@ func (r *partnerOrderRepository) CheckTableExists(ctx context.Context, tenantID,
 	return count > 0, nil
 }
 
-func (r *partnerOrderRepository) CreateWithItemsAndCustomer(ctx context.Context, order *orderdomain.OrderEntity, items []orderdomain.OrderItemEntity, customer *orderdomain.CustomerEntity) error {
-	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		// 1. Simpan order
-		if err := tx.Create(order).Error; err != nil {
-			return err
-		}
-
-		// 2. Set OrderID ke masing-masing item, lalu simpan ke database
-		for i := range items {
-			items[i].OrderID = order.ID
-		}
-		if err := tx.Create(&items).Error; err != nil {
-			return err
-		}
-
-		// 3. Set OrderID ke data customer, lalu simpan ke database
-		customer.OrderID = order.ID
-		if err := tx.Create(customer).Error; err != nil {
-			return err
-		}
-
-		order.Items = items
-		return nil
-	})
-}
-
-func (r *partnerOrderRepository) GetPublicOrderDetails(ctx context.Context, tenantID, orderID string) (*orderdomain.OrderEntity, *orderdomain.CustomerEntity, string, error) {
+func (r *partnerOrderRepository) GetPublicOrderDetails(ctx context.Context, tenantID, orderID string) (*orderdomain.OrderEntity, string, error) {
 	var order orderdomain.OrderEntity
 	err := r.db.WithContext(ctx).Preload("Items").
 		Where("id = ? AND tenant_id = ? AND deleted_at IS NULL", orderID, tenantID).
 		First(&order).Error
 	if err != nil {
-		return nil, nil, "", err
-	}
-
-	var customer orderdomain.CustomerEntity
-	err = r.db.WithContext(ctx).
-		Where("order_id = ? AND tenant_id = ? AND deleted_at IS NULL", orderID, tenantID).
-		First(&customer).Error
-	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		return nil, nil, "", err
+		return nil, "", err
 	}
 
 	var tableName string
@@ -183,19 +148,14 @@ func (r *partnerOrderRepository) GetPublicOrderDetails(ctx context.Context, tena
 			Where("id = ? AND tenant_id = ? AND deleted_at IS NULL", order.DiningTablesID, tenantID).
 			Scan(&tableName).Error
 		if err != nil {
-			return nil, nil, "", err
+			return nil, "", err
 		}
 	}
 
-	var customerPtr *orderdomain.CustomerEntity
-	if customer.ID != "" {
-		customerPtr = &customer
-	}
-
-	return &order, customerPtr, tableName, nil
+	return &order, tableName, nil
 }
 
-func (r *partnerOrderRepository) FindAllPublicOrders(ctx context.Context, tenantID string, filter dto.PublicOrderFilterParams) ([]orderdomain.OrderEntity, []orderdomain.CustomerEntity, map[string]string, error) {
+func (r *partnerOrderRepository) FindAllPublicOrders(ctx context.Context, tenantID string, filter dto.PublicOrderFilterParams) ([]orderdomain.OrderEntity, map[string]string, error) {
 	var orders []orderdomain.OrderEntity
 	query := r.db.WithContext(ctx).Preload("Items").Where("tenant_id = ? AND deleted_at IS NULL", tenantID)
 
@@ -208,11 +168,11 @@ func (r *partnerOrderRepository) FindAllPublicOrders(ctx context.Context, tenant
 
 	err := query.Order("created_at DESC").Find(&orders).Error
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, err
 	}
 
 	if len(orders) == 0 {
-		return nil, nil, make(map[string]string), nil
+		return nil, make(map[string]string), nil
 	}
 
 	orderIDs := make([]string, 0, len(orders))
@@ -222,14 +182,6 @@ func (r *partnerOrderRepository) FindAllPublicOrders(ctx context.Context, tenant
 		if o.DiningTablesID != "" {
 			tableIDs = append(tableIDs, o.DiningTablesID)
 		}
-	}
-
-	var customers []orderdomain.CustomerEntity
-	err = r.db.WithContext(ctx).
-		Where("order_id IN ? AND tenant_id = ? AND deleted_at IS NULL", orderIDs, tenantID).
-		Find(&customers).Error
-	if err != nil {
-		return nil, nil, nil, err
 	}
 
 	tableNames := make(map[string]string)
@@ -243,14 +195,14 @@ func (r *partnerOrderRepository) FindAllPublicOrders(ctx context.Context, tenant
 			Where("id IN ? AND tenant_id = ? AND deleted_at IS NULL", tableIDs, tenantID).
 			Scan(&tables).Error
 		if err != nil {
-			return nil, nil, nil, err
+			return nil, nil, err
 		}
 		for _, t := range tables {
 			tableNames[t.ID] = t.TableName
 		}
 	}
 
-	return orders, customers, tableNames, nil
+	return orders, tableNames, nil
 }
 
 

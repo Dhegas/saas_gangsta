@@ -1,19 +1,23 @@
 package bootstrap
 
 import (
+	"github.com/dhegas/saas_gangsta/internal/config"
 	categoryhttp "github.com/dhegas/saas_gangsta/internal/domains/category/delivery/http"
 	categoryrepo "github.com/dhegas/saas_gangsta/internal/domains/category/repository"
 	categoryusecase "github.com/dhegas/saas_gangsta/internal/domains/category/usecase"
 	menuhttp "github.com/dhegas/saas_gangsta/internal/domains/menu/delivery/http"
 	menurepo "github.com/dhegas/saas_gangsta/internal/domains/menu/repository"
 	menuusecase "github.com/dhegas/saas_gangsta/internal/domains/menu/usecase"
+	orderhttp "github.com/dhegas/saas_gangsta/internal/domains/order/delivery/http"
+	orderrepo "github.com/dhegas/saas_gangsta/internal/domains/order/repository"
+	orderusecase "github.com/dhegas/saas_gangsta/internal/domains/order/usecase"
 	tablehttp "github.com/dhegas/saas_gangsta/internal/domains/table/delivery/http"
 	tablerepo "github.com/dhegas/saas_gangsta/internal/domains/table/repository"
 	tableusecase "github.com/dhegas/saas_gangsta/internal/domains/table/usecase"
-	"github.com/dhegas/saas_gangsta/internal/config"
 	tenanthttp "github.com/dhegas/saas_gangsta/internal/domains/tenant/delivery/http"
 	"github.com/dhegas/saas_gangsta/internal/domains/tenant/repository"
 	"github.com/dhegas/saas_gangsta/internal/domains/tenant/usecase"
+	authrepo "github.com/dhegas/saas_gangsta/internal/domains/user/auth/repository"
 	"github.com/dhegas/saas_gangsta/internal/middleware"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -39,6 +43,12 @@ func RegisterPublicRoutes(api *gin.RouterGroup, cfg *config.Config, db *gorm.DB)
 	tableUC := tableusecase.NewPublicTableUsecase(tableRepo)
 	publicTableHandler := tablehttp.NewPublicTableHandler(tableUC)
 
+	// Order (self-order via QR code / slug, tanpa autentikasi)
+	orderRepo := orderrepo.NewPartnerOrderRepository(db)
+	authRepo := authrepo.NewAuthRepository(db)
+	orderUC := orderusecase.NewPartnerOrderUsecase(orderRepo, authRepo, cfg)
+	custOrderHandler := orderhttp.NewCustomerOrderHandler(orderUC)
+
 	publicRoutes := api.Group("/public")
 	{
 		publicRoutes.GET("/tenants", tenantHandler.GetPublicTenantList)
@@ -51,6 +61,11 @@ func RegisterPublicRoutes(api *gin.RouterGroup, cfg *config.Config, db *gorm.DB)
 			resolvedRoutes.GET("/menus", publicMenuHandler.GetPublicMenus)
 			resolvedRoutes.GET("/tables", publicTableHandler.GetPublicTables)
 			resolvedRoutes.GET("/dining-tables", publicTableHandler.GetPublicTables)
+
+			// Self-order publik dari QR code (tanpa login)
+			resolvedRoutes.POST("/orders", custOrderHandler.CreateOrder)
+			resolvedRoutes.GET("/orders", custOrderHandler.GetPublicOrders)
+			resolvedRoutes.GET("/orders/:orderId", custOrderHandler.GetOrderStatus)
 		}
 	}
 }

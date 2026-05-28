@@ -33,10 +33,10 @@ func TestFindByEmailSuccess(t *testing.T) {
 	defer cleanup()
 
 	repo := NewAuthRepository(db)
-	rows := sqlmock.NewRows([]string{"id", "tenant_id", "email", "password_hash", "role", "is_active", "tenant_status"}).
-		AddRow("u-1", "t-1", "user@test.local", "hash", "PARTNER", true, "active")
+	rows := sqlmock.NewRows([]string{"id", "tenant_id", "email", "full_name", "password_hash", "role", "is_active", "tenant_status"}).
+		AddRow("u-1", "t-1", "user@test.local", "Test User", "hash", "PARTNER", true, "active")
 
-	mock.ExpectQuery(regexp.QuoteMeta(`SELECT u.id, COALESCE(t.id::text, '') AS tenant_id, u.email, u.password_hash, u.role, u.is_active, COALESCE(t.status, 'active') AS tenant_status FROM users u LEFT JOIN LATERAL (SELECT id, status FROM tenants WHERE user_id = u.id AND deleted_at IS NULL ORDER BY created_at DESC LIMIT 1) t ON true WHERE LOWER(u.email) = LOWER($1) LIMIT $2`)).
+	mock.ExpectQuery(regexp.QuoteMeta(`SELECT u.id, COALESCE(t.id::text, '') AS tenant_id, u.email, u.full_name, u.password_hash, u.role, u.is_active, COALESCE(t.status, 'active') AS tenant_status FROM users u LEFT JOIN LATERAL (SELECT id, status FROM tenants WHERE user_id = u.id AND deleted_at IS NULL ORDER BY created_at DESC LIMIT 1) t ON true WHERE LOWER(u.email) = LOWER($1) LIMIT $2`)).
 		WithArgs("user@test.local", 1).
 		WillReturnRows(rows)
 
@@ -68,10 +68,10 @@ func TestFindByIDSuccess(t *testing.T) {
 	defer cleanup()
 
 	repo := NewAuthRepository(db)
-	rows := sqlmock.NewRows([]string{"id", "tenant_id", "email", "password_hash", "role", "is_active", "tenant_status"}).
-		AddRow("u-2", "t-2", "user2@test.local", "hash", "CUSTOMER", true, "active")
+	rows := sqlmock.NewRows([]string{"id", "tenant_id", "email", "full_name", "password_hash", "role", "is_active", "tenant_status"}).
+		AddRow("u-2", "t-2", "user2@test.local", "Test User 2", "hash", "CUSTOMER", true, "active")
 
-	mock.ExpectQuery(regexp.QuoteMeta(`SELECT u.id, COALESCE(t.id::text, '') AS tenant_id, u.email, u.password_hash, u.role, u.is_active, COALESCE(t.status, 'active') AS tenant_status FROM users u LEFT JOIN LATERAL (SELECT id, status FROM tenants WHERE user_id = u.id AND deleted_at IS NULL ORDER BY created_at DESC LIMIT 1) t ON true WHERE u.id = $1 LIMIT $2`)).
+	mock.ExpectQuery(regexp.QuoteMeta(`SELECT u.id, COALESCE(t.id::text, '') AS tenant_id, u.email, u.full_name, u.password_hash, u.role, u.is_active, COALESCE(t.status, 'active') AS tenant_status FROM users u LEFT JOIN LATERAL (SELECT id, status FROM tenants WHERE user_id = u.id AND deleted_at IS NULL ORDER BY created_at DESC LIMIT 1) t ON true WHERE u.id = $1 LIMIT $2`)).
 		WithArgs("u-1", 1).
 		WillReturnRows(rows)
 
@@ -89,7 +89,7 @@ func TestFindByEmailNotFound(t *testing.T) {
 	defer cleanup()
 
 	repo := NewAuthRepository(db)
-	mock.ExpectQuery(regexp.QuoteMeta(`SELECT u.id, COALESCE(t.id::text, '') AS tenant_id, u.email, u.password_hash, u.role, u.is_active, COALESCE(t.status, 'active') AS tenant_status FROM users u LEFT JOIN LATERAL (SELECT id, status FROM tenants WHERE user_id = u.id AND deleted_at IS NULL ORDER BY created_at DESC LIMIT 1) t ON true WHERE LOWER(u.email) = LOWER($1) LIMIT $2`)).
+	mock.ExpectQuery(regexp.QuoteMeta(`SELECT u.id, COALESCE(t.id::text, '') AS tenant_id, u.email, u.full_name, u.password_hash, u.role, u.is_active, COALESCE(t.status, 'active') AS tenant_status FROM users u LEFT JOIN LATERAL (SELECT id, status FROM tenants WHERE user_id = u.id AND deleted_at IS NULL ORDER BY created_at DESC LIMIT 1) t ON true WHERE LOWER(u.email) = LOWER($1) LIMIT $2`)).
 		WithArgs("none@test.local", 1).
 		WillReturnError(gorm.ErrRecordNotFound)
 

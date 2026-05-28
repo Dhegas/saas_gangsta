@@ -164,21 +164,8 @@ func (u *partnerOrderUsecase) CreateOrder(ctx context.Context, tenantID string, 
 	}
 
 	// 6. Simpan secara transaksional
-	if req.Customer != nil {
-		// Jika ada profil customer (Guest Mode / Self-Order QR)
-		customerEntity := &domain.CustomerEntity{
-			TenantID:    tenantID,
-			FullName:    req.Customer.FullName,
-			PhoneNumber: req.Customer.PhoneNumber,
-		}
-		if err := u.repo.CreateWithItemsAndCustomer(ctx, orderEntity, orderItems, customerEntity); err != nil {
-			return nil, apperrors.New("INTERNAL_ERROR", "Gagal menyimpan pesanan", http.StatusInternalServerError, err)
-		}
-	} else {
-		// Jika tidak ada profil customer (Normal / Private Mode)
-		if err := u.repo.CreateWithItems(ctx, orderEntity, orderItems); err != nil {
-			return nil, apperrors.New("INTERNAL_ERROR", "Gagal menyimpan pesanan", http.StatusInternalServerError, err)
-		}
+	if err := u.repo.CreateWithItems(ctx, orderEntity, orderItems); err != nil {
+		return nil, apperrors.New("INTERNAL_ERROR", "Gagal menyimpan pesanan", http.StatusInternalServerError, err)
 	}
 
 	response := toOrderResponse(orderEntity)
@@ -241,7 +228,7 @@ func toOrderResponse(entity *domain.OrderEntity) dto.OrderResponse {
 }
 
 func (u *partnerOrderUsecase) GetPublicOrderStatus(ctx context.Context, tenantID, orderID string) (*dto.PublicOrderDetailsResponse, error) {
-	order, customer, tableName, err := u.repo.GetPublicOrderDetails(ctx, tenantID, orderID)
+	order, tableName, err := u.repo.GetPublicOrderDetails(ctx, tenantID, orderID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, apperrors.New("NOT_FOUND", "Pesanan tidak ditemukan", http.StatusNotFound, nil)
@@ -250,9 +237,6 @@ func (u *partnerOrderUsecase) GetPublicOrderStatus(ctx context.Context, tenantID
 	}
 
 	var customerResp dto.PublicCustomerDetails
-	if customer != nil {
-		customerResp.FullName = customer.FullName
-	}
 
 	itemsResp := make([]dto.PublicOrderItemResponse, 0, len(order.Items))
 	for _, item := range order.Items {
@@ -278,22 +262,14 @@ func (u *partnerOrderUsecase) GetPublicOrderStatus(ctx context.Context, tenantID
 }
 
 func (u *partnerOrderUsecase) GetPublicOrdersList(ctx context.Context, tenantID string, filter dto.PublicOrderFilterParams) ([]dto.PublicOrderDetailsResponse, error) {
-	orders, customers, tableNames, err := u.repo.FindAllPublicOrders(ctx, tenantID, filter)
+	orders, tableNames, err := u.repo.FindAllPublicOrders(ctx, tenantID, filter)
 	if err != nil {
 		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil daftar pesanan", http.StatusInternalServerError, err)
-	}
-
-	customerMap := make(map[string]*domain.CustomerEntity)
-	for i := range customers {
-		customerMap[customers[i].OrderID] = &customers[i]
 	}
 
 	result := make([]dto.PublicOrderDetailsResponse, 0, len(orders))
 	for _, o := range orders {
 		var customerResp dto.PublicCustomerDetails
-		if cust, exists := customerMap[o.ID]; exists && cust != nil {
-			customerResp.FullName = cust.FullName
-		}
 
 		itemsResp := make([]dto.PublicOrderItemResponse, 0, len(o.Items))
 		for _, item := range o.Items {

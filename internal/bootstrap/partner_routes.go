@@ -82,6 +82,7 @@ func RegisterPartnerRoutes(api *gin.RouterGroup, cfg *config.Config, db *gorm.DB
 	partnerRoutes.POST("/tenants", tenantHandler.CreatePartnerTenant)
 	partnerRoutes.GET("/tenants", tenantHandler.ListPartnerTenants)
 	partnerRoutes.GET("/tenants/:id", tenantHandler.GetPartnerTenantByID)
+	partnerRoutes.PUT("/tenants/:id", tenantHandler.UpdatePartnerTenant)
 	partnerRoutes.DELETE("/tenants/:id", tenantHandler.SoftDeletePartnerTenant)
 
 	// === Tenant-Scoped Routes (dengan TenantGuard) ===

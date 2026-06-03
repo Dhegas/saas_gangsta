@@ -37,6 +37,10 @@ func (m *mockPartnerTenantRepo) SoftDeleteTenant(_ context.Context, _ string, _ 
 	return nil
 }
 
+func (m *mockPartnerTenantRepo) UpdateTenant(_ context.Context, _ string, _ string, _ string, _ string, _ string, _ string) (*domain.PartnerTenant, error) {
+	return m.createdTenant, m.createErr
+}
+
 func TestCreatePartnerTenantSuccess(t *testing.T) {
 	repo := &mockPartnerTenantRepo{
 		createdTenant: &domain.PartnerTenant{ID: "t-1", Name: "Warung A", Slug: "warung-a", Status: "active", IsOwner: true},
@@ -65,5 +69,25 @@ func TestListPartnerTenantsSuccess(t *testing.T) {
 	}
 	if len(res.Tenants) != 1 {
 		t.Fatalf("expected 1 tenant, got %d", len(res.Tenants))
+	}
+}
+
+func TestUpdatePartnerTenantSuccess(t *testing.T) {
+	repo := &mockPartnerTenantRepo{
+		createdTenant: &domain.PartnerTenant{ID: "t-1", Name: "Warung Baru", Slug: "warung-baru", Status: "active", IsOwner: true},
+	}
+	uc := NewPartnerTenantUsecase(repo)
+
+	res, err := uc.UpdatePartnerTenant(context.Background(), "u-1", "t-1", dto.UpdatePartnerTenantRequest{
+		Name:        "Warung Baru",
+		Description: "Warung Baru yang nyaman",
+		Address:     "Jalan Mawar No. 1",
+		PhoneNumber: "0812345678",
+	})
+	if err != nil {
+		t.Fatalf("expected nil error, got %v", err)
+	}
+	if res.Tenant.Name != "Warung Baru" || res.Tenant.ID != "t-1" {
+		t.Fatalf("expected updated tenant properties")
 	}
 }

@@ -135,3 +135,45 @@ func (h *PartnerTenantHandler) GetPartnerTenantByID(c *gin.Context) {
 
 	response.Success(c, http.StatusOK, "Detail tenant berhasil diambil", res)
 }
+
+// UpdatePartnerTenant godoc
+// @Summary Update partner tenant
+// @Description Partner mengubah data tenant miliknya (seperti nama, deskripsi, alamat, no telp)
+// @Tags Partner
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Tenant ID"
+// @Param request body dto.UpdatePartnerTenantRequest true "Update partner tenant payload"
+// @Success 200 {object} response.Envelope{data=dto.PartnerTenantResponse}
+// @Failure 400 {object} response.Envelope
+// @Failure 401 {object} response.Envelope
+// @Failure 403 {object} response.Envelope
+// @Failure 404 {object} response.Envelope
+// @Failure 500 {object} response.Envelope
+// @Router /partner/tenants/{id} [put]
+func (h *PartnerTenantHandler) UpdatePartnerTenant(c *gin.Context) {
+	userID, _ := c.Get("userId")
+	userIDStr, _ := userID.(string)
+	tenantID := c.Param("id")
+
+	var req dto.UpdatePartnerTenantRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		var validationErrs validator.ValidationErrors
+		details := err.Error()
+		if errors.As(err, &validationErrs) {
+			details = validationErrs.Error()
+		}
+		apperrors.Write(c, apperrors.New("VALIDATION_ERROR", "Payload update tenant tidak valid", http.StatusBadRequest, details))
+		return
+	}
+
+	res, err := h.usecase.UpdatePartnerTenant(c.Request.Context(), userIDStr, tenantID, req)
+	if err != nil {
+		apperrors.Write(c, err)
+		return
+	}
+
+	response.Success(c, http.StatusOK, "Tenant partner berhasil diperbarui", res)
+}
+

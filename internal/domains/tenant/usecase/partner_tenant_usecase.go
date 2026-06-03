@@ -161,3 +161,45 @@ func (u *partnerTenantUsecase) GetPartnerTenantByID(ctx context.Context, userID 
 		IsOwner:     tenant.IsOwner,
 	}, nil
 }
+
+func (u *partnerTenantUsecase) UpdatePartnerTenant(ctx context.Context, userID string, tenantID string, req dto.UpdatePartnerTenantRequest) (*dto.CreatePartnerTenantResponse, error) {
+	userID = strings.TrimSpace(userID)
+	if userID == "" {
+		return nil, apperrors.New("UNAUTHORIZED", "User tidak valid", http.StatusUnauthorized, nil)
+	}
+
+	tenantID = strings.TrimSpace(tenantID)
+	if tenantID == "" {
+		return nil, apperrors.New("VALIDATION_ERROR", "ID Tenant wajib diisi", http.StatusBadRequest, nil)
+	}
+
+	name := strings.TrimSpace(req.Name)
+	if name == "" {
+		return nil, apperrors.New("VALIDATION_ERROR", "Nama tenant wajib diisi", http.StatusBadRequest, nil)
+	}
+
+	tenant, err := u.repo.UpdateTenant(ctx, userID, tenantID, name, strings.TrimSpace(req.Description), strings.TrimSpace(req.Address), strings.TrimSpace(req.PhoneNumber))
+	if err != nil {
+		if errors.Is(err, repository.ErrTenantNotFound) {
+			return nil, apperrors.New("NOT_FOUND", "Tenant tidak ditemukan atau Anda tidak memiliki akses", http.StatusNotFound, nil)
+		}
+		return nil, apperrors.New("INTERNAL_ERROR", "Gagal memperbarui tenant", http.StatusInternalServerError, err)
+	}
+
+	return &dto.CreatePartnerTenantResponse{
+		Tenant: dto.PartnerTenantResponse{
+			ID:          tenant.ID,
+			Name:        tenant.Name,
+			Slug:        tenant.Slug,
+			Status:      tenant.Status,
+			Description: tenant.Description,
+			Address:     tenant.Address,
+			PhoneNumber: tenant.PhoneNumber,
+			OpenHours:   tenant.OpenHours,
+			LogoURL:     tenant.LogoURL,
+			BannerURL:   tenant.BannerURL,
+			IsOwner:     tenant.IsOwner,
+		},
+	}, nil
+}
+

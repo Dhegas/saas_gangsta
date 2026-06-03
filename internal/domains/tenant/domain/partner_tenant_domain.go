@@ -11,6 +11,7 @@ type PartnerTenantUsecase interface {
 	ListPartnerTenants(ctx context.Context, userID string) (*dto.ListPartnerTenantsResponse, error)
 	SoftDeletePartnerTenant(ctx context.Context, userID string, tenantID string) error
 	GetPartnerTenantByID(ctx context.Context, userID string, tenantID string) (*dto.PartnerTenantResponse, error)
+	UpdatePartnerTenant(ctx context.Context, userID string, tenantID string, req dto.UpdatePartnerTenantRequest) (*dto.CreatePartnerTenantResponse, error)
 }
 
 type PartnerTenantRepository interface {
@@ -19,6 +20,7 @@ type PartnerTenantRepository interface {
 	ListTenantsByPartner(ctx context.Context, userID string) ([]PartnerTenant, error)
 	SoftDeleteTenant(ctx context.Context, userID string, tenantID string) error
 	GetTenantByIDAndPartner(ctx context.Context, userID string, tenantID string) (*PartnerTenant, error)
+	UpdateTenant(ctx context.Context, userID string, tenantID string, name string, description string, address string, phoneNumber string) (*PartnerTenant, error)
 }
 
 type PartnerUser struct {

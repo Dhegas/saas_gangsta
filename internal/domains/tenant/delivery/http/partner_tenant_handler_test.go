@@ -39,6 +39,13 @@ func (m *mockPartnerTenantUsecase) GetPartnerTenantByID(_ context.Context, _ str
 	return nil, nil
 }
 
+func (m *mockPartnerTenantUsecase) UpdatePartnerTenant(_ context.Context, _ string, _ string, _ dto.UpdatePartnerTenantRequest) (*dto.CreatePartnerTenantResponse, error) {
+	if m.createTenantRes != nil {
+		return m.createTenantRes, nil
+	}
+	return nil, nil
+}
+
 func TestCreatePartnerTenantHandlerSuccess(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	r := gin.New()

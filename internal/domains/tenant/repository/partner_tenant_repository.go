@@ -206,3 +206,49 @@ func (r *partnerTenantRepository) GetTenantByIDAndPartner(ctx context.Context, u
 
 	return &tenant, nil
 }
+
+func (r *partnerTenantRepository) UpdateTenant(ctx context.Context, userID string, tenantID string, name string, description string, address string, phoneNumber string) (*domain.PartnerTenant, error) {
+	if r.db == nil {
+		return nil, fmt.Errorf("database is not initialized")
+	}
+
+	var tenant domain.PartnerTenant
+	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		result := tx.Exec(
+			`UPDATE tenants 
+			 SET name = ?, description = ?, address = ?, phone_number = ?, updated_at = NOW() 
+			 WHERE id = NULLIF(?, '')::uuid 
+			   AND user_id = NULLIF(?, '')::uuid 
+			   AND deleted_at IS NULL`,
+			name,
+			description,
+			address,
+			phoneNumber,
+			tenantID,
+			userID,
+		)
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected == 0 {
+			return ErrTenantNotFound
+		}
+
+		return tx.Raw(
+			`SELECT t.id::text AS id, t.name, t.slug, t.status, t.description, t.address, t.phone_number, t.open_hours, t.logo_url, t.banner_url, TRUE AS is_owner
+			 FROM tenants t
+			 WHERE t.id = NULLIF(?, '')::uuid 
+			   AND t.user_id = NULLIF(?, '')::uuid 
+			   AND t.deleted_at IS NULL`,
+			tenantID,
+			userID,
+		).Scan(&tenant).Error
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &tenant, nil
+}
+

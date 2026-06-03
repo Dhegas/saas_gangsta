@@ -57,8 +57,18 @@ func (u *partnerOrderUsecase) GetOrderByID(ctx context.Context, tenantID, orderI
 }
 
 func (u *partnerOrderUsecase) CreateOrder(ctx context.Context, tenantID string, req dto.CreateOrderRequest) (*dto.OrderResponse, error) {
-	// 1. Validasi meja makan milik tenant jika ada
-	if req.DiningTablesID != nil && *req.DiningTablesID != "" {
+	// 1. Validasi / dapatkan meja makan milik tenant jika ada
+	var diningTableID *string
+	if req.DiningTableName != nil && *req.DiningTableName != "" {
+		tableID, err := u.repo.GetTableByName(ctx, tenantID, *req.DiningTableName)
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) || err.Error() == "record not found" {
+				return nil, apperrors.New("BAD_REQUEST", "Meja makan dengan nomor "+*req.DiningTableName+" tidak ditemukan", http.StatusBadRequest, nil)
+			}
+			return nil, apperrors.New("INTERNAL_ERROR", "Gagal memproses meja makan", http.StatusInternalServerError, err)
+		}
+		diningTableID = &tableID
+	} else if req.DiningTablesID != nil && *req.DiningTablesID != "" {
 		tableExists, err := u.repo.CheckTableExists(ctx, tenantID, *req.DiningTablesID)
 		if err != nil {
 			return nil, apperrors.New("INTERNAL_ERROR", "Gagal memvalidasi meja makan", http.StatusInternalServerError, err)
@@ -66,6 +76,7 @@ func (u *partnerOrderUsecase) CreateOrder(ctx context.Context, tenantID string, 
 		if !tableExists {
 			return nil, apperrors.New("BAD_REQUEST", "Meja makan tidak ditemukan atau bukan milik tenant ini", http.StatusBadRequest, nil)
 		}
+		diningTableID = req.DiningTablesID
 	}
 
 	// 2. Kumpulkan ID menu yang dipesan
@@ -165,7 +176,7 @@ func (u *partnerOrderUsecase) CreateOrder(ctx context.Context, tenantID string, 
 	orderEntity := &domain.OrderEntity{
 		TenantID:       tenantID,
 		UserID:         userID,
-		DiningTablesID: req.DiningTablesID,
+		DiningTablesID: diningTableID,
 		Status:         "PENDING",
 		TotalPrice:     totalOrderPrice,
 		CustomerName:   customerName,

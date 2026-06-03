@@ -205,5 +205,19 @@ func (r *partnerOrderRepository) FindAllPublicOrders(ctx context.Context, tenant
 	return orders, tableNames, nil
 }
 
+func (r *partnerOrderRepository) GetTableByName(ctx context.Context, tenantID, tableName string) (string, error) {
+	var table struct {
+		ID string
+	}
+	err := r.db.WithContext(ctx).Table("dining_tables").
+		Select("id").
+		Where("tenant_id = ? AND table_name = ? AND deleted_at IS NULL", tenantID, tableName).
+		First(&table).Error
+	if err != nil {
+		return "", err
+	}
+	return table.ID, nil
+}
+
 
 

@@ -27,6 +27,7 @@ type PartnerOrderRepository interface {
 	SoftDelete(ctx context.Context, tenantID, orderID string) error
 	GetMenuDetails(ctx context.Context, tenantID string, menuIDs []string) (map[string]MenuDetail, error)
 	CheckTableExists(ctx context.Context, tenantID, tableID string) (bool, error)
+	GetTableByName(ctx context.Context, tenantID, tableName string) (string, error)
 	GetPublicOrderDetails(ctx context.Context, tenantID, orderID string) (*OrderEntity, string, error)
 	FindAllPublicOrders(ctx context.Context, tenantID string, filter dto.PublicOrderFilterParams) ([]OrderEntity, map[string]string, error)
 }

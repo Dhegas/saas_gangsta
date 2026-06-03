@@ -62,8 +62,6 @@ func RegisterPublicRoutes(api *gin.RouterGroup, cfg *config.Config, db *gorm.DB)
 			resolvedRoutes.GET("/tables", publicTableHandler.GetPublicTables)
 			resolvedRoutes.GET("/dining-tables", publicTableHandler.GetPublicTables)
 
-			// Self-order publik dari QR code (tanpa login)
-			resolvedRoutes.POST("/orders", custOrderHandler.CreateOrder)
 			resolvedRoutes.GET("/orders", custOrderHandler.GetPublicOrders)
 			resolvedRoutes.GET("/orders/:orderId", custOrderHandler.GetOrderStatus)
 		}

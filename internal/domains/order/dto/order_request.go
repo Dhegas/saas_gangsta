@@ -9,9 +9,10 @@ type CreateOrderItemRequest struct {
 
 // CreateOrderRequest payload untuk POST /api/orders (diakses oleh CUSTOMER)
 type CreateOrderRequest struct {
-	UserID         *string                  `json:"-"`
-	DiningTablesID string                   `json:"dining_tables_id" binding:"required,uuid"`
-	Items          []CreateOrderItemRequest `json:"items" binding:"required,min=1,dive"`
+	UserID          *string                  `json:"-"`
+	DiningTablesID  *string                  `json:"dining_tables_id" binding:"omitempty,uuid"`
+	DiningTableName *string                  `json:"dining_table_name" binding:"omitempty,max=50"`
+	Items           []CreateOrderItemRequest `json:"items" binding:"required,min=1,dive"`
 }
 
 // UpdateOrderStatusRequest payload untuk PATCH /api/orders/:id/status

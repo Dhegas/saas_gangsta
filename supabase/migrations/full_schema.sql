@@ -83,6 +83,7 @@ CREATE TABLE public.orders (
   updated_at timestamp with time zone NOT NULL DEFAULT now(),
   deleted_at timestamp with time zone,
   updated_by uuid,
+  customer_name character varying,
   CONSTRAINT orders_pkey PRIMARY KEY (id),
   CONSTRAINT fk_orders_updated_by FOREIGN KEY (updated_by) REFERENCES public.users(id),
   CONSTRAINT fk_orders_tenant FOREIGN KEY (tenant_id) REFERENCES public.tenants(id),

@@ -48,7 +48,7 @@ func (r *partnerOrderRepository) FindByID(ctx context.Context, tenantID, orderID
 
 func (r *partnerOrderRepository) CreateWithItems(ctx context.Context, order *orderdomain.OrderEntity, items []orderdomain.OrderItemEntity) error {
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		if err := tx.Create(order).Error; err != nil {
+		if err := tx.Omit("User", "Items").Create(order).Error; err != nil {
 			return err
 		}
 
@@ -142,10 +142,10 @@ func (r *partnerOrderRepository) GetPublicOrderDetails(ctx context.Context, tena
 	}
 
 	var tableName string
-	if order.DiningTablesID != "" {
+	if order.DiningTablesID != nil && *order.DiningTablesID != "" {
 		err = r.db.WithContext(ctx).Table("dining_tables").
 			Select("table_name").
-			Where("id = ? AND tenant_id = ? AND deleted_at IS NULL", order.DiningTablesID, tenantID).
+			Where("id = ? AND tenant_id = ? AND deleted_at IS NULL", *order.DiningTablesID, tenantID).
 			Scan(&tableName).Error
 		if err != nil {
 			return nil, "", err
@@ -179,8 +179,8 @@ func (r *partnerOrderRepository) FindAllPublicOrders(ctx context.Context, tenant
 	tableIDs := make([]string, 0, len(orders))
 	for _, o := range orders {
 		orderIDs = append(orderIDs, o.ID)
-		if o.DiningTablesID != "" {
-			tableIDs = append(tableIDs, o.DiningTablesID)
+		if o.DiningTablesID != nil && *o.DiningTablesID != "" {
+			tableIDs = append(tableIDs, *o.DiningTablesID)
 		}
 	}
 
@@ -203,6 +203,20 @@ func (r *partnerOrderRepository) FindAllPublicOrders(ctx context.Context, tenant
 	}
 
 	return orders, tableNames, nil
+}
+
+func (r *partnerOrderRepository) GetTableByName(ctx context.Context, tenantID, tableName string) (string, error) {
+	var table struct {
+		ID string
+	}
+	err := r.db.WithContext(ctx).Table("dining_tables").
+		Select("id").
+		Where("tenant_id = ? AND table_name = ? AND deleted_at IS NULL", tenantID, tableName).
+		First(&table).Error
+	if err != nil {
+		return "", err
+	}
+	return table.ID, nil
 }
 
 

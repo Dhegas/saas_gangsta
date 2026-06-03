@@ -16,7 +16,7 @@ type OrderResponse struct {
 	ID             string              `json:"id"`
 	TenantID       string              `json:"tenant_id"`
 	UserID         *string             `json:"user_id,omitempty"`
-	DiningTablesID string              `json:"dining_tables_id"`
+	DiningTablesID *string             `json:"dining_tables_id,omitempty"`
 	Status         string              `json:"status"`
 	TotalPrice     float64             `json:"total_price"`
 	CreatedAt      time.Time           `json:"created_at"`

@@ -27,7 +27,15 @@ func (u *partnerTableUsecase) GetAllTables(ctx context.Context, tenantID string)
 
 	result := make([]dto.TableResponse, 0, len(tables))
 	for _, t := range tables {
-		result = append(result, toTableResponse(&t))
+		isOccupied, err := u.repo.CheckTableOccupied(ctx, t.ID)
+		status := "kosong"
+		if err == nil && isOccupied {
+			status = "occupied"
+		}
+
+		res := toTableResponse(&t)
+		res.Status = status
+		result = append(result, res)
 	}
 
 	return result, nil
@@ -42,7 +50,14 @@ func (u *partnerTableUsecase) GetTableByID(ctx context.Context, tenantID, tableI
 		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil data meja", http.StatusInternalServerError, err)
 	}
 
+	isOccupied, err := u.repo.CheckTableOccupied(ctx, tableID)
+	status := "kosong"
+	if err == nil && isOccupied {
+		status = "occupied"
+	}
+
 	response := toTableResponse(table)
+	response.Status = status
 	return &response, nil
 }
 

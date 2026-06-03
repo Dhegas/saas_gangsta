@@ -42,9 +42,10 @@ type OrderEntity struct {
 	ID             string            `gorm:"primaryKey;default:gen_random_uuid()"`
 	TenantID       string            `gorm:"index;not null"`
 	UserID         *string           `gorm:"index"`
-	DiningTablesID string            `gorm:"index"`
+	DiningTablesID *string           `gorm:"index"`
 	Status         string            `gorm:"not null"`
 	TotalPrice     float64           `gorm:"not null"`
+	CustomerName   string            `gorm:"column:customer_name"`
 	CreatedAt      time.Time         `gorm:"autoCreateTime"`
 	UpdatedAt      time.Time         `gorm:"autoUpdateTime"`
 	DeletedAt      *time.Time        `gorm:"index"`

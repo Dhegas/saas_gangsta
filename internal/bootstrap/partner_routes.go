@@ -91,6 +91,7 @@ func RegisterPartnerRoutes(api *gin.RouterGroup, cfg *config.Config, db *gorm.DB
 	// Order Management
 	tenantScoped.GET("/orders", orderHandler.GetAllOrders)
 	tenantScoped.GET("/orders/:id", orderHandler.GetOrderByID)
+	tenantScoped.POST("/orders", orderHandler.CreateOrder)
 	tenantScoped.PATCH("/orders/:id/status", orderHandler.UpdateOrderStatus)
 	tenantScoped.DELETE("/orders/:id", orderHandler.SoftDeleteOrder)
 

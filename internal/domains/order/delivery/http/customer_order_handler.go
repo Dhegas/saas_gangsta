@@ -64,7 +64,7 @@ func (h *CustomerOrderHandler) CreateOrder(c *gin.Context) {
 	}
 
 	adaptedReq := dto.CreateOrderRequest{
-		DiningTablesID: req.DiningTableID,
+		DiningTablesID: &req.DiningTableID,
 		Items:          items,
 		Customer: &dto.CreateCustomerDetailsRequest{
 			FullName:    req.Customer.FullName,

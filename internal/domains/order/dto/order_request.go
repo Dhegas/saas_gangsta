@@ -10,7 +10,7 @@ type CreateOrderItemRequest struct {
 // CreateOrderRequest payload untuk POST /api/orders (diakses oleh CUSTOMER)
 type CreateOrderRequest struct {
 	UserID         *string                       `json:"-"`
-	DiningTablesID string                        `json:"dining_tables_id" binding:"required,uuid"`
+	DiningTablesID *string                       `json:"dining_tables_id" binding:"omitempty,uuid"`
 	Items          []CreateOrderItemRequest      `json:"items" binding:"required,min=1,dive"`
 	Customer       *CreateCustomerDetailsRequest `json:"customer,omitempty"`
 }

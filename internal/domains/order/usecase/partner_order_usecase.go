@@ -57,13 +57,15 @@ func (u *partnerOrderUsecase) GetOrderByID(ctx context.Context, tenantID, orderI
 }
 
 func (u *partnerOrderUsecase) CreateOrder(ctx context.Context, tenantID string, req dto.CreateOrderRequest) (*dto.OrderResponse, error) {
-	// 1. Validasi meja makan milik tenant
-	tableExists, err := u.repo.CheckTableExists(ctx, tenantID, req.DiningTablesID)
-	if err != nil {
-		return nil, apperrors.New("INTERNAL_ERROR", "Gagal memvalidasi meja makan", http.StatusInternalServerError, err)
-	}
-	if !tableExists {
-		return nil, apperrors.New("BAD_REQUEST", "Meja makan tidak ditemukan atau bukan milik tenant ini", http.StatusBadRequest, nil)
+	// 1. Validasi meja makan milik tenant jika ada
+	if req.DiningTablesID != nil && *req.DiningTablesID != "" {
+		tableExists, err := u.repo.CheckTableExists(ctx, tenantID, *req.DiningTablesID)
+		if err != nil {
+			return nil, apperrors.New("INTERNAL_ERROR", "Gagal memvalidasi meja makan", http.StatusInternalServerError, err)
+		}
+		if !tableExists {
+			return nil, apperrors.New("BAD_REQUEST", "Meja makan tidak ditemukan atau bukan milik tenant ini", http.StatusBadRequest, nil)
+		}
 	}
 
 	// 2. Kumpulkan ID menu yang dipesan
@@ -154,6 +156,11 @@ func (u *partnerOrderUsecase) CreateOrder(ctx context.Context, tenantID string, 
 		userID = req.UserID
 	}
 
+	var customerName string
+	if req.Customer != nil {
+		customerName = req.Customer.FullName
+	}
+
 	// 5. Bangun entitas Order
 	orderEntity := &domain.OrderEntity{
 		TenantID:       tenantID,
@@ -161,6 +168,7 @@ func (u *partnerOrderUsecase) CreateOrder(ctx context.Context, tenantID string, 
 		DiningTablesID: req.DiningTablesID,
 		Status:         "PENDING",
 		TotalPrice:     totalOrderPrice,
+		CustomerName:   customerName,
 	}
 
 	if req.Customer != nil && req.Customer.Email != "" && req.Customer.Password != "" {
@@ -231,8 +239,8 @@ func toOrderResponse(entity *domain.OrderEntity) dto.OrderResponse {
 		}
 	}
 
-	var customerName string
-	if entity.User != nil {
+	customerName := entity.CustomerName
+	if customerName == "" && entity.User != nil {
 		customerName = entity.User.FullName
 	}
 
@@ -304,6 +312,11 @@ func (u *partnerOrderUsecase) GetPublicOrdersList(ctx context.Context, tenantID 
 			})
 		}
 
+		var tableName string
+		if o.DiningTablesID != nil {
+			tableName = tableNames[*o.DiningTablesID]
+		}
+
 		result = append(result, dto.PublicOrderDetailsResponse{
 			ID:         o.ID,
 			Status:     o.Status,
@@ -311,7 +324,7 @@ func (u *partnerOrderUsecase) GetPublicOrdersList(ctx context.Context, tenantID 
 			CreatedAt:  o.CreatedAt,
 			Customer:   customerResp,
 			DiningTable: dto.PublicDiningTableDetails{
-				TableName: tableNames[o.DiningTablesID],
+				TableName: tableName,
 			},
 			Items: itemsResp,
 		})

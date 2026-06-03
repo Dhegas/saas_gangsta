@@ -17,6 +17,12 @@ func Connect(databaseURL string) (*gorm.DB, error) {
 	if err != nil {
 		return nil, fmt.Errorf("connect database: %w", err)
 	}
+
+	// Auto migration helper for local/development startup
+	if err := db.Exec("ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_name VARCHAR(150)").Error; err != nil {
+		fmt.Printf("Warning: failed to add customer_name column: %v\n", err)
+	}
+
 	return db, nil
 }
 

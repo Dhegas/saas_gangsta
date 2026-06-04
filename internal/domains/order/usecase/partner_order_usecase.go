@@ -3,8 +3,11 @@ package usecase
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
+	"time"
 
+	"github.com/dhegas/saas_gangsta/internal/common/cache"
 	apperrors "github.com/dhegas/saas_gangsta/internal/common/errors"
 	"github.com/dhegas/saas_gangsta/internal/config"
 	authrepo "github.com/dhegas/saas_gangsta/internal/domains/user/auth/repository"
@@ -12,6 +15,8 @@ import (
 	"github.com/dhegas/saas_gangsta/internal/domains/order/dto"
 	"gorm.io/gorm"
 )
+
+var orderCache = cache.NewLocalCache()
 
 type partnerOrderUsecase struct {
 	repo     domain.PartnerOrderRepository
@@ -253,6 +258,13 @@ func (u *partnerOrderUsecase) GetPublicOrderStatus(ctx context.Context, tenantID
 }
 
 func (u *partnerOrderUsecase) GetPublicOrdersList(ctx context.Context, tenantID string, filter dto.PublicOrderFilterParams) ([]dto.PublicOrderDetailsResponse, error) {
+	cacheKey := fmt.Sprintf("customer:orders:tenant:%s:status:%s:table:%s:user:%s", tenantID, filter.Status, filter.TableID, filter.UserID)
+	if cached, found := orderCache.Get(cacheKey); found {
+		if cachedOrders, ok := cached.([]dto.PublicOrderDetailsResponse); ok {
+			return cachedOrders, nil
+		}
+	}
+
 	orders, tableNames, err := u.repo.FindAllPublicOrders(ctx, tenantID, filter)
 	if err != nil {
 		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil daftar pesanan", http.StatusInternalServerError, err)
@@ -296,6 +308,8 @@ func (u *partnerOrderUsecase) GetPublicOrdersList(ctx context.Context, tenantID 
 			Items: itemsResp,
 		})
 	}
+
+	orderCache.Set(cacheKey, result, 1*time.Minute)
 
 	return result, nil
 }

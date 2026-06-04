@@ -49,9 +49,26 @@ func (h *CustomerOrderHandler) GetOrderStatus(c *gin.Context) {
 		return
 	}
 
+	userIDVal, exists := c.Get("userId")
+	if !exists {
+		response.Error(c, http.StatusUnauthorized, "Autentikasi diperlukan", gin.H{"code": "UNAUTHORIZED", "details": "User ID tidak ditemukan"})
+		return
+	}
+	uID, ok := userIDVal.(string)
+	if !ok || uID == "" {
+		response.Error(c, http.StatusUnauthorized, "Autentikasi tidak valid", gin.H{"code": "UNAUTHORIZED", "details": "User ID tidak valid"})
+		return
+	}
+
 	res, err := h.usecase.GetPublicOrderStatus(c.Request.Context(), tenantID, orderID)
 	if err != nil {
 		apperrors.Write(c, err)
+		return
+	}
+
+	// Proteksi anti-IDOR: pastikan order adalah milik user yang sedang login
+	if res.UserID == nil || *res.UserID != uID {
+		response.Error(c, http.StatusForbidden, "Akses ditolak", gin.H{"code": "FORBIDDEN", "details": "Anda tidak memiliki akses ke pesanan ini"})
 		return
 	}
 
@@ -60,7 +77,7 @@ func (h *CustomerOrderHandler) GetOrderStatus(c *gin.Context) {
 
 // GetPublicOrders godoc
 // @Summary      Get Public Orders List
-// @Description  Melihat daftar pesanan secara publik (misal untuk antrean / monitoring status customer)
+// @Description  Melihat daftar pesanan secara publik (hanya untuk pesanan milik customer yang login)
 // @Tags         Public Customer Order
 // @Produce      json
 // @Param        tenantSlug path      string  true  "Tenant Slug"
@@ -82,11 +99,24 @@ func (h *CustomerOrderHandler) GetPublicOrders(c *gin.Context) {
 		return
 	}
 
+	userIDVal, exists := c.Get("userId")
+	if !exists {
+		response.Error(c, http.StatusUnauthorized, "Autentikasi diperlukan", gin.H{"code": "UNAUTHORIZED", "details": "User ID tidak ditemukan"})
+		return
+	}
+	uID, ok := userIDVal.(string)
+	if !ok || uID == "" {
+		response.Error(c, http.StatusUnauthorized, "Autentikasi tidak valid", gin.H{"code": "UNAUTHORIZED", "details": "User ID tidak valid"})
+		return
+	}
+
 	var filter dto.PublicOrderFilterParams
 	if err := c.ShouldBindQuery(&filter); err != nil {
 		response.Error(c, http.StatusBadRequest, "Parameter query tidak valid", gin.H{"code": "VALIDATION_ERROR", "details": err.Error()})
 		return
 	}
+
+	filter.UserID = uID
 
 	res, err := h.usecase.GetPublicOrdersList(c.Request.Context(), tenantID, filter)
 	if err != nil {

@@ -220,7 +220,13 @@ func (u *partnerOrderUsecase) GetPublicOrderStatus(ctx context.Context, tenantID
 		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil status pesanan", http.StatusInternalServerError, err)
 	}
 
-	var customerResp dto.PublicCustomerDetails
+	customerName := order.CustomerName
+	if customerName == "" && order.User != nil {
+		customerName = order.User.FullName
+	}
+	customerResp := dto.PublicCustomerDetails{
+		FullName: customerName,
+	}
 
 	itemsResp := make([]dto.PublicOrderItemResponse, 0, len(order.Items))
 	for _, item := range order.Items {
@@ -237,6 +243,7 @@ func (u *partnerOrderUsecase) GetPublicOrderStatus(ctx context.Context, tenantID
 		Status:     order.Status,
 		TotalPrice: order.TotalPrice,
 		CreatedAt:  order.CreatedAt,
+		UserID:     order.UserID,
 		Customer:   customerResp,
 		DiningTable: dto.PublicDiningTableDetails{
 			TableName: tableName,
@@ -253,7 +260,13 @@ func (u *partnerOrderUsecase) GetPublicOrdersList(ctx context.Context, tenantID 
 
 	result := make([]dto.PublicOrderDetailsResponse, 0, len(orders))
 	for _, o := range orders {
-		var customerResp dto.PublicCustomerDetails
+		customerName := o.CustomerName
+		if customerName == "" && o.User != nil {
+			customerName = o.User.FullName
+		}
+		customerResp := dto.PublicCustomerDetails{
+			FullName: customerName,
+		}
 
 		itemsResp := make([]dto.PublicOrderItemResponse, 0, len(o.Items))
 		for _, item := range o.Items {
@@ -275,6 +288,7 @@ func (u *partnerOrderUsecase) GetPublicOrdersList(ctx context.Context, tenantID 
 			Status:     o.Status,
 			TotalPrice: o.TotalPrice,
 			CreatedAt:  o.CreatedAt,
+			UserID:     o.UserID,
 			Customer:   customerResp,
 			DiningTable: dto.PublicDiningTableDetails{
 				TableName: tableName,

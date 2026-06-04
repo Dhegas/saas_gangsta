@@ -8,6 +8,7 @@ type PublicOrderDetailsResponse struct {
 	Status      string                    `json:"status"`
 	TotalPrice  float64                   `json:"totalPrice"`
 	CreatedAt   time.Time                 `json:"createdAt"`
+	UserID      *string                   `json:"userId,omitempty"`
 	Customer    PublicCustomerDetails     `json:"customer"`
 	DiningTable PublicDiningTableDetails  `json:"diningTable"`
 	Items       []PublicOrderItemResponse `json:"items"`
@@ -31,6 +32,7 @@ type PublicOrderItemResponse struct {
 type PublicOrderFilterParams struct {
 	Status  string `form:"status" binding:"omitempty"`
 	TableID string `form:"table_id" binding:"omitempty,uuid"`
+	UserID  string `form:"-"`
 }
 
 

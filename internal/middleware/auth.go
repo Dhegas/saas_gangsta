@@ -33,7 +33,9 @@ func JWTAuth(cfg *config.Config) gin.HandlerFunc {
 
 		c.Set(UserIDKey, claims.Subject)
 		c.Set(RoleKey, claims.Role)
-		c.Set(tenant.TenantIDKey, claims.TenantID)
+		if claims.TenantID != "" {
+			c.Set(tenant.TenantIDKey, claims.TenantID)
+		}
 		c.Next()
 	}
 }

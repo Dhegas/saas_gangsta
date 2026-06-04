@@ -20,6 +20,7 @@ func RegisterCustomerRoutes(api *gin.RouterGroup, cfg *config.Config, db *gorm.D
 	authRepo := authrepo.NewAuthRepository(db)
 	orderUC := orderusecase.NewPartnerOrderUsecase(orderRepo, authRepo, cfg)
 	orderHandler := orderhttp.NewPartnerOrderHandler(orderUC)
+	custOrderHandler := orderhttp.NewCustomerOrderHandler(orderUC)
 
 	// Base group dengan autentikasi CUSTOMER
 	customerRoutes := api.Group("/customer")
@@ -40,11 +41,12 @@ func RegisterCustomerRoutes(api *gin.RouterGroup, cfg *config.Config, db *gorm.D
 	{
 		// Membuat order baru (TenantResolver untuk resolve tenantId dari slug)
 		customerOrderRoutes.POST("/tenant/:tenantSlug", middleware.TenantResolver(db), orderHandler.CreateOrder)
+	}
 
-		// Melihat daftar order
-		customerOrderRoutes.GET("", middleware.TenantGuard(db), orderHandler.GetAllOrders)
-
-		// Melihat detail order (struk)
-		customerOrderRoutes.GET("/:id", middleware.TenantGuard(db), orderHandler.GetOrderByID)
+	// Tenant-resolved customer orders
+	customerTenantRoutes := customerRoutes.Group("/tenant/:tenantSlug", middleware.TenantResolver(db))
+	{
+		customerTenantRoutes.GET("/orders", custOrderHandler.GetPublicOrders)
+		customerTenantRoutes.GET("/orders/:orderId", custOrderHandler.GetOrderStatus)
 	}
 }

@@ -134,7 +134,7 @@ func (r *partnerOrderRepository) CheckTableExists(ctx context.Context, tenantID,
 
 func (r *partnerOrderRepository) GetPublicOrderDetails(ctx context.Context, tenantID, orderID string) (*orderdomain.OrderEntity, string, error) {
 	var order orderdomain.OrderEntity
-	err := r.db.WithContext(ctx).Preload("Items").
+	err := r.db.WithContext(ctx).Preload("Items").Preload("User").
 		Where("id = ? AND tenant_id = ? AND deleted_at IS NULL", orderID, tenantID).
 		First(&order).Error
 	if err != nil {
@@ -157,13 +157,16 @@ func (r *partnerOrderRepository) GetPublicOrderDetails(ctx context.Context, tena
 
 func (r *partnerOrderRepository) FindAllPublicOrders(ctx context.Context, tenantID string, filter dto.PublicOrderFilterParams) ([]orderdomain.OrderEntity, map[string]string, error) {
 	var orders []orderdomain.OrderEntity
-	query := r.db.WithContext(ctx).Preload("Items").Where("tenant_id = ? AND deleted_at IS NULL", tenantID)
+	query := r.db.WithContext(ctx).Preload("Items").Preload("User").Where("tenant_id = ? AND deleted_at IS NULL", tenantID)
 
 	if filter.Status != "" {
 		query = query.Where("status = ?", filter.Status)
 	}
 	if filter.TableID != "" {
 		query = query.Where("dining_tables_id = ?", filter.TableID)
+	}
+	if filter.UserID != "" {
+		query = query.Where("user_id = ?", filter.UserID)
 	}
 
 	err := query.Order("created_at DESC").Find(&orders).Error

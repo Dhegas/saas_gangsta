@@ -1,6 +1,7 @@
 package bootstrap
 
 import (
+	"github.com/dhegas/saas_gangsta/internal/common/cache"
 	"github.com/dhegas/saas_gangsta/internal/config"
 	categoryhttp "github.com/dhegas/saas_gangsta/internal/domains/category/delivery/http"
 	categoryrepo "github.com/dhegas/saas_gangsta/internal/domains/category/repository"
@@ -24,18 +25,20 @@ import (
 )
 
 func RegisterPublicRoutes(api *gin.RouterGroup, cfg *config.Config, db *gorm.DB) {
+	localCache := cache.NewLocalCache()
+
 	tenantRepo := repository.NewPublicTenantRepository(db)
-	tenantUsecase := usecase.NewPublicTenantUsecase(tenantRepo)
+	tenantUsecase := usecase.NewPublicTenantUsecase(tenantRepo, localCache)
 	tenantHandler := tenanthttp.NewPublicTenantHandler(tenantUsecase)
 
 	// Category
 	categoryRepo := categoryrepo.NewPublicCategoryRepository(db)
-	categoryUC := categoryusecase.NewPublicCategoryUsecase(categoryRepo)
+	categoryUC := categoryusecase.NewPublicCategoryUsecase(categoryRepo, localCache)
 	publicCategoryHandler := categoryhttp.NewPublicCategoryHandler(categoryUC)
 
 	// Menu
 	menuRepo := menurepo.NewPublicMenuRepository(db)
-	menuUC := menuusecase.NewPublicMenuUsecase(menuRepo)
+	menuUC := menuusecase.NewPublicMenuUsecase(menuRepo, localCache)
 	publicMenuHandler := menuhttp.NewPublicMenuHandler(menuUC)
 
 	// Table

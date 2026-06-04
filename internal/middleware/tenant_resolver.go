@@ -2,12 +2,16 @@ package middleware
 
 import (
 	"net/http"
+	"time"
 
+	"github.com/dhegas/saas_gangsta/internal/common/cache"
 	apperrors "github.com/dhegas/saas_gangsta/internal/common/errors"
 	"github.com/dhegas/saas_gangsta/internal/domains/tenant/domain"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
+
+var tenantCache = cache.NewLocalCache()
 
 // TenantResolver intercepts public tenant requests, resolves the slug into a valid Tenant ID, and injects context.
 func TenantResolver(db *gorm.DB) gin.HandlerFunc {
@@ -16,6 +20,18 @@ func TenantResolver(db *gorm.DB) gin.HandlerFunc {
 		if slug == "" {
 			apperrors.Abort(c, apperrors.New("VALIDATION_ERROR", "Slug tenant wajib disertakan", http.StatusBadRequest, nil))
 			return
+		}
+
+		cacheKey := "resolved_tenant:slug:" + slug
+		if cached, found := tenantCache.Get(cacheKey); found {
+			if tenant, ok := cached.(domain.PublicTenant); ok {
+				c.Set("tenantId", tenant.ID)
+				c.Set("tenantID", tenant.ID)
+				c.Set("tenantSlug", tenant.Slug)
+				c.Set("tenantName", tenant.Name)
+				c.Next()
+				return
+			}
 		}
 
 		var tenant domain.PublicTenant
@@ -37,6 +53,9 @@ func TenantResolver(db *gorm.DB) gin.HandlerFunc {
 			return
 		}
 
+		// Cache for 10 minutes
+		tenantCache.Set(cacheKey, tenant, 10*time.Minute)
+
 		// Inject tenant context into gin.Context
 		c.Set("tenantId", tenant.ID)
 		c.Set("tenantID", tenant.ID)
@@ -51,3 +70,4 @@ func TenantResolver(db *gorm.DB) gin.HandlerFunc {
 func TenantResolverMiddleware(db *gorm.DB) gin.HandlerFunc {
 	return TenantResolver(db)
 }
+

@@ -3,10 +3,13 @@ package usecase
 import (
 	"context"
 	"errors"
+	"fmt"
 	"math"
 	"net/http"
 	"strings"
+	"time"
 
+	"github.com/dhegas/saas_gangsta/internal/common/cache"
 	apperrors "github.com/dhegas/saas_gangsta/internal/common/errors"
 	"github.com/dhegas/saas_gangsta/internal/domains/tenant/domain"
 	"github.com/dhegas/saas_gangsta/internal/domains/tenant/dto"
@@ -14,11 +17,15 @@ import (
 )
 
 type publicTenantUsecase struct {
-	repo domain.PublicTenantRepository
+	repo  domain.PublicTenantRepository
+	cache *cache.LocalCache
 }
 
-func NewPublicTenantUsecase(repo domain.PublicTenantRepository) domain.PublicTenantUsecase {
-	return &publicTenantUsecase{repo: repo}
+func NewPublicTenantUsecase(repo domain.PublicTenantRepository, cache *cache.LocalCache) domain.PublicTenantUsecase {
+	return &publicTenantUsecase{
+		repo:  repo,
+		cache: cache,
+	}
 }
 
 func (u *publicTenantUsecase) ListPublicTenants(ctx context.Context, req dto.ListPublicTenantsRequest) (*dto.ListPublicTenantsResponse, error) {
@@ -33,6 +40,13 @@ func (u *publicTenantUsecase) ListPublicTenants(ctx context.Context, req dto.Lis
 	}
 	if limit > 100 {
 		limit = 100
+	}
+
+	cacheKey := fmt.Sprintf("public:tenants:search:%s:page:%d:limit:%d", req.Search, page, limit)
+	if cached, found := u.cache.Get(cacheKey); found {
+		if cachedResponse, ok := cached.(*dto.ListPublicTenantsResponse); ok {
+			return cachedResponse, nil
+		}
 	}
 
 	offset := (page - 1) * limit
@@ -61,7 +75,7 @@ func (u *publicTenantUsecase) ListPublicTenants(ctx context.Context, req dto.Lis
 		totalPages = 1
 	}
 
-	return &dto.ListPublicTenantsResponse{
+	res := &dto.ListPublicTenantsResponse{
 		Data: items,
 		Meta: dto.PaginationMeta{
 			Page:       page,
@@ -69,13 +83,24 @@ func (u *publicTenantUsecase) ListPublicTenants(ctx context.Context, req dto.Lis
 			Total:      totalItems,
 			TotalPages: totalPages,
 		},
-	}, nil
+	}
+
+	u.cache.Set(cacheKey, res, 15*time.Minute)
+
+	return res, nil
 }
 
 func (u *publicTenantUsecase) GetPublicTenantBySlug(ctx context.Context, slug string) (*dto.PublicTenantDetailResponse, error) {
 	slug = strings.TrimSpace(slug)
 	if slug == "" {
 		return nil, apperrors.New("VALIDATION_ERROR", "Slug tenant wajib diisi", http.StatusBadRequest, nil)
+	}
+
+	cacheKey := fmt.Sprintf("public:tenant:slug:%s", slug)
+	if cached, found := u.cache.Get(cacheKey); found {
+		if cachedTenant, ok := cached.(*dto.PublicTenantDetailResponse); ok {
+			return cachedTenant, nil
+		}
 	}
 
 	tenant, err := u.repo.FindTenantBySlug(ctx, slug)
@@ -86,7 +111,7 @@ func (u *publicTenantUsecase) GetPublicTenantBySlug(ctx context.Context, slug st
 		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil detail tenant", http.StatusInternalServerError, nil)
 	}
 
-	return &dto.PublicTenantDetailResponse{
+	res := &dto.PublicTenantDetailResponse{
 		ID:          tenant.ID,
 		Name:        tenant.Name,
 		Slug:        tenant.Slug,
@@ -96,5 +121,9 @@ func (u *publicTenantUsecase) GetPublicTenantBySlug(ctx context.Context, slug st
 		Address:     tenant.Address,
 		PhoneNumber: tenant.PhoneNumber,
 		OpenHours:   tenant.OpenHours,
-	}, nil
+	}
+
+	u.cache.Set(cacheKey, res, 15*time.Minute)
+
+	return res, nil
 }

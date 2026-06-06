@@ -3,6 +3,7 @@ package bootstrap
 import (
 	"net/http"
 
+	"github.com/dhegas/saas_gangsta/internal/common/cache"
 	"github.com/dhegas/saas_gangsta/internal/common/response"
 	"github.com/dhegas/saas_gangsta/internal/config"
 	categoryhttp "github.com/dhegas/saas_gangsta/internal/domains/category/delivery/http"
@@ -29,7 +30,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func RegisterPartnerRoutes(api *gin.RouterGroup, cfg *config.Config, db *gorm.DB) {
+func RegisterPartnerRoutes(api *gin.RouterGroup, cfg *config.Config, db *gorm.DB, localCache *cache.LocalCache) {
 	// === Dependency Init ===
 
 	// Tenant
@@ -60,7 +61,7 @@ func RegisterPartnerRoutes(api *gin.RouterGroup, cfg *config.Config, db *gorm.DB
 
 	// Report
 	reportRepo := reportrepo.NewPartnerReportRepository(db)
-	reportUC := reportusecase.NewPartnerReportUsecase(reportRepo)
+	reportUC := reportusecase.NewPartnerReportUsecase(reportRepo, localCache)
 	reportHandler := reporthttp.NewPartnerReportHandler(reportUC)
 
 	// === Base Route Group ===

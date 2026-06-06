@@ -20,8 +20,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func RegisterPublicRoutes(api *gin.RouterGroup, cfg *config.Config, db *gorm.DB) {
-	localCache := cache.NewLocalCache()
+func RegisterPublicRoutes(api *gin.RouterGroup, cfg *config.Config, db *gorm.DB, localCache *cache.LocalCache) {
 
 	tenantRepo := repository.NewPublicTenantRepository(db)
 	tenantUsecase := usecase.NewPublicTenantUsecase(tenantRepo, localCache)

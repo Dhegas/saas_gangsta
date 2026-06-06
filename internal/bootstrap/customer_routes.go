@@ -3,6 +3,7 @@ package bootstrap
 import (
 	"net/http"
 
+	"github.com/dhegas/saas_gangsta/internal/common/cache"
 	"github.com/dhegas/saas_gangsta/internal/common/response"
 	"github.com/dhegas/saas_gangsta/internal/config"
 	orderhttp "github.com/dhegas/saas_gangsta/internal/domains/order/delivery/http"
@@ -14,7 +15,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func RegisterCustomerRoutes(api *gin.RouterGroup, cfg *config.Config, db *gorm.DB) {
+func RegisterCustomerRoutes(api *gin.RouterGroup, cfg *config.Config, db *gorm.DB, localCache *cache.LocalCache) {
 	// Order
 	orderRepo := orderrepo.NewPartnerOrderRepository(db)
 	authRepo := authrepo.NewAuthRepository(db)

@@ -76,21 +76,28 @@ func TestCreateOrder_TableValidation(t *testing.T) {
 		JWTAccessTokenExpiry: 3600,
 	}
 
+	userID := "user-123"
+	userMock := &authdomain.User{
+		ID:       userID,
+		FullName: "Budi",
+		IsActive: true,
+	}
+
 	t.Run("success takeaway order without table name", func(t *testing.T) {
 		repo := &mockPartnerOrderRepo{
 			menuDetails: map[string]domain.MenuDetail{
 				"m-1": {ID: "m-1", Name: "Nasi Goreng", Price: 20000},
 			},
 		}
-		authRepo := &mockAuthRepo{}
+		authRepo := &mockAuthRepo{
+			user: userMock,
+		}
 		uc := NewPartnerOrderUsecase(repo, authRepo, cfg)
 
 		req := dto.CreateOrderRequest{
+			UserID: &userID,
 			Items: []dto.CreateOrderItemRequest{
 				{MenuID: "m-1", Quantity: 2},
-			},
-			Customer: &dto.CreateCustomerDetailsRequest{
-				FullName: "Budi",
 			},
 		}
 
@@ -111,16 +118,16 @@ func TestCreateOrder_TableValidation(t *testing.T) {
 				"m-1": {ID: "m-1", Name: "Nasi Goreng", Price: 20000},
 			},
 		}
-		authRepo := &mockAuthRepo{}
+		authRepo := &mockAuthRepo{
+			user: userMock,
+		}
 		uc := NewPartnerOrderUsecase(repo, authRepo, cfg)
 
 		req := dto.CreateOrderRequest{
+			UserID:          &userID,
 			DiningTableName: &tableName,
 			Items: []dto.CreateOrderItemRequest{
 				{MenuID: "m-1", Quantity: 2},
-			},
-			Customer: &dto.CreateCustomerDetailsRequest{
-				FullName: "Budi",
 			},
 		}
 
@@ -138,16 +145,16 @@ func TestCreateOrder_TableValidation(t *testing.T) {
 		repo := &mockPartnerOrderRepo{
 			findTableErr: gorm.ErrRecordNotFound,
 		}
-		authRepo := &mockAuthRepo{}
+		authRepo := &mockAuthRepo{
+			user: userMock,
+		}
 		uc := NewPartnerOrderUsecase(repo, authRepo, cfg)
 
 		req := dto.CreateOrderRequest{
+			UserID:          &userID,
 			DiningTableName: &tableName,
 			Items: []dto.CreateOrderItemRequest{
 				{MenuID: "m-1", Quantity: 2},
-			},
-			Customer: &dto.CreateCustomerDetailsRequest{
-				FullName: "Budi",
 			},
 		}
 

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	docs "github.com/dhegas/saas_gangsta/docs"
+	"github.com/dhegas/saas_gangsta/internal/common/cache"
 	apperrors "github.com/dhegas/saas_gangsta/internal/common/errors"
 	"github.com/dhegas/saas_gangsta/internal/common/response"
 	"github.com/dhegas/saas_gangsta/internal/config"
@@ -75,13 +76,15 @@ func registerRoutes(router *gin.Engine, cfg *config.Config, db *gorm.DB, redisCl
 	userUC := userusecase.NewUserUsecase(userRepository, tenantRepo)
 	userHandler := userhttp.NewUserHandler(userUC)
 
+	localCache := cache.NewLocalCache()
+
 	api := router.Group("/api/v1")
 	{
 		registerAuthRoutes(api, cfg, authHandler)
 		registerUserRoutes(api, cfg, db, userHandler)
-		RegisterPublicRoutes(api, cfg, db)
-		RegisterCustomerRoutes(api, cfg, db)
-		RegisterPartnerRoutes(api, cfg, db)
+		RegisterPublicRoutes(api, cfg, db, localCache)
+		RegisterCustomerRoutes(api, cfg, db, localCache)
+		RegisterPartnerRoutes(api, cfg, db, localCache)
 		RegisterAdminRoutes(api, cfg, db)
 
 		api.GET("/health", func(c *gin.Context) {

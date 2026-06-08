@@ -7,16 +7,21 @@ import (
 	"time"
 
 	apperrors "github.com/dhegas/saas_gangsta/internal/common/errors"
+	"github.com/dhegas/saas_gangsta/internal/common/cache"
 	"github.com/dhegas/saas_gangsta/internal/domains/report/domain"
 	"github.com/dhegas/saas_gangsta/internal/domains/report/dto"
 )
 
 type partnerReportUsecase struct {
-	repo domain.PartnerReportRepository
+	repo  domain.PartnerReportRepository
+	cache *cache.LocalCache
 }
 
-func NewPartnerReportUsecase(repo domain.PartnerReportRepository) domain.PartnerReportUsecase {
-	return &partnerReportUsecase{repo: repo}
+func NewPartnerReportUsecase(repo domain.PartnerReportRepository, cache *cache.LocalCache) domain.PartnerReportUsecase {
+	return &partnerReportUsecase{
+		repo:  repo,
+		cache: cache,
+	}
 }
 
 func (u *partnerReportUsecase) GetRevenue(ctx context.Context, tenantID string, params dto.RevenueFilterParams) (*dto.RevenueResponse, error) {
@@ -24,21 +29,45 @@ func (u *partnerReportUsecase) GetRevenue(ctx context.Context, tenantID string, 
 		return nil, apperrors.New("BAD_REQUEST", err.Error(), http.StatusBadRequest, nil)
 	}
 
+	cacheKey := fmt.Sprintf("report:revenue:%s:%s:%s", tenantID, params.From, params.To)
+	if u.cache != nil {
+		if cachedVal, found := u.cache.Get(cacheKey); found {
+			if cachedResp, ok := cachedVal.(*dto.RevenueResponse); ok {
+				return cachedResp, nil
+			}
+		}
+	}
+
 	totalRevenue, totalOrders, err := u.repo.FetchRevenue(ctx, tenantID, params.From, params.To)
 	if err != nil {
 		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil data revenue", http.StatusInternalServerError, err)
 	}
 
-	return &dto.RevenueResponse{
+	res := &dto.RevenueResponse{
 		From:         params.From,
 		To:           params.To,
 		TotalRevenue: totalRevenue,
 		TotalOrders:  totalOrders,
 		GeneratedAt:  time.Now().UTC(),
-	}, nil
+	}
+
+	if u.cache != nil {
+		u.cache.Set(cacheKey, res, 15*time.Minute)
+	}
+
+	return res, nil
 }
 
 func (u *partnerReportUsecase) GetTopMenus(ctx context.Context, tenantID string, params dto.TopMenusFilterParams) (*dto.TopMenusResponse, error) {
+	cacheKey := fmt.Sprintf("report:top_menus:%s:%s:%s:%d", tenantID, params.From, params.To, params.Limit)
+	if u.cache != nil {
+		if cachedVal, found := u.cache.Get(cacheKey); found {
+			if cachedResp, ok := cachedVal.(*dto.TopMenusResponse); ok {
+				return cachedResp, nil
+			}
+		}
+	}
+
 	rows, err := u.repo.FetchTopMenus(ctx, tenantID, params.From, params.To, params.Limit)
 	if err != nil {
 		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil data menu terlaris", http.StatusInternalServerError, err)
@@ -55,14 +84,29 @@ func (u *partnerReportUsecase) GetTopMenus(ctx context.Context, tenantID string,
 		})
 	}
 
-	return &dto.TopMenusResponse{
+	res := &dto.TopMenusResponse{
 		From:  params.From,
 		To:    params.To,
 		Menus: entries,
-	}, nil
+	}
+
+	if u.cache != nil {
+		u.cache.Set(cacheKey, res, 15*time.Minute)
+	}
+
+	return res, nil
 }
 
 func (u *partnerReportUsecase) GetOrdersByTable(ctx context.Context, tenantID string, params dto.OrdersByTableFilterParams) (*dto.OrdersByTableResponse, error) {
+	cacheKey := fmt.Sprintf("report:orders_by_table:%s:%s:%s:%d", tenantID, params.From, params.To, params.Limit)
+	if u.cache != nil {
+		if cachedVal, found := u.cache.Get(cacheKey); found {
+			if cachedResp, ok := cachedVal.(*dto.OrdersByTableResponse); ok {
+				return cachedResp, nil
+			}
+		}
+	}
+
 	rows, err := u.repo.FetchOrdersByTable(ctx, tenantID, params.From, params.To, params.Limit)
 	if err != nil {
 		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil data order per meja", http.StatusInternalServerError, err)
@@ -79,11 +123,17 @@ func (u *partnerReportUsecase) GetOrdersByTable(ctx context.Context, tenantID st
 		})
 	}
 
-	return &dto.OrdersByTableResponse{
+	res := &dto.OrdersByTableResponse{
 		From:   params.From,
 		To:     params.To,
 		Tables: entries,
-	}, nil
+	}
+
+	if u.cache != nil {
+		u.cache.Set(cacheKey, res, 15*time.Minute)
+	}
+
+	return res, nil
 }
 
 func (u *partnerReportUsecase) GetDailySummary(ctx context.Context, tenantID string, params dto.DailySummaryFilterParams) (*dto.DailySummaryResponse, error) {
@@ -99,6 +149,15 @@ func (u *partnerReportUsecase) GetDailySummary(ctx context.Context, tenantID str
 
 	if err := validateDateRange(from, to); err != nil {
 		return nil, apperrors.New("BAD_REQUEST", err.Error(), http.StatusBadRequest, nil)
+	}
+
+	cacheKey := fmt.Sprintf("report:daily_summary:%s:%s:%s", tenantID, from, to)
+	if u.cache != nil {
+		if cachedVal, found := u.cache.Get(cacheKey); found {
+			if cachedResp, ok := cachedVal.(*dto.DailySummaryResponse); ok {
+				return cachedResp, nil
+			}
+		}
 	}
 
 	rows, err := u.repo.FetchDailySummary(ctx, tenantID, from, to)
@@ -120,11 +179,17 @@ func (u *partnerReportUsecase) GetDailySummary(ctx context.Context, tenantID str
 		})
 	}
 
-	return &dto.DailySummaryResponse{
+	res := &dto.DailySummaryResponse{
 		From:    from,
 		To:      to,
 		Summary: entries,
-	}, nil
+	}
+
+	if u.cache != nil {
+		u.cache.Set(cacheKey, res, 15*time.Minute)
+	}
+
+	return res, nil
 }
 
 // validateDateRange memastikan format tanggal valid dan from <= to

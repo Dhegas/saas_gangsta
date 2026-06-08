@@ -44,8 +44,8 @@ func (h *CustomerOrderHandler) GetOrderStatus(c *gin.Context) {
 	}
 
 	orderID := c.Param("orderId")
-	if orderID == "" {
-		apperrors.Write(c, apperrors.New("VALIDATION_ERROR", "Order ID wajib disertakan", http.StatusBadRequest, nil))
+	if orderID == "" || len(orderID) != 36 {
+		apperrors.Write(c, apperrors.New("ORDER_NOT_FOUND", "Pesanan tidak ditemukan atau ID pesanan tidak valid", http.StatusNotFound, nil))
 		return
 	}
 

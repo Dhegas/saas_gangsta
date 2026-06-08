@@ -105,6 +105,11 @@ func (h *PartnerOrderHandler) GetOrderByID(c *gin.Context) {
 	}
 	orderID := c.Param("id")
 
+	if orderID == "" || len(orderID) != 36 {
+		response.Error(c, http.StatusNotFound, "Pesanan tidak ditemukan", gin.H{"code": "ORDER_NOT_FOUND", "details": "ID pesanan tidak valid atau tidak ditemukan"})
+		return
+	}
+
 	order, err := h.usecase.GetOrderByID(c.Request.Context(), tenantID, orderID)
 	if err != nil {
 		errors.Write(c, err)
@@ -190,6 +195,11 @@ func (h *PartnerOrderHandler) UpdateOrderStatus(c *gin.Context) {
 	}
 	orderID := c.Param("id")
 
+	if orderID == "" || len(orderID) != 36 {
+		response.Error(c, http.StatusNotFound, "Pesanan tidak ditemukan", gin.H{"code": "ORDER_NOT_FOUND", "details": "ID pesanan tidak valid atau tidak ditemukan"})
+		return
+	}
+
 	var req dto.UpdateOrderStatusRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.Error(c, http.StatusBadRequest, "Data tidak valid", gin.H{"code": "VALIDATION_ERROR", "details": err.Error()})
@@ -222,6 +232,11 @@ func (h *PartnerOrderHandler) SoftDeleteOrder(c *gin.Context) {
 		return
 	}
 	orderID := c.Param("id")
+
+	if orderID == "" || len(orderID) != 36 {
+		response.Error(c, http.StatusNotFound, "Pesanan tidak ditemukan", gin.H{"code": "ORDER_NOT_FOUND", "details": "ID pesanan tidak valid atau tidak ditemukan"})
+		return
+	}
 
 	if err := h.usecase.SoftDeleteOrder(c.Request.Context(), tenantID, orderID); err != nil {
 		errors.Write(c, err)

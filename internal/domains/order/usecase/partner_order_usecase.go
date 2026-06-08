@@ -5,14 +5,16 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/dhegas/saas_gangsta/internal/common/cache"
 	apperrors "github.com/dhegas/saas_gangsta/internal/common/errors"
 	"github.com/dhegas/saas_gangsta/internal/config"
-	authrepo "github.com/dhegas/saas_gangsta/internal/domains/user/auth/repository"
 	"github.com/dhegas/saas_gangsta/internal/domains/order/domain"
 	"github.com/dhegas/saas_gangsta/internal/domains/order/dto"
+	authrepo "github.com/dhegas/saas_gangsta/internal/domains/user/auth/repository"
+	"github.com/jackc/pgx/v5/pgconn"
 	"gorm.io/gorm"
 )
 
@@ -139,9 +141,49 @@ func (u *partnerOrderUsecase) CreateOrder(ctx context.Context, tenantID string, 
 		CustomerName:   authUser.FullName,
 	}
 
-	// 6. Simpan secara transaksional
-	if err := u.repo.CreateWithItems(ctx, orderEntity, orderItems); err != nil {
-		return nil, apperrors.New("INTERNAL_ERROR", "Gagal menyimpan pesanan", http.StatusInternalServerError, err)
+	var saveErr error
+	for attempt := 1; attempt <= 5; attempt++ {
+		// Reset ID agar GORM membuat UUID baru saat retry
+		orderEntity.ID = ""
+		for i := range orderItems {
+			orderItems[i].ID = ""
+		}
+
+		// Ambil antrian terbesar hari ini dan tentukan antrian berikutnya
+		maxQueueVal, err := u.repo.GetMaxQueueNumberToday(ctx, tenantID)
+		if err != nil {
+			return nil, apperrors.New("INTERNAL_ERROR", "Gagal mendapatkan nomor antrian", http.StatusInternalServerError, err)
+		}
+
+		orderEntity.QueueNumber = fmt.Sprintf("Q-%d", maxQueueVal+1)
+		orderEntity.PaymentMethod = req.PaymentMethod
+
+		// 6. Simpan secara transaksional
+		saveErr = u.repo.CreateWithItems(ctx, orderEntity, orderItems)
+		if saveErr == nil {
+			break
+		}
+
+		// Periksa jika kesalahan adalah Unique Violation (tabrakan queue_number harian)
+		var pgErr *pgconn.PgError
+		isUniqueViolation := false
+		if errors.As(saveErr, &pgErr) && pgErr.Code == "23505" {
+			isUniqueViolation = true
+		} else if strings.Contains(saveErr.Error(), "23505") || strings.Contains(saveErr.Error(), "unique constraint") {
+			isUniqueViolation = true
+		}
+
+		if isUniqueViolation {
+			// Tabrakan terdeteksi, lanjutkan ke iterasi berikutnya untuk mencoba antrian yang lebih tinggi
+			continue
+		}
+
+		// Jika error lain, langsung gagalkan proses
+		return nil, apperrors.New("INTERNAL_ERROR", "Gagal menyimpan pesanan", http.StatusInternalServerError, saveErr)
+	}
+
+	if saveErr != nil {
+		return nil, apperrors.New("INTERNAL_ERROR", "Gagal menyimpan pesanan setelah beberapa kali percobaan karena tabrakan nomor antrian", http.StatusInternalServerError, saveErr)
 	}
 
 	// Isi relasi User setelah penyimpanan berhasil untuk keperluan format response
@@ -209,6 +251,8 @@ func toOrderResponse(entity *domain.OrderEntity) dto.OrderResponse {
 		DiningTablesID: entity.DiningTablesID,
 		Status:         entity.Status,
 		TotalPrice:     entity.TotalPrice,
+		QueueNumber:    entity.QueueNumber,
+		PaymentMethod:  entity.PaymentMethod,
 		CreatedAt:      entity.CreatedAt,
 		UpdatedAt:      entity.UpdatedAt,
 		Items:          itemsResp,
@@ -244,12 +288,14 @@ func (u *partnerOrderUsecase) GetPublicOrderStatus(ctx context.Context, tenantID
 	}
 
 	return &dto.PublicOrderDetailsResponse{
-		ID:         order.ID,
-		Status:     order.Status,
-		TotalPrice: order.TotalPrice,
-		CreatedAt:  order.CreatedAt,
-		UserID:     order.UserID,
-		Customer:   customerResp,
+		ID:            order.ID,
+		Status:        order.Status,
+		TotalPrice:    order.TotalPrice,
+		QueueNumber:   order.QueueNumber,
+		PaymentMethod: order.PaymentMethod,
+		CreatedAt:     order.CreatedAt,
+		UserID:        order.UserID,
+		Customer:      customerResp,
 		DiningTable: dto.PublicDiningTableDetails{
 			TableName: tableName,
 		},
@@ -296,12 +342,14 @@ func (u *partnerOrderUsecase) GetPublicOrdersList(ctx context.Context, tenantID 
 		}
 
 		result = append(result, dto.PublicOrderDetailsResponse{
-			ID:         o.ID,
-			Status:     o.Status,
-			TotalPrice: o.TotalPrice,
-			CreatedAt:  o.CreatedAt,
-			UserID:     o.UserID,
-			Customer:   customerResp,
+			ID:            o.ID,
+			Status:        o.Status,
+			TotalPrice:    o.TotalPrice,
+			QueueNumber:   o.QueueNumber,
+			PaymentMethod: o.PaymentMethod,
+			CreatedAt:     o.CreatedAt,
+			UserID:        o.UserID,
+			Customer:      customerResp,
 			DiningTable: dto.PublicDiningTableDetails{
 				TableName: tableName,
 			},

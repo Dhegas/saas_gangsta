@@ -30,6 +30,7 @@ type PartnerOrderRepository interface {
 	GetTableByName(ctx context.Context, tenantID, tableName string) (string, error)
 	GetPublicOrderDetails(ctx context.Context, tenantID, orderID string) (*OrderEntity, string, error)
 	FindAllPublicOrders(ctx context.Context, tenantID string, filter dto.PublicOrderFilterParams) ([]OrderEntity, map[string]string, error)
+	GetMaxQueueNumberToday(ctx context.Context, tenantID string) (int, error)
 }
 
 type MenuDetail struct {
@@ -47,6 +48,8 @@ type OrderEntity struct {
 	Status         string            `gorm:"not null"`
 	TotalPrice     float64           `gorm:"not null"`
 	CustomerName   string            `gorm:"column:customer_name"`
+	QueueNumber    string            `gorm:"column:queue_number;not null"`
+	PaymentMethod  string            `gorm:"column:payment_method;not null"`
 	CreatedAt      time.Time         `gorm:"autoCreateTime"`
 	UpdatedAt      time.Time         `gorm:"autoUpdateTime"`
 	DeletedAt      *time.Time        `gorm:"index"`

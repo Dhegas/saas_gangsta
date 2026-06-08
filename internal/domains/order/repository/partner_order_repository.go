@@ -222,5 +222,14 @@ func (r *partnerOrderRepository) GetTableByName(ctx context.Context, tenantID, t
 	return table.ID, nil
 }
 
+func (r *partnerOrderRepository) GetMaxQueueNumberToday(ctx context.Context, tenantID string) (int, error) {
+	var maxVal int
+	err := r.db.WithContext(ctx).Table("orders").
+		Select("COALESCE(MAX(cast(substring(queue_number from 3) as integer)), 0)").
+		Where("tenant_id = ? AND timezone('UTC', created_at)::date = timezone('UTC', CURRENT_TIMESTAMP)::date AND deleted_at IS NULL", tenantID).
+		Scan(&maxVal).Error
+	return maxVal, err
+}
+
 
 

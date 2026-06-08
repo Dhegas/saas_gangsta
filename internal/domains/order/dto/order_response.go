@@ -19,6 +19,8 @@ type OrderResponse struct {
 	DiningTablesID *string             `json:"dining_tables_id,omitempty"`
 	Status         string              `json:"status"`
 	TotalPrice     float64             `json:"total_price"`
+	QueueNumber    string              `json:"queue_number"`
+	PaymentMethod  string              `json:"payment_method"`
 	CreatedAt      time.Time           `json:"created_at"`
 	UpdatedAt      time.Time           `json:"updated_at"`
 	Items          []OrderItemResponse `json:"items,omitempty"`

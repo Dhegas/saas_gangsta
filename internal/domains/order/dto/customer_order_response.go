@@ -4,14 +4,16 @@ import "time"
 
 
 type PublicOrderDetailsResponse struct {
-	ID          string                    `json:"id"`
-	Status      string                    `json:"status"`
-	TotalPrice  float64                   `json:"totalPrice"`
-	CreatedAt   time.Time                 `json:"createdAt"`
-	UserID      *string                   `json:"userId,omitempty"`
-	Customer    PublicCustomerDetails     `json:"customer"`
-	DiningTable PublicDiningTableDetails  `json:"diningTable"`
-	Items       []PublicOrderItemResponse `json:"items"`
+	ID            string                    `json:"id"`
+	Status        string                    `json:"status"`
+	TotalPrice    float64                   `json:"totalPrice"`
+	QueueNumber   string                    `json:"queueNumber"`
+	PaymentMethod string                    `json:"paymentMethod"`
+	CreatedAt     time.Time                 `json:"createdAt"`
+	UserID        *string                   `json:"userId,omitempty"`
+	Customer      PublicCustomerDetails     `json:"customer"`
+	DiningTable   PublicDiningTableDetails  `json:"diningTable"`
+	Items         []PublicOrderItemResponse `json:"items"`
 }
 
 type PublicCustomerDetails struct {

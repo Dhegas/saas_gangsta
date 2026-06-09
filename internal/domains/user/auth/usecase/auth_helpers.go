@@ -13,7 +13,7 @@ import (
 func validateTenantState(user *domain.User) error {
 	if user.Role == "PARTNER" {
 		if user.TenantID != "" && strings.TrimSpace(user.TenantStatus) != "active" {
-			return apperrors.New("TENANT_INACTIVE", "Tenant tidak aktif", http.StatusForbidden, nil)
+			return apperrors.New("TENANT_INACTIVE", "Tenant tidak aktif", http.StatusForbidden)
 		}
 	}
 
@@ -29,7 +29,7 @@ func (u *authUsecase) buildLoginResponse(user *domain.User) (*dto.LoginResponse,
 		u.cfg.JWTSecret,
 	)
 	if err != nil {
-		return nil, apperrors.New("INTERNAL_ERROR", "Gagal membuat access token", http.StatusInternalServerError, nil)
+		return nil, apperrors.New("INTERNAL_ERROR", "Gagal membuat access token", http.StatusInternalServerError)
 	}
 
 	refreshToken, err := commonauth.GenerateRefreshToken(
@@ -40,7 +40,7 @@ func (u *authUsecase) buildLoginResponse(user *domain.User) (*dto.LoginResponse,
 		u.cfg.JWTSecret,
 	)
 	if err != nil {
-		return nil, apperrors.New("INTERNAL_ERROR", "Gagal membuat refresh token", http.StatusInternalServerError, nil)
+		return nil, apperrors.New("INTERNAL_ERROR", "Gagal membuat refresh token", http.StatusInternalServerError)
 	}
 
 	return &dto.LoginResponse{

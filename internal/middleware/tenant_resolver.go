@@ -18,7 +18,7 @@ func TenantResolver(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		slug := c.Param("tenantSlug")
 		if slug == "" {
-			apperrors.Abort(c, apperrors.New("VALIDATION_ERROR", "Slug tenant wajib disertakan", http.StatusBadRequest, nil))
+			apperrors.Abort(c, apperrors.New("VALIDATION_ERROR", "Slug tenant wajib disertakan", http.StatusBadRequest))
 			return
 		}
 
@@ -44,12 +44,12 @@ func TenantResolver(db *gorm.DB) gin.HandlerFunc {
 			Scan(&tenant).Error
 
 		if err != nil {
-			apperrors.Abort(c, apperrors.New("INTERNAL_ERROR", "Gagal memproses validasi tenant", http.StatusInternalServerError, nil))
+			apperrors.Abort(c, apperrors.New("INTERNAL_ERROR", "Gagal memproses validasi tenant", http.StatusInternalServerError))
 			return
 		}
 
 		if tenant.ID == "" {
-			apperrors.Abort(c, apperrors.New("NOT_FOUND", "Tenant tidak ditemukan atau tidak aktif", http.StatusNotFound, nil))
+			apperrors.Abort(c, apperrors.New("NOT_FOUND", "Tenant tidak ditemukan atau tidak aktif", http.StatusNotFound))
 			return
 		}
 

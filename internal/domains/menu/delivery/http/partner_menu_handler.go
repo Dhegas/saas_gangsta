@@ -40,7 +40,7 @@ func (h *PartnerMenuHandler) extractTenantID(c *gin.Context) (string, error) {
 		if contextID != "" {
 			return contextID, nil
 		}
-		return "", apperrors.New("TENANT_NOT_FOUND", "Tenant ID diperlukan", http.StatusBadRequest, nil)
+		return "", apperrors.New("TENANT_NOT_FOUND", "Tenant ID diperlukan", http.StatusBadRequest)
 	}
 
 	// Untuk CUSTOMER / BASIC
@@ -48,13 +48,13 @@ func (h *PartnerMenuHandler) extractTenantID(c *gin.Context) (string, error) {
 	contextID, _ := contextTenantID.(string)
 	if contextID != "" {
 		if manualID != "" && manualID != contextID {
-			return "", apperrors.New("FORBIDDEN", "tenantId yang Anda kirimkan tidak sesuai dengan hak akses token Anda", http.StatusForbidden, nil)
+			return "", apperrors.New("FORBIDDEN", "You do not have permission to perform this action", http.StatusForbidden)
 		}
 		return contextID, nil
 	}
 
 	if manualID == "" {
-		return "", apperrors.New("TENANT_NOT_FOUND", "Tenant ID diperlukan", http.StatusBadRequest, nil)
+		return "", apperrors.New("TENANT_NOT_FOUND", "Tenant ID diperlukan", http.StatusBadRequest)
 	}
 
 	return manualID, nil
@@ -81,7 +81,7 @@ func (h *PartnerMenuHandler) GetAllMenus(c *gin.Context) {
 
 	var filter dto.MenuFilterParams
 	if err := c.ShouldBindQuery(&filter); err != nil {
-		response.Error(c, http.StatusBadRequest, "Parameter query tidak valid", gin.H{"code": "VALIDATION_ERROR", "details": err.Error()})
+		apperrors.Write(c, apperrors.New("VALIDATION_ERROR", "Parameter query tidak valid", http.StatusUnprocessableEntity))
 		return
 	}
 
@@ -138,13 +138,13 @@ func (h *PartnerMenuHandler) GetMenuByID(c *gin.Context) {
 func (h *PartnerMenuHandler) CreateMenu(c *gin.Context) {
 	tenantID, err := tenant.GetTenantID(c)
 	if err != nil {
-		apperrors.Write(c, apperrors.New("FORBIDDEN", err.Error(), http.StatusForbidden, nil))
+		apperrors.Write(c, apperrors.New("FORBIDDEN", "You do not have permission to perform this action", http.StatusForbidden))
 		return
 	}
 
 	var req dto.CreateMenuRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, "Data tidak valid", gin.H{"code": "VALIDATION_ERROR", "details": err.Error()})
+		apperrors.Write(c, apperrors.New("VALIDATION_ERROR", "Validation failed", http.StatusUnprocessableEntity))
 		return
 	}
 
@@ -174,14 +174,14 @@ func (h *PartnerMenuHandler) CreateMenu(c *gin.Context) {
 func (h *PartnerMenuHandler) UpdateMenu(c *gin.Context) {
 	tenantID, err := tenant.GetTenantID(c)
 	if err != nil {
-		apperrors.Write(c, apperrors.New("FORBIDDEN", err.Error(), http.StatusForbidden, nil))
+		apperrors.Write(c, apperrors.New("FORBIDDEN", "You do not have permission to perform this action", http.StatusForbidden))
 		return
 	}
 	menuID := c.Param("id")
 
 	var req dto.UpdateMenuRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, "Data tidak valid", gin.H{"code": "VALIDATION_ERROR", "details": err.Error()})
+		apperrors.Write(c, apperrors.New("VALIDATION_ERROR", "Validation failed", http.StatusUnprocessableEntity))
 		return
 	}
 
@@ -208,7 +208,7 @@ func (h *PartnerMenuHandler) UpdateMenu(c *gin.Context) {
 func (h *PartnerMenuHandler) SoftDeleteMenu(c *gin.Context) {
 	tenantID, err := tenant.GetTenantID(c)
 	if err != nil {
-		apperrors.Write(c, apperrors.New("FORBIDDEN", err.Error(), http.StatusForbidden, nil))
+		apperrors.Write(c, apperrors.New("FORBIDDEN", "You do not have permission to perform this action", http.StatusForbidden))
 		return
 	}
 	menuID := c.Param("id")
@@ -238,14 +238,14 @@ func (h *PartnerMenuHandler) SoftDeleteMenu(c *gin.Context) {
 func (h *PartnerMenuHandler) ToggleMenuAvailable(c *gin.Context) {
 	tenantID, err := tenant.GetTenantID(c)
 	if err != nil {
-		apperrors.Write(c, apperrors.New("FORBIDDEN", err.Error(), http.StatusForbidden, nil))
+		apperrors.Write(c, apperrors.New("FORBIDDEN", "You do not have permission to perform this action", http.StatusForbidden))
 		return
 	}
 	menuID := c.Param("id")
 
 	var req dto.ToggleMenuAvailableRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, "Data tidak valid", gin.H{"code": "VALIDATION_ERROR", "details": err.Error()})
+		apperrors.Write(c, apperrors.New("VALIDATION_ERROR", "Validation failed", http.StatusUnprocessableEntity))
 		return
 	}
 

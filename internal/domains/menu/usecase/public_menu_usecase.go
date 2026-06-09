@@ -39,7 +39,7 @@ func (u *publicMenuUsecase) GetPublicMenus(ctx context.Context, tenantID string,
 
 	menus, err := u.repo.FindPublicMenus(ctx, tenantID, categoryID, search, isAvailable)
 	if err != nil {
-		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil daftar menu publik", http.StatusInternalServerError, err)
+		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil daftar menu publik", http.StatusInternalServerError)
 	}
 
 	result := make([]dto.MenuResponse, 0, len(menus))

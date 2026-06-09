@@ -15,7 +15,7 @@ func RoleGuard(allowedRole string) gin.HandlerFunc {
 func RoleGuards(allowedRoles ...string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if len(allowedRoles) == 0 {
-			apperrors.Abort(c, apperrors.New("FORBIDDEN", "Role guard is not configured", http.StatusForbidden, nil))
+			apperrors.Abort(c, apperrors.New("FORBIDDEN", "Role guard is not configured", http.StatusForbidden))
 			return
 		}
 
@@ -23,9 +23,9 @@ func RoleGuards(allowedRoles ...string) gin.HandlerFunc {
 		roleStr, okCast := role.(string)
 
 		if !ok || !okCast || roleStr == "" {
-			apperrors.Abort(c, apperrors.New("FORBIDDEN", "Role not found", http.StatusForbidden, nil))
+			apperrors.Abort(c, apperrors.New("FORBIDDEN", "Role not found", http.StatusForbidden))
 			return
-		}
+		}	
 
 		allowed := false
 		for _, allowedRole := range allowedRoles {
@@ -35,7 +35,7 @@ func RoleGuards(allowedRoles ...string) gin.HandlerFunc {
 			}
 		}
 		if !allowed {
-			apperrors.Abort(c, apperrors.New("FORBIDDEN", "You do not have access to this resource", http.StatusForbidden, nil))
+			apperrors.Abort(c, apperrors.New("FORBIDDEN", "You do not have access to this resource", http.StatusForbidden))
 			return
 		}
 		c.Next()

@@ -3,7 +3,7 @@ package http
 import (
 	"net/http"
 
-	"github.com/dhegas/saas_gangsta/internal/common/errors"
+	apperrors "github.com/dhegas/saas_gangsta/internal/common/errors"
 	"github.com/dhegas/saas_gangsta/internal/common/response"
 	"github.com/dhegas/saas_gangsta/internal/domains/category/domain"
 	"github.com/dhegas/saas_gangsta/internal/domains/category/dto"
@@ -31,13 +31,14 @@ func NewPartnerCategoryHandler(usecase domain.PartnerCategoryUsecase) *PartnerCa
 func (h *PartnerCategoryHandler) GetAllCategories(c *gin.Context) {
 	tenantID, err := tenant.GetTenantID(c)
 	if err != nil {
+		apperrors.Write(c, err)
 		return
 	}
 
 	categories, err := h.usecase.GetAllCategories(c.Request.Context(), tenantID)
 	if err != nil {
-		errors.Write(c, err)
-		return // Usecase returns formatted apperrors
+		apperrors.Write(c, err)
+		return
 	}
 
 	response.Success(c, http.StatusOK, "Berhasil mengambil daftar category", categories)
@@ -57,13 +58,14 @@ func (h *PartnerCategoryHandler) GetAllCategories(c *gin.Context) {
 func (h *PartnerCategoryHandler) GetCategoryByID(c *gin.Context) {
 	tenantID, err := tenant.GetTenantID(c)
 	if err != nil {
+		apperrors.Write(c, err)
 		return
 	}
 	categoryID := c.Param("id")
 
 	category, err := h.usecase.GetCategoryByID(c.Request.Context(), tenantID, categoryID)
 	if err != nil {
-		errors.Write(c, err)
+		apperrors.Write(c, err)
 		return
 	}
 
@@ -85,18 +87,19 @@ func (h *PartnerCategoryHandler) GetCategoryByID(c *gin.Context) {
 func (h *PartnerCategoryHandler) CreateCategory(c *gin.Context) {
 	tenantID, err := tenant.GetTenantID(c)
 	if err != nil {
+		apperrors.Write(c, err)
 		return
 	}
 
 	var req dto.CreateCategoryRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, "Data tidak valid", gin.H{"code": "VALIDATION_ERROR", "details": err.Error()})
+		apperrors.Write(c, apperrors.New("VALIDATION_ERROR", "Validation failed", http.StatusUnprocessableEntity))
 		return
 	}
 
 	category, err := h.usecase.CreateCategory(c.Request.Context(), tenantID, req)
 	if err != nil {
-		errors.Write(c, err)
+		apperrors.Write(c, err)
 		return
 	}
 
@@ -120,19 +123,20 @@ func (h *PartnerCategoryHandler) CreateCategory(c *gin.Context) {
 func (h *PartnerCategoryHandler) UpdateCategory(c *gin.Context) {
 	tenantID, err := tenant.GetTenantID(c)
 	if err != nil {
+		apperrors.Write(c, err)
 		return
 	}
 	categoryID := c.Param("id")
 
 	var req dto.UpdateCategoryRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, "Data tidak valid", gin.H{"code": "VALIDATION_ERROR", "details": err.Error()})
+		apperrors.Write(c, apperrors.New("VALIDATION_ERROR", "Validation failed", http.StatusUnprocessableEntity))
 		return
 	}
 
 	category, err := h.usecase.UpdateCategory(c.Request.Context(), tenantID, categoryID, req)
 	if err != nil {
-		errors.Write(c, err)
+		apperrors.Write(c, err)
 		return
 	}
 
@@ -153,12 +157,13 @@ func (h *PartnerCategoryHandler) UpdateCategory(c *gin.Context) {
 func (h *PartnerCategoryHandler) SoftDeleteCategory(c *gin.Context) {
 	tenantID, err := tenant.GetTenantID(c)
 	if err != nil {
+		apperrors.Write(c, err)
 		return
 	}
 	categoryID := c.Param("id")
 
 	if err := h.usecase.SoftDeleteCategory(c.Request.Context(), tenantID, categoryID); err != nil {
-		errors.Write(c, err)
+		apperrors.Write(c, err)
 		return
 	}
 
@@ -182,18 +187,19 @@ func (h *PartnerCategoryHandler) SoftDeleteCategory(c *gin.Context) {
 func (h *PartnerCategoryHandler) ToggleCategoryActive(c *gin.Context) {
 	tenantID, err := tenant.GetTenantID(c)
 	if err != nil {
+		apperrors.Write(c, err)
 		return
 	}
 	categoryID := c.Param("id")
 
 	var req dto.ToggleCategoryActiveRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, "Data tidak valid", gin.H{"code": "VALIDATION_ERROR", "details": err.Error()})
+		apperrors.Write(c, apperrors.New("VALIDATION_ERROR", "Validation failed", http.StatusUnprocessableEntity))
 		return
 	}
 
 	if err := h.usecase.ToggleCategoryActive(c.Request.Context(), tenantID, categoryID, *req.IsActive); err != nil {
-		errors.Write(c, err)
+		apperrors.Write(c, err)
 		return
 	}
 
@@ -215,17 +221,18 @@ func (h *PartnerCategoryHandler) ToggleCategoryActive(c *gin.Context) {
 func (h *PartnerCategoryHandler) ReorderCategories(c *gin.Context) {
 	tenantID, err := tenant.GetTenantID(c)
 	if err != nil {
+		apperrors.Write(c, err)
 		return
 	}
 
 	var req dto.ReorderCategoryRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, "Data tidak valid", gin.H{"code": "VALIDATION_ERROR", "details": err.Error()})
+		apperrors.Write(c, apperrors.New("VALIDATION_ERROR", "Validation failed", http.StatusUnprocessableEntity))
 		return
 	}
 
 	if err := h.usecase.ReorderCategories(c.Request.Context(), tenantID, req); err != nil {
-		errors.Write(c, err)
+		apperrors.Write(c, err)
 		return
 	}
 

@@ -11,15 +11,15 @@ import (
 
 func (u *authUsecase) Me(ctx context.Context, userID string) (*dto.MeResponse, error) {
 	if strings.TrimSpace(userID) == "" {
-		return nil, apperrors.New("UNAUTHORIZED", "User tidak valid", http.StatusUnauthorized, nil)
+		return nil, apperrors.New("UNAUTHORIZED", "User tidak valid", http.StatusUnauthorized)
 	}
 
 	user, err := u.repo.FindByID(ctx, userID)
 	if err != nil {
-		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil profil user", http.StatusInternalServerError, nil)
+		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil profil user", http.StatusInternalServerError)
 	}
 	if user == nil {
-		return nil, apperrors.New("UNAUTHORIZED", "User tidak ditemukan", http.StatusUnauthorized, nil)
+		return nil, apperrors.New("UNAUTHORIZED", "User tidak ditemukan", http.StatusUnauthorized)
 	}
 
 	if err := validateTenantState(user); err != nil {

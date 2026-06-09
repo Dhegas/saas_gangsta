@@ -31,7 +31,7 @@ func NewPublicTableHandler(usecase domain.PublicTableUsecase) *PublicTableHandle
 func (h *PublicTableHandler) GetPublicTables(c *gin.Context) {
 	tenantID := c.GetString("tenantId")
 	if tenantID == "" {
-		apperrors.Write(c, apperrors.New("VALIDATION_ERROR", "Tenant context tidak ditemukan", http.StatusBadRequest, nil))
+		apperrors.Write(c, apperrors.New("VALIDATION_ERROR", "Tenant context tidak ditemukan", http.StatusBadRequest))
 		return
 	}
 

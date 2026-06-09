@@ -34,29 +34,29 @@ func NewCustomerOrderHandler(usecase domain.PartnerOrderUsecase) *CustomerOrderH
 func (h *CustomerOrderHandler) GetOrderStatus(c *gin.Context) {
 	tenantIDVal, exists := c.Get("tenantId")
 	if !exists {
-		apperrors.Write(c, apperrors.New("VALIDATION_ERROR", "Tenant context tidak ditemukan", http.StatusBadRequest, nil))
+		apperrors.Write(c, apperrors.New("VALIDATION_ERROR", "Tenant context tidak ditemukan", http.StatusBadRequest))
 		return
 	}
 	tenantID, ok := tenantIDVal.(string)
 	if !ok || tenantID == "" {
-		apperrors.Write(c, apperrors.New("VALIDATION_ERROR", "Tenant context tidak valid", http.StatusBadRequest, nil))
+		apperrors.Write(c, apperrors.New("VALIDATION_ERROR", "Tenant context tidak valid", http.StatusBadRequest))
 		return
 	}
 
 	orderID := c.Param("orderId")
 	if orderID == "" || len(orderID) != 36 {
-		apperrors.Write(c, apperrors.New("ORDER_NOT_FOUND", "Pesanan tidak ditemukan atau ID pesanan tidak valid", http.StatusNotFound, nil))
+		apperrors.Write(c, apperrors.New("NOT_FOUND", "Pesanan tidak ditemukan atau ID pesanan tidak valid", http.StatusNotFound))
 		return
 	}
 
 	userIDVal, exists := c.Get("userId")
 	if !exists {
-		response.Error(c, http.StatusUnauthorized, "Autentikasi diperlukan", gin.H{"code": "UNAUTHORIZED", "details": "User ID tidak ditemukan"})
+		apperrors.Write(c, apperrors.New("UNAUTHORIZED", "Authentication required", http.StatusUnauthorized))
 		return
 	}
 	uID, ok := userIDVal.(string)
 	if !ok || uID == "" {
-		response.Error(c, http.StatusUnauthorized, "Autentikasi tidak valid", gin.H{"code": "UNAUTHORIZED", "details": "User ID tidak valid"})
+		apperrors.Write(c, apperrors.New("UNAUTHORIZED", "Authentication required", http.StatusUnauthorized))
 		return
 	}
 
@@ -68,7 +68,7 @@ func (h *CustomerOrderHandler) GetOrderStatus(c *gin.Context) {
 
 	// Proteksi anti-IDOR: pastikan order adalah milik user yang sedang login
 	if res.UserID == nil || *res.UserID != uID {
-		response.Error(c, http.StatusForbidden, "Akses ditolak", gin.H{"code": "FORBIDDEN", "details": "Anda tidak memiliki akses ke pesanan ini"})
+		apperrors.Write(c, apperrors.New("FORBIDDEN", "You do not have permission to perform this action", http.StatusForbidden))
 		return
 	}
 
@@ -90,29 +90,29 @@ func (h *CustomerOrderHandler) GetOrderStatus(c *gin.Context) {
 func (h *CustomerOrderHandler) GetPublicOrders(c *gin.Context) {
 	tenantIDVal, exists := c.Get("tenantId")
 	if !exists {
-		apperrors.Write(c, apperrors.New("VALIDATION_ERROR", "Tenant context tidak ditemukan", http.StatusBadRequest, nil))
+		apperrors.Write(c, apperrors.New("VALIDATION_ERROR", "Tenant context tidak ditemukan", http.StatusBadRequest))
 		return
 	}
 	tenantID, ok := tenantIDVal.(string)
 	if !ok || tenantID == "" {
-		apperrors.Write(c, apperrors.New("VALIDATION_ERROR", "Tenant context tidak valid", http.StatusBadRequest, nil))
+		apperrors.Write(c, apperrors.New("VALIDATION_ERROR", "Tenant context tidak valid", http.StatusBadRequest))
 		return
 	}
 
 	userIDVal, exists := c.Get("userId")
 	if !exists {
-		response.Error(c, http.StatusUnauthorized, "Autentikasi diperlukan", gin.H{"code": "UNAUTHORIZED", "details": "User ID tidak ditemukan"})
+		apperrors.Write(c, apperrors.New("UNAUTHORIZED", "Authentication required", http.StatusUnauthorized))
 		return
 	}
 	uID, ok := userIDVal.(string)
 	if !ok || uID == "" {
-		response.Error(c, http.StatusUnauthorized, "Autentikasi tidak valid", gin.H{"code": "UNAUTHORIZED", "details": "User ID tidak valid"})
+		apperrors.Write(c, apperrors.New("UNAUTHORIZED", "Authentication required", http.StatusUnauthorized))
 		return
 	}
 
 	var filter dto.PublicOrderFilterParams
 	if err := c.ShouldBindQuery(&filter); err != nil {
-		response.Error(c, http.StatusBadRequest, "Parameter query tidak valid", gin.H{"code": "VALIDATION_ERROR", "details": err.Error()})
+		apperrors.Write(c, apperrors.New("VALIDATION_ERROR", "Parameter query tidak valid", http.StatusUnprocessableEntity))
 		return
 	}
 

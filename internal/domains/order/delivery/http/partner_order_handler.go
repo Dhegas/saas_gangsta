@@ -3,7 +3,7 @@ package http
 import (
 	"net/http"
 
-	"github.com/dhegas/saas_gangsta/internal/common/errors"
+	apperrors "github.com/dhegas/saas_gangsta/internal/common/errors"
 	"github.com/dhegas/saas_gangsta/internal/common/response"
 	"github.com/dhegas/saas_gangsta/internal/domains/order/domain"
 	"github.com/dhegas/saas_gangsta/internal/domains/order/dto"
@@ -36,8 +36,9 @@ func (h *PartnerOrderHandler) extractTenantID(c *gin.Context) (string, error) {
 	}
 
 	if tenantID == "" {
-		response.Error(c, http.StatusBadRequest, "Tenant ID diperlukan", gin.H{"code": "TENANT_NOT_FOUND", "details": "Konteks tenant atau parameter tenant_id tidak ditemukan"})
-		return "", http.ErrNoCookie
+		err := apperrors.New("TENANT_NOT_FOUND", "Tenant ID diperlukan", http.StatusBadRequest)
+		apperrors.Write(c, err)
+		return "", err
 	}
 	return tenantID, nil
 }
@@ -62,7 +63,7 @@ func (h *PartnerOrderHandler) GetAllOrders(c *gin.Context) {
 
 	var filter dto.OrderFilterParams
 	if err := c.ShouldBindQuery(&filter); err != nil {
-		response.Error(c, http.StatusBadRequest, "Parameter query tidak valid", gin.H{"code": "VALIDATION_ERROR", "details": err.Error()})
+		apperrors.Write(c, apperrors.New("VALIDATION_ERROR", "Parameter query tidak valid", http.StatusUnprocessableEntity))
 		return
 	}
 
@@ -79,7 +80,7 @@ func (h *PartnerOrderHandler) GetAllOrders(c *gin.Context) {
 
 	orders, err := h.usecase.GetAllOrders(c.Request.Context(), tenantID, filter)
 	if err != nil {
-		errors.Write(c, err)
+		apperrors.Write(c, err)
 		return
 	}
 
@@ -106,13 +107,13 @@ func (h *PartnerOrderHandler) GetOrderByID(c *gin.Context) {
 	orderID := c.Param("id")
 
 	if orderID == "" || len(orderID) != 36 {
-		response.Error(c, http.StatusNotFound, "Pesanan tidak ditemukan", gin.H{"code": "ORDER_NOT_FOUND", "details": "ID pesanan tidak valid atau tidak ditemukan"})
+		apperrors.Write(c, apperrors.New("NOT_FOUND", "Requested resource was not found", http.StatusNotFound))
 		return
 	}
 
 	order, err := h.usecase.GetOrderByID(c.Request.Context(), tenantID, orderID)
 	if err != nil {
-		errors.Write(c, err)
+		apperrors.Write(c, err)
 		return
 	}
 
@@ -122,7 +123,7 @@ func (h *PartnerOrderHandler) GetOrderByID(c *gin.Context) {
 			if userIDVal, exists := c.Get("userId"); exists {
 				if uID, ok := userIDVal.(string); ok && uID != "" {
 					if order.UserID == nil || *order.UserID != uID {
-						response.Error(c, http.StatusForbidden, "Akses ditolak", gin.H{"code": "FORBIDDEN", "details": "Anda tidak memiliki akses ke pesanan ini"})
+						apperrors.Write(c, apperrors.New("FORBIDDEN", "You do not have permission to perform this action", http.StatusForbidden))
 						return
 					}
 				}
@@ -154,7 +155,7 @@ func (h *PartnerOrderHandler) CreateOrder(c *gin.Context) {
 
 	var req dto.CreateOrderRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, "Data tidak valid", gin.H{"code": "VALIDATION_ERROR", "details": err.Error()})
+		apperrors.Write(c, apperrors.New("VALIDATION_ERROR", "Validation failed", http.StatusUnprocessableEntity))
 		return
 	}
 
@@ -167,7 +168,7 @@ func (h *PartnerOrderHandler) CreateOrder(c *gin.Context) {
 
 	order, err := h.usecase.CreateOrder(c.Request.Context(), tenantID, req)
 	if err != nil {
-		errors.Write(c, err)
+		apperrors.Write(c, err)
 		return
 	}
 
@@ -196,19 +197,19 @@ func (h *PartnerOrderHandler) UpdateOrderStatus(c *gin.Context) {
 	orderID := c.Param("id")
 
 	if orderID == "" || len(orderID) != 36 {
-		response.Error(c, http.StatusNotFound, "Pesanan tidak ditemukan", gin.H{"code": "ORDER_NOT_FOUND", "details": "ID pesanan tidak valid atau tidak ditemukan"})
+		apperrors.Write(c, apperrors.New("NOT_FOUND", "Requested resource was not found", http.StatusNotFound))
 		return
 	}
 
 	var req dto.UpdateOrderStatusRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, "Data tidak valid", gin.H{"code": "VALIDATION_ERROR", "details": err.Error()})
+		apperrors.Write(c, apperrors.New("VALIDATION_ERROR", "Validation failed", http.StatusUnprocessableEntity))
 		return
 	}
 
 	order, err := h.usecase.UpdateOrderStatus(c.Request.Context(), tenantID, orderID, req)
 	if err != nil {
-		errors.Write(c, err)
+		apperrors.Write(c, err)
 		return
 	}
 
@@ -234,12 +235,12 @@ func (h *PartnerOrderHandler) SoftDeleteOrder(c *gin.Context) {
 	orderID := c.Param("id")
 
 	if orderID == "" || len(orderID) != 36 {
-		response.Error(c, http.StatusNotFound, "Pesanan tidak ditemukan", gin.H{"code": "ORDER_NOT_FOUND", "details": "ID pesanan tidak valid atau tidak ditemukan"})
+		apperrors.Write(c, apperrors.New("NOT_FOUND", "Requested resource was not found", http.StatusNotFound))
 		return
 	}
 
 	if err := h.usecase.SoftDeleteOrder(c.Request.Context(), tenantID, orderID); err != nil {
-		errors.Write(c, err)
+		apperrors.Write(c, err)
 		return
 	}
 

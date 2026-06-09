@@ -22,7 +22,7 @@ func NewPartnerCategoryUsecase(repo domain.PartnerCategoryRepository) domain.Par
 func (u *partnerCategoryUsecase) GetAllCategories(ctx context.Context, tenantID string) ([]dto.CategoryResponse, error) {
 	categories, err := u.repo.FindAllByTenant(ctx, tenantID)
 	if err != nil {
-		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil data kategori", http.StatusInternalServerError, err)
+		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil data kategori", http.StatusInternalServerError)
 	}
 
 	result := make([]dto.CategoryResponse, 0, len(categories))
@@ -37,9 +37,9 @@ func (u *partnerCategoryUsecase) GetCategoryByID(ctx context.Context, tenantID, 
 	category, err := u.repo.FindByIDAndTenant(ctx, tenantID, categoryID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, apperrors.New("NOT_FOUND", "Kategori tidak ditemukan", http.StatusNotFound, nil)
+			return nil, apperrors.New("NOT_FOUND", "Kategori tidak ditemukan", http.StatusNotFound)
 		}
-		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil data kategori", http.StatusInternalServerError, err)
+		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil data kategori", http.StatusInternalServerError)
 	}
 
 	response := toCategoryResponse(category)
@@ -49,10 +49,10 @@ func (u *partnerCategoryUsecase) GetCategoryByID(ctx context.Context, tenantID, 
 func (u *partnerCategoryUsecase) CreateCategory(ctx context.Context, tenantID string, req dto.CreateCategoryRequest) (*dto.CategoryResponse, error) {
 	exists, err := u.repo.CheckNameExists(ctx, tenantID, req.Name, "")
 	if err != nil {
-		return nil, apperrors.New("INTERNAL_ERROR", "Gagal memvalidasi nama kategori", http.StatusInternalServerError, err)
+		return nil, apperrors.New("INTERNAL_ERROR", "Gagal memvalidasi nama kategori", http.StatusInternalServerError)
 	}
 	if exists {
-		return nil, apperrors.New("CONFLICT", "Nama kategori sudah ada", http.StatusConflict, nil)
+		return nil, apperrors.New("CONFLICT", "Nama kategori sudah ada", http.StatusConflict)
 	}
 
 	entity := &domain.CategoryEntity{
@@ -64,7 +64,7 @@ func (u *partnerCategoryUsecase) CreateCategory(ctx context.Context, tenantID st
 	}
 
 	if err := u.repo.Create(ctx, entity); err != nil {
-		return nil, apperrors.New("INTERNAL_ERROR", "Gagal menyimpan kategori", http.StatusInternalServerError, err)
+		return nil, apperrors.New("INTERNAL_ERROR", "Gagal menyimpan kategori", http.StatusInternalServerError)
 	}
 
 	response := toCategoryResponse(entity)
@@ -75,18 +75,18 @@ func (u *partnerCategoryUsecase) UpdateCategory(ctx context.Context, tenantID, c
 	category, err := u.repo.FindByIDAndTenant(ctx, tenantID, categoryID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, apperrors.New("NOT_FOUND", "Kategori tidak ditemukan", http.StatusNotFound, nil)
+			return nil, apperrors.New("NOT_FOUND", "Kategori tidak ditemukan", http.StatusNotFound)
 		}
-		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil data kategori", http.StatusInternalServerError, err)
+		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil data kategori", http.StatusInternalServerError)
 	}
 
 	if req.Name != "" && req.Name != category.Name {
 		exists, err := u.repo.CheckNameExists(ctx, tenantID, req.Name, categoryID)
 		if err != nil {
-			return nil, apperrors.New("INTERNAL_ERROR", "Gagal memvalidasi nama kategori", http.StatusInternalServerError, err)
+			return nil, apperrors.New("INTERNAL_ERROR", "Gagal memvalidasi nama kategori", http.StatusInternalServerError)
 		}
 		if exists {
-			return nil, apperrors.New("CONFLICT", "Nama kategori sudah ada", http.StatusConflict, nil)
+			return nil, apperrors.New("CONFLICT", "Nama kategori sudah ada", http.StatusConflict)
 		}
 		category.Name = req.Name
 	}
@@ -96,7 +96,7 @@ func (u *partnerCategoryUsecase) UpdateCategory(ctx context.Context, tenantID, c
 	}
 
 	if err := u.repo.Update(ctx, category); err != nil {
-		return nil, apperrors.New("INTERNAL_ERROR", "Gagal memperbarui kategori", http.StatusInternalServerError, err)
+		return nil, apperrors.New("INTERNAL_ERROR", "Gagal memperbarui kategori", http.StatusInternalServerError)
 	}
 
 	response := toCategoryResponse(category)
@@ -107,9 +107,9 @@ func (u *partnerCategoryUsecase) SoftDeleteCategory(ctx context.Context, tenantI
 	err := u.repo.SoftDelete(ctx, tenantID, categoryID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return apperrors.New("NOT_FOUND", "Kategori tidak ditemukan", http.StatusNotFound, nil)
+			return apperrors.New("NOT_FOUND", "Kategori tidak ditemukan", http.StatusNotFound)
 		}
-		return apperrors.New("INTERNAL_ERROR", "Gagal menghapus kategori", http.StatusInternalServerError, err)
+		return apperrors.New("INTERNAL_ERROR", "Gagal menghapus kategori", http.StatusInternalServerError)
 	}
 	return nil
 }
@@ -118,9 +118,9 @@ func (u *partnerCategoryUsecase) ToggleCategoryActive(ctx context.Context, tenan
 	err := u.repo.UpdateActiveStatus(ctx, tenantID, categoryID, isActive)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return apperrors.New("NOT_FOUND", "Kategori tidak ditemukan", http.StatusNotFound, nil)
+			return apperrors.New("NOT_FOUND", "Kategori tidak ditemukan", http.StatusNotFound)
 		}
-		return apperrors.New("INTERNAL_ERROR", "Gagal memperbarui status kategori", http.StatusInternalServerError, err)
+		return apperrors.New("INTERNAL_ERROR", "Gagal memperbarui status kategori", http.StatusInternalServerError)
 	}
 	return nil
 }
@@ -128,7 +128,7 @@ func (u *partnerCategoryUsecase) ToggleCategoryActive(ctx context.Context, tenan
 func (u *partnerCategoryUsecase) ReorderCategories(ctx context.Context, tenantID string, req dto.ReorderCategoryRequest) error {
 	err := u.repo.UpdateSortOrderBulk(ctx, tenantID, req.Items)
 	if err != nil {
-		return apperrors.New("INTERNAL_ERROR", "Gagal mengurutkan kategori", http.StatusInternalServerError, err)
+		return apperrors.New("INTERNAL_ERROR", "Gagal mengurutkan kategori", http.StatusInternalServerError)
 	}
 	return nil
 }

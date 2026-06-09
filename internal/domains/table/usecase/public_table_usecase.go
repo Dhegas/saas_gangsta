@@ -20,7 +20,7 @@ func NewPublicTableUsecase(repo domain.PublicTableRepository) domain.PublicTable
 func (u *publicTableUsecase) GetPublicTables(ctx context.Context, tenantID string) ([]dto.PublicTableResponse, error) {
 	tables, err := u.repo.FindPublicTables(ctx, tenantID)
 	if err != nil {
-		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil data meja publik", http.StatusInternalServerError, err)
+		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil data meja publik", http.StatusInternalServerError)
 	}
 	return tables, nil
 }

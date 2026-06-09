@@ -53,7 +53,7 @@ func (u *publicTenantUsecase) ListPublicTenants(ctx context.Context, req dto.Lis
 
 	tenants, totalItems, err := u.repo.ListPublicTenants(ctx, req.Search, limit, offset)
 	if err != nil {
-		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil daftar tenant", http.StatusInternalServerError, nil)
+		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil daftar tenant", http.StatusInternalServerError)
 	}
 
 	items := make([]dto.PublicTenantResponse, 0, len(tenants))
@@ -93,7 +93,7 @@ func (u *publicTenantUsecase) ListPublicTenants(ctx context.Context, req dto.Lis
 func (u *publicTenantUsecase) GetPublicTenantBySlug(ctx context.Context, slug string) (*dto.PublicTenantDetailResponse, error) {
 	slug = strings.TrimSpace(slug)
 	if slug == "" {
-		return nil, apperrors.New("VALIDATION_ERROR", "Slug tenant wajib diisi", http.StatusBadRequest, nil)
+		return nil, apperrors.New("VALIDATION_ERROR", "Slug tenant wajib diisi", http.StatusBadRequest)
 	}
 
 	cacheKey := fmt.Sprintf("public:tenant:slug:%s", slug)
@@ -106,9 +106,9 @@ func (u *publicTenantUsecase) GetPublicTenantBySlug(ctx context.Context, slug st
 	tenant, err := u.repo.FindTenantBySlug(ctx, slug)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, apperrors.New("NOT_FOUND", "Tenant tidak ditemukan", http.StatusNotFound, nil)
+			return nil, apperrors.New("NOT_FOUND", "Tenant tidak ditemukan", http.StatusNotFound)
 		}
-		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil detail tenant", http.StatusInternalServerError, nil)
+		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil detail tenant", http.StatusInternalServerError)
 	}
 
 	res := &dto.PublicTenantDetailResponse{

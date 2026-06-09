@@ -35,7 +35,7 @@ func (u *publicCategoryUsecase) GetPublicCategories(ctx context.Context, tenantI
 
 	categories, err := u.repo.FindPublicCategories(ctx, tenantID)
 	if err != nil {
-		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil data kategori publik", http.StatusInternalServerError, err)
+		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil data kategori publik", http.StatusInternalServerError)
 	}
 
 	result := make([]dto.CategoryResponse, 0, len(categories))

@@ -25,17 +25,17 @@ func (u *partnerMenuUsecase) GetAllMenus(ctx context.Context, tenantID string, f
 		isValid, err := u.repo.CategoryExists(ctx, tenantID, filter.CategoryID)
 		if err != nil {
 			// Jika error berasal dari pengecekan kepemilikan (misal: kategori milik orang lain)
-			return nil, apperrors.New("VALIDATION_ERROR", err.Error(), http.StatusBadRequest, nil)
+			return nil, apperrors.New("VALIDATION_ERROR", "Kategori tidak valid atau tidak ditemukan", http.StatusBadRequest)
 		}
 		if !isValid {
-			return nil, apperrors.New("NOT_FOUND", "Kategori tidak ditemukan atau bukan milik tenant Anda", http.StatusBadRequest, nil)
+			return nil, apperrors.New("NOT_FOUND", "Kategori tidak ditemukan atau bukan milik tenant Anda", http.StatusBadRequest)
 		}
 	}
 
 	// 2. Ambil data menu
 	menus, err := u.repo.FindAllByTenant(ctx, tenantID, filter)
 	if err != nil {
-		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil data menu", http.StatusInternalServerError, err)
+		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil data menu", http.StatusInternalServerError)
 	}
 
 	result := make([]dto.MenuResponse, 0, len(menus))
@@ -50,9 +50,9 @@ func (u *partnerMenuUsecase) GetMenuByID(ctx context.Context, tenantID, menuID s
 	menu, err := u.repo.FindByIDAndTenant(ctx, tenantID, menuID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, apperrors.New("NOT_FOUND", "Menu tidak ditemukan", http.StatusNotFound, nil)
+			return nil, apperrors.New("NOT_FOUND", "Menu tidak ditemukan", http.StatusNotFound)
 		}
-		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil data menu", http.StatusInternalServerError, err)
+		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil data menu", http.StatusInternalServerError)
 	}
 
 	response := toMenuResponse(menu)
@@ -63,19 +63,19 @@ func (u *partnerMenuUsecase) CreateMenu(ctx context.Context, tenantID string, re
 	if req.CategoryID != nil && *req.CategoryID != "" {
 		isValidCategory, err := u.repo.CategoryExists(ctx, tenantID, *req.CategoryID)
 		if err != nil {
-			return nil, apperrors.New("VALIDATION_ERROR", err.Error(), http.StatusBadRequest, nil)
+			return nil, apperrors.New("VALIDATION_ERROR", "Kategori tidak valid atau tidak ditemukan", http.StatusBadRequest)
 		}
 		if !isValidCategory {
-			return nil, apperrors.New("VALIDATION_ERROR", "Kategori tidak valid", http.StatusBadRequest, nil)
+			return nil, apperrors.New("VALIDATION_ERROR", "Kategori tidak valid", http.StatusBadRequest)
 		}
 	}
 
 	exists, err := u.repo.CheckNameExists(ctx, tenantID, req.Name, "")
 	if err != nil {
-		return nil, apperrors.New("INTERNAL_ERROR", "Gagal memvalidasi nama menu", http.StatusInternalServerError, err)
+		return nil, apperrors.New("INTERNAL_ERROR", "Gagal memvalidasi nama menu", http.StatusInternalServerError)
 	}
 	if exists {
-		return nil, apperrors.New("CONFLICT", "Nama menu sudah ada", http.StatusConflict, nil)
+		return nil, apperrors.New("CONFLICT", "Nama menu sudah ada", http.StatusConflict)
 	}
 
 	entity := &domain.MenuEntity{
@@ -89,7 +89,7 @@ func (u *partnerMenuUsecase) CreateMenu(ctx context.Context, tenantID string, re
 	}
 
 	if err := u.repo.Create(ctx, entity); err != nil {
-		return nil, apperrors.New("INTERNAL_ERROR", "Gagal menyimpan menu", http.StatusInternalServerError, err)
+		return nil, apperrors.New("INTERNAL_ERROR", "Gagal menyimpan menu", http.StatusInternalServerError)
 	}
 
 	response := toMenuResponse(entity)
@@ -100,19 +100,19 @@ func (u *partnerMenuUsecase) UpdateMenu(ctx context.Context, tenantID, menuID st
 	menu, err := u.repo.FindByIDAndTenant(ctx, tenantID, menuID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, apperrors.New("NOT_FOUND", "Menu tidak ditemukan", http.StatusNotFound, nil)
+			return nil, apperrors.New("NOT_FOUND", "Menu tidak ditemukan", http.StatusNotFound)
 		}
-		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil data menu", http.StatusInternalServerError, err)
+		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil data menu", http.StatusInternalServerError)
 	}
 
 	if req.CategoryID != nil {
 		if *req.CategoryID != "" {
 			isValidCategory, err := u.repo.CategoryExists(ctx, tenantID, *req.CategoryID)
 			if err != nil {
-				return nil, apperrors.New("VALIDATION_ERROR", err.Error(), http.StatusBadRequest, nil)
+				return nil, apperrors.New("VALIDATION_ERROR", "Kategori tidak valid atau tidak ditemukan", http.StatusBadRequest)
 			}
 			if !isValidCategory {
-				return nil, apperrors.New("VALIDATION_ERROR", "Kategori tidak valid", http.StatusBadRequest, nil)
+				return nil, apperrors.New("VALIDATION_ERROR", "Kategori tidak valid", http.StatusBadRequest)
 			}
 			menu.CategoryID = req.CategoryID
 		} else {
@@ -123,10 +123,10 @@ func (u *partnerMenuUsecase) UpdateMenu(ctx context.Context, tenantID, menuID st
 	if req.Name != "" && req.Name != menu.Name {
 		exists, err := u.repo.CheckNameExists(ctx, tenantID, req.Name, menuID)
 		if err != nil {
-			return nil, apperrors.New("INTERNAL_ERROR", "Gagal memvalidasi nama menu", http.StatusInternalServerError, err)
+			return nil, apperrors.New("INTERNAL_ERROR", "Gagal memvalidasi nama menu", http.StatusInternalServerError)
 		}
 		if exists {
-			return nil, apperrors.New("CONFLICT", "Nama menu sudah ada", http.StatusConflict, nil)
+			return nil, apperrors.New("CONFLICT", "Nama menu sudah ada", http.StatusConflict)
 		}
 		menu.Name = req.Name
 	}
@@ -144,7 +144,7 @@ func (u *partnerMenuUsecase) UpdateMenu(ctx context.Context, tenantID, menuID st
 	}
 
 	if err := u.repo.Update(ctx, menu); err != nil {
-		return nil, apperrors.New("INTERNAL_ERROR", "Gagal memperbarui menu", http.StatusInternalServerError, err)
+		return nil, apperrors.New("INTERNAL_ERROR", "Gagal memperbarui menu", http.StatusInternalServerError)
 	}
 
 	response := toMenuResponse(menu)
@@ -155,9 +155,9 @@ func (u *partnerMenuUsecase) SoftDeleteMenu(ctx context.Context, tenantID, menuI
 	err := u.repo.SoftDelete(ctx, tenantID, menuID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return apperrors.New("NOT_FOUND", "Menu tidak ditemukan", http.StatusNotFound, nil)
+			return apperrors.New("NOT_FOUND", "Menu tidak ditemukan", http.StatusNotFound)
 		}
-		return apperrors.New("INTERNAL_ERROR", "Gagal menghapus menu", http.StatusInternalServerError, err)
+		return apperrors.New("INTERNAL_ERROR", "Gagal menghapus menu", http.StatusInternalServerError)
 	}
 	return nil
 }
@@ -166,9 +166,9 @@ func (u *partnerMenuUsecase) ToggleMenuAvailable(ctx context.Context, tenantID, 
 	err := u.repo.UpdateAvailableStatus(ctx, tenantID, menuID, isAvailable)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return apperrors.New("NOT_FOUND", "Menu tidak ditemukan", http.StatusNotFound, nil)
+			return apperrors.New("NOT_FOUND", "Menu tidak ditemukan", http.StatusNotFound)
 		}
-		return apperrors.New("INTERNAL_ERROR", "Gagal memperbarui status ketersediaan menu", http.StatusInternalServerError, err)
+		return apperrors.New("INTERNAL_ERROR", "Gagal memperbarui status ketersediaan menu", http.StatusInternalServerError)
 	}
 	return nil
 }

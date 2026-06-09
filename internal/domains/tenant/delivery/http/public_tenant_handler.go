@@ -1,7 +1,6 @@
 package http
 
 import (
-	"errors"
 	"net/http"
 
 	apperrors "github.com/dhegas/saas_gangsta/internal/common/errors"
@@ -9,7 +8,6 @@ import (
 	"github.com/dhegas/saas_gangsta/internal/domains/tenant/domain"
 	"github.com/dhegas/saas_gangsta/internal/domains/tenant/dto"
 	"github.com/gin-gonic/gin"
-	"github.com/go-playground/validator/v10"
 )
 
 type PublicTenantHandler struct {
@@ -35,12 +33,7 @@ func NewPublicTenantHandler(usecase domain.PublicTenantUsecase) *PublicTenantHan
 func (h *PublicTenantHandler) GetPublicTenantList(c *gin.Context) {
 	var req dto.ListPublicTenantsRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
-		var validationErrs validator.ValidationErrors
-		details := err.Error()
-		if errors.As(err, &validationErrs) {
-			details = validationErrs.Error()
-		}
-		apperrors.Write(c, apperrors.New("VALIDATION_ERROR", "Query params tidak valid", http.StatusBadRequest, details))
+		apperrors.Write(c, apperrors.New("VALIDATION_ERROR", "Query params tidak valid", http.StatusUnprocessableEntity))
 		return
 	}
 

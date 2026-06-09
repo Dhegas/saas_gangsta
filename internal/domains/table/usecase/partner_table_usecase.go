@@ -22,7 +22,7 @@ func NewPartnerTableUsecase(repo domain.PartnerTableRepository) domain.PartnerTa
 func (u *partnerTableUsecase) GetAllTables(ctx context.Context, tenantID string) ([]dto.TableResponse, error) {
 	tables, err := u.repo.FindAllByTenant(ctx, tenantID)
 	if err != nil {
-		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil data meja", http.StatusInternalServerError, err)
+		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil data meja", http.StatusInternalServerError)
 	}
 
 	result := make([]dto.TableResponse, 0, len(tables))
@@ -45,9 +45,9 @@ func (u *partnerTableUsecase) GetTableByID(ctx context.Context, tenantID, tableI
 	table, err := u.repo.FindByIDAndTenant(ctx, tenantID, tableID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, apperrors.New("NOT_FOUND", "Meja tidak ditemukan", http.StatusNotFound, nil)
+			return nil, apperrors.New("NOT_FOUND", "Meja tidak ditemukan", http.StatusNotFound)
 		}
-		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil data meja", http.StatusInternalServerError, err)
+		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil data meja", http.StatusInternalServerError)
 	}
 
 	isOccupied, err := u.repo.CheckTableOccupied(ctx, tableID)
@@ -65,14 +65,14 @@ func (u *partnerTableUsecase) GetTableStatus(ctx context.Context, tenantID, tabl
 	table, err := u.repo.FindByIDAndTenant(ctx, tenantID, tableID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, apperrors.New("NOT_FOUND", "Meja tidak ditemukan", http.StatusNotFound, nil)
+			return nil, apperrors.New("NOT_FOUND", "Meja tidak ditemukan", http.StatusNotFound)
 		}
-		return nil, apperrors.New("INTERNAL_ERROR", "Gagal memverifikasi meja", http.StatusInternalServerError, err)
+		return nil, apperrors.New("INTERNAL_ERROR", "Gagal memverifikasi meja", http.StatusInternalServerError)
 	}
 
 	isOccupied, err := u.repo.CheckTableOccupied(ctx, tableID)
 	if err != nil {
-		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengecek status meja", http.StatusInternalServerError, err)
+		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengecek status meja", http.StatusInternalServerError)
 	}
 
 	status := "kosong"
@@ -90,10 +90,10 @@ func (u *partnerTableUsecase) GetTableStatus(ctx context.Context, tenantID, tabl
 func (u *partnerTableUsecase) CreateTable(ctx context.Context, tenantID string, req dto.CreateTableRequest) (*dto.TableResponse, error) {
 	exists, err := u.repo.CheckNameExists(ctx, tenantID, req.TableName, "")
 	if err != nil {
-		return nil, apperrors.New("INTERNAL_ERROR", "Gagal memvalidasi nama meja", http.StatusInternalServerError, err)
+		return nil, apperrors.New("INTERNAL_ERROR", "Gagal memvalidasi nama meja", http.StatusInternalServerError)
 	}
 	if exists {
-		return nil, apperrors.New("CONFLICT", "Nama meja sudah ada", http.StatusConflict, nil)
+		return nil, apperrors.New("CONFLICT", "Nama meja sudah ada", http.StatusConflict)
 	}
 
 	entity := &domain.DiningTableEntity{
@@ -102,7 +102,7 @@ func (u *partnerTableUsecase) CreateTable(ctx context.Context, tenantID string, 
 	}
 
 	if err := u.repo.Create(ctx, entity); err != nil {
-		return nil, apperrors.New("INTERNAL_ERROR", "Gagal menyimpan meja", http.StatusInternalServerError, err)
+		return nil, apperrors.New("INTERNAL_ERROR", "Gagal menyimpan meja", http.StatusInternalServerError)
 	}
 
 	response := toTableResponse(entity)
@@ -113,24 +113,24 @@ func (u *partnerTableUsecase) UpdateTable(ctx context.Context, tenantID, tableID
 	table, err := u.repo.FindByIDAndTenant(ctx, tenantID, tableID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, apperrors.New("NOT_FOUND", "Meja tidak ditemukan", http.StatusNotFound, nil)
+			return nil, apperrors.New("NOT_FOUND", "Meja tidak ditemukan", http.StatusNotFound)
 		}
-		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil data meja", http.StatusInternalServerError, err)
+		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil data meja", http.StatusInternalServerError)
 	}
 
 	if req.TableName != "" && req.TableName != table.Name {
 		exists, err := u.repo.CheckNameExists(ctx, tenantID, req.TableName, tableID)
 		if err != nil {
-			return nil, apperrors.New("INTERNAL_ERROR", "Gagal memvalidasi nama meja", http.StatusInternalServerError, err)
+			return nil, apperrors.New("INTERNAL_ERROR", "Gagal memvalidasi nama meja", http.StatusInternalServerError)
 		}
 		if exists {
-			return nil, apperrors.New("CONFLICT", "Nama meja sudah ada", http.StatusConflict, nil)
+			return nil, apperrors.New("CONFLICT", "Nama meja sudah ada", http.StatusConflict)
 		}
 		table.Name = req.TableName
 	}
 
 	if err := u.repo.Update(ctx, table); err != nil {
-		return nil, apperrors.New("INTERNAL_ERROR", "Gagal memperbarui meja", http.StatusInternalServerError, err)
+		return nil, apperrors.New("INTERNAL_ERROR", "Gagal memperbarui meja", http.StatusInternalServerError)
 	}
 
 	response := toTableResponse(table)
@@ -141,9 +141,9 @@ func (u *partnerTableUsecase) SoftDeleteTable(ctx context.Context, tenantID, tab
 	err := u.repo.SoftDelete(ctx, tenantID, tableID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return apperrors.New("NOT_FOUND", "Meja tidak ditemukan", http.StatusNotFound, nil)
+			return apperrors.New("NOT_FOUND", "Meja tidak ditemukan", http.StatusNotFound)
 		}
-		return apperrors.New("INTERNAL_ERROR", "Gagal menghapus meja", http.StatusInternalServerError, err)
+		return apperrors.New("INTERNAL_ERROR", "Gagal menghapus meja", http.StatusInternalServerError)
 	}
 	return nil
 }

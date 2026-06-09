@@ -3,7 +3,7 @@ package http
 import (
 	"net/http"
 
-	"github.com/dhegas/saas_gangsta/internal/common/errors"
+	apperrors "github.com/dhegas/saas_gangsta/internal/common/errors"
 	"github.com/dhegas/saas_gangsta/internal/common/response"
 	"github.com/dhegas/saas_gangsta/internal/domains/report/domain"
 	"github.com/dhegas/saas_gangsta/internal/domains/report/dto"
@@ -22,17 +22,12 @@ func NewPartnerReportHandler(usecase domain.PartnerReportUsecase) *PartnerReport
 func extractReportTenantID(c *gin.Context) (string, bool) {
 	val, exists := c.Get("tenantId")
 	if !exists {
-		response.Error(c, http.StatusBadRequest, "Tenant ID diperlukan", gin.H{
-			"code":    "TENANT_NOT_FOUND",
-			"details": "Konteks tenant tidak ditemukan",
-		})
+		apperrors.Write(c, apperrors.New("TENANT_NOT_FOUND", "Tenant ID diperlukan", http.StatusBadRequest))
 		return "", false
 	}
 	tenantID, ok := val.(string)
 	if !ok || tenantID == "" {
-		response.Error(c, http.StatusBadRequest, "Tenant ID tidak valid", gin.H{
-			"code": "TENANT_INVALID",
-		})
+		apperrors.Write(c, apperrors.New("TENANT_NOT_FOUND", "Tenant ID tidak valid", http.StatusBadRequest))
 		return "", false
 	}
 	return tenantID, true
@@ -58,13 +53,13 @@ func (h *PartnerReportHandler) GetRevenue(c *gin.Context) {
 
 	var params dto.RevenueFilterParams
 	if err := c.ShouldBindQuery(&params); err != nil {
-		response.Error(c, http.StatusBadRequest, "Parameter tidak valid", gin.H{"code": "VALIDATION_ERROR", "details": err.Error()})
+		apperrors.Write(c, apperrors.New("VALIDATION_ERROR", "Parameter tidak valid", http.StatusUnprocessableEntity))
 		return
 	}
 
 	result, err := h.usecase.GetRevenue(c.Request.Context(), tenantID, params)
 	if err != nil {
-		errors.Write(c, err)
+		apperrors.Write(c, err)
 		return
 	}
 
@@ -92,13 +87,13 @@ func (h *PartnerReportHandler) GetTopMenus(c *gin.Context) {
 
 	var params dto.TopMenusFilterParams
 	if err := c.ShouldBindQuery(&params); err != nil {
-		response.Error(c, http.StatusBadRequest, "Parameter tidak valid", gin.H{"code": "VALIDATION_ERROR", "details": err.Error()})
+		apperrors.Write(c, apperrors.New("VALIDATION_ERROR", "Parameter tidak valid", http.StatusUnprocessableEntity))
 		return
 	}
 
 	result, err := h.usecase.GetTopMenus(c.Request.Context(), tenantID, params)
 	if err != nil {
-		errors.Write(c, err)
+		apperrors.Write(c, err)
 		return
 	}
 
@@ -126,13 +121,13 @@ func (h *PartnerReportHandler) GetOrdersByTable(c *gin.Context) {
 
 	var params dto.OrdersByTableFilterParams
 	if err := c.ShouldBindQuery(&params); err != nil {
-		response.Error(c, http.StatusBadRequest, "Parameter tidak valid", gin.H{"code": "VALIDATION_ERROR", "details": err.Error()})
+		apperrors.Write(c, apperrors.New("VALIDATION_ERROR", "Parameter tidak valid", http.StatusUnprocessableEntity))
 		return
 	}
 
 	result, err := h.usecase.GetOrdersByTable(c.Request.Context(), tenantID, params)
 	if err != nil {
-		errors.Write(c, err)
+		apperrors.Write(c, err)
 		return
 	}
 
@@ -159,13 +154,13 @@ func (h *PartnerReportHandler) GetDailySummary(c *gin.Context) {
 
 	var params dto.DailySummaryFilterParams
 	if err := c.ShouldBindQuery(&params); err != nil {
-		response.Error(c, http.StatusBadRequest, "Parameter tidak valid", gin.H{"code": "VALIDATION_ERROR", "details": err.Error()})
+		apperrors.Write(c, apperrors.New("VALIDATION_ERROR", "Parameter tidak valid", http.StatusUnprocessableEntity))
 		return
 	}
 
 	result, err := h.usecase.GetDailySummary(c.Request.Context(), tenantID, params)
 	if err != nil {
-		errors.Write(c, err)
+		apperrors.Write(c, err)
 		return
 	}
 

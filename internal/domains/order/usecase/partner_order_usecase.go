@@ -37,7 +37,7 @@ func NewPartnerOrderUsecase(repo domain.PartnerOrderRepository, authRepo authrep
 func (u *partnerOrderUsecase) GetAllOrders(ctx context.Context, tenantID string, filter dto.OrderFilterParams) ([]dto.OrderResponse, error) {
 	orders, err := u.repo.FindAll(ctx, tenantID, filter)
 	if err != nil {
-		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil daftar pesanan", http.StatusInternalServerError, err)
+		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil daftar pesanan", http.StatusInternalServerError)
 	}
 
 	result := make([]dto.OrderResponse, 0, len(orders))
@@ -51,9 +51,9 @@ func (u *partnerOrderUsecase) GetOrderByID(ctx context.Context, tenantID, orderI
 	order, err := u.repo.FindByID(ctx, tenantID, orderID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, apperrors.New("NOT_FOUND", "Pesanan tidak ditemukan", http.StatusNotFound, nil)
+			return nil, apperrors.New("NOT_FOUND", "Pesanan tidak ditemukan", http.StatusNotFound)
 		}
-		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil detail pesanan", http.StatusInternalServerError, err)
+		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil detail pesanan", http.StatusInternalServerError)
 	}
 
 	response := toOrderResponse(order)
@@ -67,18 +67,18 @@ func (u *partnerOrderUsecase) CreateOrder(ctx context.Context, tenantID string, 
 		tableID, err := u.repo.GetTableByName(ctx, tenantID, *req.DiningTableName)
 		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) || err.Error() == "record not found" {
-				return nil, apperrors.New("BAD_REQUEST", "Meja makan dengan nomor "+*req.DiningTableName+" tidak ditemukan", http.StatusBadRequest, nil)
+				return nil, apperrors.New("BAD_REQUEST", "Meja makan dengan nomor "+*req.DiningTableName+" tidak ditemukan", http.StatusBadRequest)
 			}
-			return nil, apperrors.New("INTERNAL_ERROR", "Gagal memproses meja makan", http.StatusInternalServerError, err)
+			return nil, apperrors.New("INTERNAL_ERROR", "Gagal memproses meja makan", http.StatusInternalServerError)
 		}
 		diningTableID = &tableID
 	} else if req.DiningTablesID != nil && *req.DiningTablesID != "" {
 		tableExists, err := u.repo.CheckTableExists(ctx, tenantID, *req.DiningTablesID)
 		if err != nil {
-			return nil, apperrors.New("INTERNAL_ERROR", "Gagal memvalidasi meja makan", http.StatusInternalServerError, err)
+			return nil, apperrors.New("INTERNAL_ERROR", "Gagal memvalidasi meja makan", http.StatusInternalServerError)
 		}
 		if !tableExists {
-			return nil, apperrors.New("BAD_REQUEST", "Meja makan tidak ditemukan atau bukan milik tenant ini", http.StatusBadRequest, nil)
+			return nil, apperrors.New("BAD_REQUEST", "Meja makan tidak ditemukan atau bukan milik tenant ini", http.StatusBadRequest)
 		}
 		diningTableID = req.DiningTablesID
 	}
@@ -92,7 +92,7 @@ func (u *partnerOrderUsecase) CreateOrder(ctx context.Context, tenantID string, 
 	// 3. Ambil detail harga dan nama menu dari database untuk validasi & kalkulasi harga aman (tenant-isolated)
 	menuDetails, err := u.repo.GetMenuDetails(ctx, tenantID, menuIDs)
 	if err != nil {
-		return nil, apperrors.New("INTERNAL_ERROR", "Gagal memvalidasi item pesanan", http.StatusInternalServerError, err)
+		return nil, apperrors.New("INTERNAL_ERROR", "Gagal memvalidasi item pesanan", http.StatusInternalServerError)
 	}
 
 	var totalOrderPrice float64
@@ -102,7 +102,7 @@ func (u *partnerOrderUsecase) CreateOrder(ctx context.Context, tenantID string, 
 	for _, reqItem := range req.Items {
 		detail, exists := menuDetails[reqItem.MenuID]
 		if !exists {
-			return nil, apperrors.New("BAD_REQUEST", "Salah satu menu yang dipesan tidak valid, tidak tersedia, atau bukan milik tenant ini", http.StatusBadRequest, nil)
+			return nil, apperrors.New("BAD_REQUEST", "Salah satu menu yang dipesan tidak valid, tidak tersedia, atau bukan milik tenant ini", http.StatusBadRequest)
 		}
 
 		subtotal := float64(reqItem.Quantity) * detail.Price
@@ -119,16 +119,16 @@ func (u *partnerOrderUsecase) CreateOrder(ctx context.Context, tenantID string, 
 	}
 
 	if req.UserID == nil || *req.UserID == "" {
-		return nil, apperrors.New("UNAUTHORIZED", "User ID diperlukan untuk membuat pesanan", http.StatusUnauthorized, nil)
+		return nil, apperrors.New("UNAUTHORIZED", "User ID diperlukan untuk membuat pesanan", http.StatusUnauthorized)
 	}
 
 	// Cek apakah user ada di database dan statusnya aktif
 	authUser, err := u.authRepo.FindByID(ctx, *req.UserID)
 	if err != nil || authUser == nil {
-		return nil, apperrors.New("UNAUTHORIZED", "Pengguna tidak ditemukan di database", http.StatusUnauthorized, nil)
+		return nil, apperrors.New("UNAUTHORIZED", "Pengguna tidak ditemukan di database", http.StatusUnauthorized)
 	}
 	if !authUser.IsActive {
-		return nil, apperrors.New("FORBIDDEN", "Akun pengguna tidak aktif", http.StatusForbidden, nil)
+		return nil, apperrors.New("FORBIDDEN", "Akun pengguna tidak aktif", http.StatusForbidden)
 	}
 
 	// 5. Bangun entitas Order (tanpa mengisi relasi User agar GORM tidak mencoba melakukan INSERT ke tabel users)
@@ -152,7 +152,7 @@ func (u *partnerOrderUsecase) CreateOrder(ctx context.Context, tenantID string, 
 		// Ambil antrian terbesar hari ini dan tentukan antrian berikutnya
 		maxQueueVal, err := u.repo.GetMaxQueueNumberToday(ctx, tenantID)
 		if err != nil {
-			return nil, apperrors.New("INTERNAL_ERROR", "Gagal mendapatkan nomor antrian", http.StatusInternalServerError, err)
+			return nil, apperrors.New("INTERNAL_ERROR", "Gagal mendapatkan nomor antrian", http.StatusInternalServerError)
 		}
 
 		orderEntity.QueueNumber = fmt.Sprintf("Q-%d", maxQueueVal+1)
@@ -179,11 +179,11 @@ func (u *partnerOrderUsecase) CreateOrder(ctx context.Context, tenantID string, 
 		}
 
 		// Jika error lain, langsung gagalkan proses
-		return nil, apperrors.New("INTERNAL_ERROR", "Gagal menyimpan pesanan", http.StatusInternalServerError, saveErr)
+		return nil, apperrors.New("INTERNAL_ERROR", "Gagal menyimpan pesanan", http.StatusInternalServerError)
 	}
 
 	if saveErr != nil {
-		return nil, apperrors.New("INTERNAL_ERROR", "Gagal menyimpan pesanan setelah beberapa kali percobaan karena tabrakan nomor antrian", http.StatusInternalServerError, saveErr)
+		return nil, apperrors.New("INTERNAL_ERROR", "Gagal menyimpan pesanan setelah beberapa kali percobaan karena tabrakan nomor antrian", http.StatusInternalServerError)
 	}
 
 	// Isi relasi User setelah penyimpanan berhasil untuk keperluan format response
@@ -203,9 +203,9 @@ func (u *partnerOrderUsecase) UpdateOrderStatus(ctx context.Context, tenantID, o
 	err := u.repo.UpdateStatus(ctx, tenantID, orderID, req.Status)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, apperrors.New("NOT_FOUND", "Pesanan tidak ditemukan", http.StatusNotFound, nil)
+			return nil, apperrors.New("NOT_FOUND", "Pesanan tidak ditemukan", http.StatusNotFound)
 		}
-		return nil, apperrors.New("INTERNAL_ERROR", "Gagal memperbarui status pesanan", http.StatusInternalServerError, err)
+		return nil, apperrors.New("INTERNAL_ERROR", "Gagal memperbarui status pesanan", http.StatusInternalServerError)
 	}
 
 	return u.GetOrderByID(ctx, tenantID, orderID)
@@ -215,9 +215,9 @@ func (u *partnerOrderUsecase) SoftDeleteOrder(ctx context.Context, tenantID, ord
 	err := u.repo.SoftDelete(ctx, tenantID, orderID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return apperrors.New("NOT_FOUND", "Pesanan tidak ditemukan", http.StatusNotFound, nil)
+			return apperrors.New("NOT_FOUND", "Pesanan tidak ditemukan", http.StatusNotFound)
 		}
-		return apperrors.New("INTERNAL_ERROR", "Gagal menghapus pesanan", http.StatusInternalServerError, err)
+		return apperrors.New("INTERNAL_ERROR", "Gagal menghapus pesanan", http.StatusInternalServerError)
 	}
 	return nil
 }
@@ -264,9 +264,9 @@ func (u *partnerOrderUsecase) GetPublicOrderStatus(ctx context.Context, tenantID
 	order, tableName, err := u.repo.GetPublicOrderDetails(ctx, tenantID, orderID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, apperrors.New("NOT_FOUND", "Pesanan tidak ditemukan", http.StatusNotFound, nil)
+			return nil, apperrors.New("NOT_FOUND", "Pesanan tidak ditemukan", http.StatusNotFound)
 		}
-		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil status pesanan", http.StatusInternalServerError, err)
+		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil status pesanan", http.StatusInternalServerError)
 	}
 
 	customerName := order.CustomerName
@@ -313,7 +313,7 @@ func (u *partnerOrderUsecase) GetPublicOrdersList(ctx context.Context, tenantID 
 
 	orders, tableNames, err := u.repo.FindAllPublicOrders(ctx, tenantID, filter)
 	if err != nil {
-		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil daftar pesanan", http.StatusInternalServerError, err)
+		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil daftar pesanan", http.StatusInternalServerError)
 	}
 
 	result := make([]dto.PublicOrderDetailsResponse, 0, len(orders))

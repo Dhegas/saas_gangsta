@@ -1,7 +1,6 @@
 package http
 
 import (
-	"errors"
 	"net/http"
 
 	apperrors "github.com/dhegas/saas_gangsta/internal/common/errors"
@@ -9,7 +8,6 @@ import (
 	"github.com/dhegas/saas_gangsta/internal/domains/tenant/domain"
 	"github.com/dhegas/saas_gangsta/internal/domains/tenant/dto"
 	"github.com/gin-gonic/gin"
-	"github.com/go-playground/validator/v10"
 )
 
 type PartnerTenantHandler struct {
@@ -40,12 +38,7 @@ func (h *PartnerTenantHandler) CreatePartnerTenant(c *gin.Context) {
 
 	var req dto.CreatePartnerTenantRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		var validationErrs validator.ValidationErrors
-		details := err.Error()
-		if errors.As(err, &validationErrs) {
-			details = validationErrs.Error()
-		}
-		apperrors.Write(c, apperrors.New("VALIDATION_ERROR", "Payload create tenant tidak valid", http.StatusBadRequest, details))
+		apperrors.Write(c, apperrors.New("VALIDATION_ERROR", "Validation failed", http.StatusUnprocessableEntity))
 		return
 	}
 
@@ -159,12 +152,7 @@ func (h *PartnerTenantHandler) UpdatePartnerTenant(c *gin.Context) {
 
 	var req dto.UpdatePartnerTenantRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		var validationErrs validator.ValidationErrors
-		details := err.Error()
-		if errors.As(err, &validationErrs) {
-			details = validationErrs.Error()
-		}
-		apperrors.Write(c, apperrors.New("VALIDATION_ERROR", "Payload update tenant tidak valid", http.StatusBadRequest, details))
+		apperrors.Write(c, apperrors.New("VALIDATION_ERROR", "Validation failed", http.StatusUnprocessableEntity))
 		return
 	}
 
@@ -176,4 +164,3 @@ func (h *PartnerTenantHandler) UpdatePartnerTenant(c *gin.Context) {
 
 	response.Success(c, http.StatusOK, "Tenant partner berhasil diperbarui", res)
 }
-

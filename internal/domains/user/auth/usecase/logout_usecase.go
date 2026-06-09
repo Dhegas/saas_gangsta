@@ -11,7 +11,7 @@ import (
 
 func (u *authUsecase) Logout(_ context.Context, userID string, _ dto.LogoutRequest) error {
 	if strings.TrimSpace(userID) == "" {
-		return apperrors.New("UNAUTHORIZED", "User tidak valid", http.StatusUnauthorized, nil)
+		return apperrors.New("UNAUTHORIZED", "User tidak valid", http.StatusUnauthorized)
 	}
 
 	// Stateless JWT logout: client removes token locally.

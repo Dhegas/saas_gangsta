@@ -29,7 +29,7 @@ func (h *AdminMenuHandler) extractAdminTenantID(c *gin.Context) (string, error) 
 		tenantID = c.Query("tenant_id")
 	}
 	if tenantID == "" {
-		return "", apperrors.New("TENANT_NOT_FOUND", "Header X-Tenant-ID wajib disertakan untuk endpoint admin menu", http.StatusBadRequest, nil)
+		return "", apperrors.New("TENANT_NOT_FOUND", "Header X-Tenant-ID wajib disertakan untuk endpoint admin menu", http.StatusBadRequest)
 	}
 	return tenantID, nil
 }
@@ -58,7 +58,7 @@ func (h *AdminMenuHandler) GetAllMenus(c *gin.Context) {
 
 	var filter dto.MenuFilterParams
 	if err := c.ShouldBindQuery(&filter); err != nil {
-		apperrors.Write(c, apperrors.New("VALIDATION_ERROR", "Parameter query tidak valid", http.StatusBadRequest, err.Error()))
+		apperrors.Write(c, apperrors.New("VALIDATION_ERROR", "Parameter query tidak valid", http.StatusUnprocessableEntity))
 		return
 	}
 
@@ -127,7 +127,7 @@ func (h *AdminMenuHandler) CreateMenu(c *gin.Context) {
 
 	var req dto.CreateMenuRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		apperrors.Write(c, apperrors.New("VALIDATION_ERROR", "Data menu tidak valid", http.StatusBadRequest, err.Error()))
+		apperrors.Write(c, apperrors.New("VALIDATION_ERROR", "Validation failed", http.StatusUnprocessableEntity))
 		return
 	}
 
@@ -167,7 +167,7 @@ func (h *AdminMenuHandler) UpdateMenu(c *gin.Context) {
 
 	var req dto.UpdateMenuRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		apperrors.Write(c, apperrors.New("VALIDATION_ERROR", "Data update menu tidak valid", http.StatusBadRequest, err.Error()))
+		apperrors.Write(c, apperrors.New("VALIDATION_ERROR", "Validation failed", http.StatusUnprocessableEntity))
 		return
 	}
 
@@ -238,7 +238,7 @@ func (h *AdminMenuHandler) ToggleMenuAvailable(c *gin.Context) {
 
 	var req dto.ToggleMenuAvailableRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		apperrors.Write(c, apperrors.New("VALIDATION_ERROR", "Data toggle menu tidak valid", http.StatusBadRequest, err.Error()))
+		apperrors.Write(c, apperrors.New("VALIDATION_ERROR", "Validation failed", http.StatusUnprocessableEntity))
 		return
 	}
 

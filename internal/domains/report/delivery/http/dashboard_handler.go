@@ -5,6 +5,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	apperrors "github.com/dhegas/saas_gangsta/internal/common/errors"
+	"github.com/dhegas/saas_gangsta/internal/common/response"
 	"github.com/dhegas/saas_gangsta/internal/domains/report/domain"
 )
 
@@ -27,27 +29,17 @@ func NewDashboardHandler(usecase domain.AdminDashboardUsecase) *DashboardHandler
 // @Success      200  {object}  map[string]interface{}
 // @Failure      500  {object}  map[string]interface{}
 // @Router       /admin/dashboard [get]
+// @Router       /admin/dashboard [get]
 func (h *DashboardHandler) GetDashboardStats(c *gin.Context) {
 	ctx := c.Request.Context()
 
 	stats, err := h.usecase.GetStats(ctx)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"success": false,
-			"message": "Gagal mengambil data statistik dashboard",
-			"error": gin.H{
-				"code":    "INTERNAL_ERROR",
-				"details": err.Error(),
-			},
-		})
+		apperrors.Write(c, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "Data statistik dashboard berhasil diambil",
-		"data":    stats,
-	})
+	response.Success(c, http.StatusOK, "Data statistik dashboard berhasil diambil", stats)
 }
 
 // RegisterRoutes mendaftarkan endpoint ke dalam group yang sudah diterima.

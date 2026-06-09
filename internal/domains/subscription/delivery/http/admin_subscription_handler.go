@@ -1,11 +1,12 @@
 package http
 
 import (
+	"log/slog"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 
-	// Sesuaikan path import jika perlu
+	"github.com/dhegas/saas_gangsta/internal/common/response"
 	"github.com/dhegas/saas_gangsta/internal/domains/subscription/domain"
 	"github.com/dhegas/saas_gangsta/internal/domains/subscription/dto"
 )
@@ -33,22 +34,16 @@ func (h *SubscriptionHandler) GetAllPlans(c *gin.Context) {
 
 	plans, err := h.usecase.GetAllPlans(ctx)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"success": false,
-			"message": "Gagal mengambil data paket langganan",
-			"error": gin.H{
-				"code":    "INTERNAL_ERROR",
-				"details": err.Error(),
-			},
+		slog.Error("GetAllPlans failed",
+			slog.String("error", err.Error()),
+		)
+		response.Error(c, http.StatusInternalServerError, "An unexpected error occurred", gin.H{
+			"code": "INTERNAL_ERROR",
 		})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"success": true,
-		"message": "Data paket langganan berhasil diambil",
-		"data":    plans,
-	})
+	response.Success(c, http.StatusOK, "Data paket langganan berhasil diambil", plans)
 }
 
 // CreatePlan godoc
@@ -68,16 +63,23 @@ func (h *SubscriptionHandler) CreatePlan(c *gin.Context) {
 	var req dto.CreateSubscriptionPlanRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "Input tidak valid", "error": err.Error()})
+		response.Error(c, http.StatusUnprocessableEntity, "Validation failed", gin.H{
+			"code": "VALIDATION_ERROR",
+		})
 		return
 	}
 
 	if err := h.usecase.CreatePlan(ctx, req); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Gagal membuat paket", "error": err.Error()})
+		slog.Error("CreatePlan failed",
+			slog.String("error", err.Error()),
+		)
+		response.Error(c, http.StatusInternalServerError, "An unexpected error occurred", gin.H{
+			"code": "INTERNAL_ERROR",
+		})
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{"success": true, "message": "Paket berhasil dibuat"})
+	response.Success(c, http.StatusCreated, "Paket berhasil dibuat", nil)
 }
 
 // UpdatePlan godoc
@@ -99,16 +101,24 @@ func (h *SubscriptionHandler) UpdatePlan(c *gin.Context) {
 	var req dto.UpdateSubscriptionPlanRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"success": false, "message": "Input tidak valid", "error": err.Error()})
+		response.Error(c, http.StatusUnprocessableEntity, "Validation failed", gin.H{
+			"code": "VALIDATION_ERROR",
+		})
 		return
 	}
 
 	if err := h.usecase.UpdatePlan(ctx, planID, req); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "message": "Gagal update paket", "error": err.Error()})
+		slog.Error("UpdatePlan failed",
+			slog.String("plan_id", planID),
+			slog.String("error", err.Error()),
+		)
+		response.Error(c, http.StatusInternalServerError, "An unexpected error occurred", gin.H{
+			"code": "INTERNAL_ERROR",
+		})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"success": true, "message": "Paket berhasil diupdate"})
+	response.Success(c, http.StatusOK, "Paket berhasil diupdate", nil)
 }
 
 // RegisterRoutes mendaftarkan endpoint ke dalam group yang sudah diterima.

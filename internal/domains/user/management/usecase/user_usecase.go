@@ -36,12 +36,12 @@ func NewUserUsecase(repo repository.UserRepository, tenantRepo tenantDomain.Admi
 
 func (u *userUsecase) ListUsersByTenant(ctx context.Context, tenantID string) (*dto.ListUsersResponse, error) {
 	if strings.TrimSpace(tenantID) == "" {
-		return nil, apperrors.New("TENANT_NOT_FOUND", "Tenant context is required", http.StatusUnauthorized, nil)
+		return nil, apperrors.New("TENANT_NOT_FOUND", "Tenant context is required", http.StatusUnauthorized)
 	}
 
 	users, err := u.repo.ListByTenant(ctx, tenantID)
 	if err != nil {
-		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil daftar user", http.StatusInternalServerError, nil)
+		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil daftar user", http.StatusInternalServerError)
 	}
 
 	items := make([]dto.UserResponse, 0, len(users))
@@ -61,15 +61,15 @@ func (u *userUsecase) ListUsersByTenant(ctx context.Context, tenantID string) (*
 
 func (u *userUsecase) GetUserDetailByTenant(ctx context.Context, tenantID, userID string) (*dto.DetailUserResponse, error) {
 	if strings.TrimSpace(tenantID) == "" {
-		return nil, apperrors.New("TENANT_NOT_FOUND", "Tenant context is required", http.StatusUnauthorized, nil)
+		return nil, apperrors.New("TENANT_NOT_FOUND", "Tenant context is required", http.StatusUnauthorized)
 	}
 
 	user, err := u.repo.FindByIDAndTenant(ctx, tenantID, userID)
 	if err != nil {
 		if errors.Is(err, repository.ErrUserNotFound) {
-			return nil, apperrors.New("NOT_FOUND", "User tidak ditemukan", http.StatusNotFound, nil)
+			return nil, apperrors.New("NOT_FOUND", "User tidak ditemukan", http.StatusNotFound)
 		}
-		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil detail user", http.StatusInternalServerError, nil)
+		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil detail user", http.StatusInternalServerError)
 	}
 
 	return &dto.DetailUserResponse{User: dto.UserResponse{
@@ -84,7 +84,7 @@ func (u *userUsecase) GetUserDetailByTenant(ctx context.Context, tenantID, userI
 
 func (u *userUsecase) UpdateUserByTenant(ctx context.Context, tenantID, userID string, req dto.UpdateUserRequest) (*dto.UpdateUserResponse, error) {
 	if strings.TrimSpace(tenantID) == "" {
-		return nil, apperrors.New("TENANT_NOT_FOUND", "Tenant context is required", http.StatusUnauthorized, nil)
+		return nil, apperrors.New("TENANT_NOT_FOUND", "Tenant context is required", http.StatusUnauthorized)
 	}
 
 	user, err := u.repo.UpdateByIDAndTenant(ctx, tenantID, userID, repository.UpdateUserInput{
@@ -95,13 +95,13 @@ func (u *userUsecase) UpdateUserByTenant(ctx context.Context, tenantID, userID s
 	if err != nil {
 		switch {
 		case errors.Is(err, repository.ErrNoFieldsToUpdate):
-			return nil, apperrors.New("VALIDATION_ERROR", "Minimal satu field harus diisi untuk update user", http.StatusBadRequest, nil)
+			return nil, apperrors.New("VALIDATION_ERROR", "Minimal satu field harus diisi untuk update user", http.StatusBadRequest)
 		case errors.Is(err, repository.ErrUserNotFound):
-			return nil, apperrors.New("NOT_FOUND", "User tidak ditemukan", http.StatusNotFound, nil)
+			return nil, apperrors.New("NOT_FOUND", "User tidak ditemukan", http.StatusNotFound)
 		case errors.Is(err, repository.ErrEmailAlreadyExist):
-			return nil, apperrors.New("CONFLICT", "Email sudah digunakan user lain", http.StatusConflict, nil)
+			return nil, apperrors.New("CONFLICT", "Email sudah digunakan user lain", http.StatusConflict)
 		default:
-			return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengupdate user", http.StatusInternalServerError, nil)
+			return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengupdate user", http.StatusInternalServerError)
 		}
 	}
 
@@ -117,14 +117,14 @@ func (u *userUsecase) UpdateUserByTenant(ctx context.Context, tenantID, userID s
 
 func (u *userUsecase) SoftDeleteUserByTenant(ctx context.Context, tenantID, userID string) (*dto.DeleteUserResponse, error) {
 	if strings.TrimSpace(tenantID) == "" {
-		return nil, apperrors.New("TENANT_NOT_FOUND", "Tenant context is required", http.StatusUnauthorized, nil)
+		return nil, apperrors.New("TENANT_NOT_FOUND", "Tenant context is required", http.StatusUnauthorized)
 	}
 
 	if err := u.repo.SoftDeleteByIDAndTenant(ctx, tenantID, userID); err != nil {
 		if errors.Is(err, repository.ErrUserNotFound) {
-			return nil, apperrors.New("NOT_FOUND", "User tidak ditemukan", http.StatusNotFound, nil)
+			return nil, apperrors.New("NOT_FOUND", "User tidak ditemukan", http.StatusNotFound)
 		}
-		return nil, apperrors.New("INTERNAL_ERROR", "Gagal menghapus user", http.StatusInternalServerError, nil)
+		return nil, apperrors.New("INTERNAL_ERROR", "Gagal menghapus user", http.StatusInternalServerError)
 	}
 
 	return &dto.DeleteUserResponse{Deleted: true}, nil
@@ -132,15 +132,15 @@ func (u *userUsecase) SoftDeleteUserByTenant(ctx context.Context, tenantID, user
 
 func (u *userUsecase) ToggleUserActiveByTenant(ctx context.Context, tenantID, userID string) (*dto.ToggleActiveUserResponse, error) {
 	if strings.TrimSpace(tenantID) == "" {
-		return nil, apperrors.New("TENANT_NOT_FOUND", "Tenant context is required", http.StatusUnauthorized, nil)
+		return nil, apperrors.New("TENANT_NOT_FOUND", "Tenant context is required", http.StatusUnauthorized)
 	}
 
 	user, err := u.repo.ToggleActiveByIDAndTenant(ctx, tenantID, userID)
 	if err != nil {
 		if errors.Is(err, repository.ErrUserNotFound) {
-			return nil, apperrors.New("NOT_FOUND", "User tidak ditemukan", http.StatusNotFound, nil)
+			return nil, apperrors.New("NOT_FOUND", "User tidak ditemukan", http.StatusNotFound)
 		}
-		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengubah status aktif user", http.StatusInternalServerError, nil)
+		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengubah status aktif user", http.StatusInternalServerError)
 	}
 
 	return &dto.ToggleActiveUserResponse{User: dto.UserResponse{
@@ -171,7 +171,7 @@ func (u *userUsecase) ListAllUsersForAdmin(ctx context.Context, req dto.ListAllU
 	roleFilter := strings.ToUpper(strings.TrimSpace(req.Role))
 	users, totalItems, err := u.repo.ListAllUsersForAdmin(ctx, roleFilter, limit, offset)
 	if err != nil {
-		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil daftar seluruh user oleh admin", http.StatusInternalServerError, nil)
+		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil daftar seluruh user oleh admin", http.StatusInternalServerError)
 	}
 
 	totalPages := 0
@@ -205,16 +205,16 @@ func (u *userUsecase) GetUserDetailForAdmin(ctx context.Context, userID string) 
 	user, err := u.repo.FindByIDForAdmin(ctx, userID)
 	if err != nil {
 		if errors.Is(err, repository.ErrUserNotFound) {
-			return nil, apperrors.New("NOT_FOUND", "User tidak ditemukan", http.StatusNotFound, nil)
+			return nil, apperrors.New("NOT_FOUND", "User tidak ditemukan", http.StatusNotFound)
 		}
-		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil detail user oleh admin", http.StatusInternalServerError, nil)
+		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil detail user oleh admin", http.StatusInternalServerError)
 	}
 
 	var tenantsList *[]dto.UserTenantResponse
 	if user.Role == "PARTNER" {
 		tenants, err := u.tenantRepo.GetTenantsByUserID(ctx, userID)
 		if err != nil {
-			return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil detail tenant untuk partner", http.StatusInternalServerError, nil)
+			return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil detail tenant untuk partner", http.StatusInternalServerError)
 		}
 
 		list := make([]dto.UserTenantResponse, 0, len(tenants))

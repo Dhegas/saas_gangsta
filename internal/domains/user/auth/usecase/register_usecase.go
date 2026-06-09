@@ -26,22 +26,22 @@ func (u *authUsecase) Register(ctx context.Context, req dto.RegisterRequest) (*d
 	// Membatasi registrasi ADMIN secara publik untuk alasan keamanan.
 	if role != "CUSTOMER" && role != "PARTNER" {
 		if role == "ADMIN" {
-			return nil, apperrors.New("VALIDATION_ERROR", "Registrasi sebagai ADMIN tidak diperbolehkan secara publik", http.StatusBadRequest, nil)
+			return nil, apperrors.New("VALIDATION_ERROR", "Registrasi sebagai ADMIN tidak diperbolehkan secara publik", http.StatusBadRequest)
 		}
-		return nil, apperrors.New("VALIDATION_ERROR", "Role tidak valid. Harus salah satu dari: CUSTOMER atau PARTNER", http.StatusBadRequest, nil)
+		return nil, apperrors.New("VALIDATION_ERROR", "Role tidak valid. Harus salah satu dari: CUSTOMER atau PARTNER", http.StatusBadRequest)
 	}
 
 	existing, err := u.repo.FindByEmail(ctx, email)
 	if err != nil {
-		return nil, apperrors.New("INTERNAL_ERROR", "Gagal memproses registrasi", http.StatusInternalServerError, nil)
+		return nil, apperrors.New("INTERNAL_ERROR", "Gagal memproses registrasi", http.StatusInternalServerError)
 	}
 	if existing != nil {
-		return nil, apperrors.New("CONFLICT", "Email sudah terdaftar", http.StatusConflict, nil)
+		return nil, apperrors.New("CONFLICT", "Email sudah terdaftar", http.StatusConflict)
 	}
 
 	passwordHash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
-		return nil, apperrors.New("INTERNAL_ERROR", "Gagal menyiapkan akun", http.StatusInternalServerError, nil)
+		return nil, apperrors.New("INTERNAL_ERROR", "Gagal menyiapkan akun", http.StatusInternalServerError)
 	}
 
 	user := &domain.User{
@@ -56,9 +56,9 @@ func (u *authUsecase) Register(ctx context.Context, req dto.RegisterRequest) (*d
 
 	if err := u.repo.CreateUser(ctx, user); err != nil {
 		if strings.Contains(strings.ToLower(err.Error()), "duplicate email") {
-			return nil, apperrors.New("CONFLICT", "Email sudah terdaftar", http.StatusConflict, nil)
+			return nil, apperrors.New("CONFLICT", "Email sudah terdaftar", http.StatusConflict)
 		}
-		return nil, apperrors.New("INTERNAL_ERROR", "Gagal menyimpan akun", http.StatusInternalServerError, nil)
+		return nil, apperrors.New("INTERNAL_ERROR", "Gagal menyimpan akun", http.StatusInternalServerError)
 	}
 
 	return &dto.RegisterResponse{

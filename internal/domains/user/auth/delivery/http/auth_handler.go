@@ -1,7 +1,6 @@
 package http
 
 import (
-	"errors"
 	"net/http"
 
 	apperrors "github.com/dhegas/saas_gangsta/internal/common/errors"
@@ -9,7 +8,6 @@ import (
 	"github.com/dhegas/saas_gangsta/internal/domains/user/auth/dto"
 	"github.com/dhegas/saas_gangsta/internal/domains/user/auth/usecase"
 	"github.com/gin-gonic/gin"
-	"github.com/go-playground/validator/v10"
 )
 
 type AuthHandler struct {
@@ -35,12 +33,7 @@ func NewAuthHandler(usecase usecase.AuthUsecase) *AuthHandler {
 func (h *AuthHandler) Register(c *gin.Context) {
 	var req dto.RegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		var validationErrs validator.ValidationErrors
-		details := err.Error()
-		if errors.As(err, &validationErrs) {
-			details = validationErrs.Error()
-		}
-		apperrors.Write(c, apperrors.New("VALIDATION_ERROR", "Payload registrasi tidak valid", http.StatusBadRequest, details))
+		apperrors.Write(c, apperrors.New("VALIDATION_ERROR", "Validation failed", http.StatusUnprocessableEntity))
 		return
 	}
 
@@ -70,12 +63,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 func (h *AuthHandler) Login(c *gin.Context) {
 	var req dto.LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		var validationErrs validator.ValidationErrors
-		details := err.Error()
-		if errors.As(err, &validationErrs) {
-			details = validationErrs.Error()
-		}
-		apperrors.Write(c, apperrors.New("VALIDATION_ERROR", "Payload login tidak valid", http.StatusBadRequest, details))
+		apperrors.Write(c, apperrors.New("VALIDATION_ERROR", "Validation failed", http.StatusUnprocessableEntity))
 		return
 	}
 
@@ -103,12 +91,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 func (h *AuthHandler) Refresh(c *gin.Context) {
 	var req dto.RefreshTokenRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		var validationErrs validator.ValidationErrors
-		details := err.Error()
-		if errors.As(err, &validationErrs) {
-			details = validationErrs.Error()
-		}
-		apperrors.Write(c, apperrors.New("VALIDATION_ERROR", "Payload refresh token tidak valid", http.StatusBadRequest, details))
+		apperrors.Write(c, apperrors.New("VALIDATION_ERROR", "Validation failed", http.StatusUnprocessableEntity))
 		return
 	}
 

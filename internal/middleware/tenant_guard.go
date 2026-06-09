@@ -14,7 +14,7 @@ func TenantGuard(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		tenantID, err := tenant.GetTenantID(c)
 		if err != nil {
-			apperrors.Abort(c, apperrors.New("TENANT_NOT_FOUND", "Tenant context is required", http.StatusUnauthorized, nil))
+			apperrors.Abort(c, apperrors.New("TENANT_NOT_FOUND", "Tenant context is required", http.StatusUnauthorized))
 			return
 		}
 
@@ -33,7 +33,7 @@ func TenantGuard(db *gorm.DB) gin.HandlerFunc {
 				Count(&count).Error
 
 			if err != nil || count == 0 {
-				apperrors.Abort(c, apperrors.New("FORBIDDEN", "Anda tidak memiliki akses ke tenant ini", http.StatusForbidden, nil))
+				apperrors.Abort(c, apperrors.New("FORBIDDEN", "Anda tidak memiliki akses ke tenant ini", http.StatusForbidden))
 				return
 			}
 		}

@@ -21,13 +21,13 @@ func JWTAuth(cfg *config.Config) gin.HandlerFunc {
 		authorization := c.GetHeader("Authorization")
 		parts := strings.SplitN(authorization, " ", 2)
 		if len(parts) != 2 || !strings.EqualFold(parts[0], "Bearer") || strings.TrimSpace(parts[1]) == "" {
-			apperrors.Abort(c, apperrors.New("UNAUTHORIZED", "Missing or invalid Authorization header", http.StatusUnauthorized, nil))
+			apperrors.Abort(c, apperrors.New("UNAUTHORIZED", "Missing or invalid Authorization header", http.StatusUnauthorized))
 			return
 		}
 
 		claims, err := auth.ParseAccessToken(strings.TrimSpace(parts[1]), cfg.JWTSecret)
 		if err != nil {
-			apperrors.Abort(c, apperrors.New("UNAUTHORIZED", "Invalid or expired token", http.StatusUnauthorized, nil))
+			apperrors.Abort(c, apperrors.New("UNAUTHORIZED", "Invalid or expired token", http.StatusUnauthorized))
 			return
 		}
 

@@ -52,6 +52,9 @@ func (m *mockPartnerOrderRepo) GetPublicOrderDetails(ctx context.Context, tenant
 func (m *mockPartnerOrderRepo) FindAllPublicOrders(ctx context.Context, tenantID string, filter dto.PublicOrderFilterParams) ([]domain.OrderEntity, map[string]string, error) {
 	return nil, nil, nil
 }
+func (m *mockPartnerOrderRepo) GetMaxQueueNumberToday(ctx context.Context, tenantID string) (int, error) {
+	return 0, nil
+}
 
 type mockAuthRepo struct {
 	user *authdomain.User

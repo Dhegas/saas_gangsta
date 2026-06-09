@@ -23,7 +23,7 @@ func NewAdminTenantUsecase(repo domain.AdminTenantRepository) domain.AdminTenant
 func (u *adminTenantUsecase) CreateAdminTenant(ctx context.Context, req dto.CreateAdminTenantRequest) (*dto.CreateAdminTenantResponse, error) {
 	name := strings.TrimSpace(req.Name)
 	if name == "" {
-		return nil, apperrors.New("VALIDATION_ERROR", "Nama tenant wajib diisi", http.StatusBadRequest, nil)
+		return nil, apperrors.New("VALIDATION_ERROR", "Nama tenant wajib diisi", http.StatusBadRequest)
 	}
 
 	tenant, err := u.repo.CreateTenantForAdmin(ctx, domain.CreateAdminTenantInput{
@@ -40,11 +40,11 @@ func (u *adminTenantUsecase) CreateAdminTenant(ctx context.Context, req dto.Crea
 	if err != nil {
 		switch {
 		case errors.Is(err, repository.ErrUserNotFound):
-			return nil, apperrors.New("NOT_FOUND", "Partner user tidak ditemukan atau tidak aktif", http.StatusNotFound, nil)
+			return nil, apperrors.New("NOT_FOUND", "Partner user tidak ditemukan atau tidak aktif", http.StatusNotFound)
 		case errors.Is(err, repository.ErrUserNotPartner):
-			return nil, apperrors.New("FORBIDDEN", "Tenant hanya dapat diasosiasikan kepada user dengan role PARTNER", http.StatusForbidden, nil)
+			return nil, apperrors.New("FORBIDDEN", "Tenant hanya dapat diasosiasikan kepada user dengan role PARTNER", http.StatusForbidden)
 		default:
-			return nil, apperrors.New("INTERNAL_ERROR", "Gagal membuat tenant oleh admin", http.StatusInternalServerError, nil)
+			return nil, apperrors.New("INTERNAL_ERROR", "Gagal membuat tenant oleh admin", http.StatusInternalServerError)
 		}
 	}
 
@@ -89,7 +89,7 @@ func (u *adminTenantUsecase) ListAllTenants(ctx context.Context, req dto.ListAll
 
 	tenants, totalItems, err := u.repo.ListAllTenants(ctx, limit, offset)
 	if err != nil {
-		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil daftar tenant oleh admin", http.StatusInternalServerError, nil)
+		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil daftar tenant oleh admin", http.StatusInternalServerError)
 	}
 
 	items := make([]dto.AdminTenantResponse, 0, len(tenants))
@@ -137,15 +137,15 @@ func (u *adminTenantUsecase) ListAllTenants(ctx context.Context, req dto.ListAll
 func (u *adminTenantUsecase) SoftDeleteTenant(ctx context.Context, tenantID string) error {
 	tenantID = strings.TrimSpace(tenantID)
 	if tenantID == "" {
-		return apperrors.New("VALIDATION_ERROR", "ID tenant wajib diisi", http.StatusBadRequest, nil)
+		return apperrors.New("VALIDATION_ERROR", "ID tenant wajib diisi", http.StatusBadRequest)
 	}
 
 	err := u.repo.SoftDeleteTenant(ctx, tenantID)
 	if err != nil {
 		if errors.Is(err, repository.ErrTenantNotFound) {
-			return apperrors.New("NOT_FOUND", "Tenant ID tidak ditemukan", http.StatusNotFound, nil)
+			return apperrors.New("NOT_FOUND", "Tenant ID tidak ditemukan", http.StatusNotFound)
 		}
-		return apperrors.New("INTERNAL_ERROR", "Gagal menghapus tenant oleh admin", http.StatusInternalServerError, nil)
+		return apperrors.New("INTERNAL_ERROR", "Gagal menghapus tenant oleh admin", http.StatusInternalServerError)
 	}
 
 	return nil
@@ -154,12 +154,12 @@ func (u *adminTenantUsecase) SoftDeleteTenant(ctx context.Context, tenantID stri
 func (u *adminTenantUsecase) GetTenantsByUserID(ctx context.Context, userID string) (*dto.GetTenantsByUserIDResponse, error) {
 	userID = strings.TrimSpace(userID)
 	if userID == "" {
-		return nil, apperrors.New("VALIDATION_ERROR", "User ID partner wajib diisi", http.StatusBadRequest, nil)
+		return nil, apperrors.New("VALIDATION_ERROR", "User ID partner wajib diisi", http.StatusBadRequest)
 	}
 
 	tenants, err := u.repo.GetTenantsByUserID(ctx, userID)
 	if err != nil {
-		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil data tenant berdasarkan User ID", http.StatusInternalServerError, nil)
+		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil data tenant berdasarkan User ID", http.StatusInternalServerError)
 	}
 
 	items := make([]dto.AdminTenantResponse, 0, len(tenants))
@@ -196,15 +196,15 @@ func (u *adminTenantUsecase) GetTenantsByUserID(ctx context.Context, userID stri
 func (u *adminTenantUsecase) GetTenantByID(ctx context.Context, tenantID string) (*dto.AdminTenantResponse, error) {
 	tenantID = strings.TrimSpace(tenantID)
 	if tenantID == "" {
-		return nil, apperrors.New("VALIDATION_ERROR", "ID Tenant wajib diisi", http.StatusBadRequest, nil)
+		return nil, apperrors.New("VALIDATION_ERROR", "ID Tenant wajib diisi", http.StatusBadRequest)
 	}
 
 	tenant, err := u.repo.GetTenantByID(ctx, tenantID)
 	if err != nil {
 		if errors.Is(err, repository.ErrTenantNotFound) {
-			return nil, apperrors.New("NOT_FOUND", "Tenant ID tidak ditemukan", http.StatusNotFound, nil)
+			return nil, apperrors.New("NOT_FOUND", "Tenant ID tidak ditemukan", http.StatusNotFound)
 		}
-		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil detail tenant oleh admin", http.StatusInternalServerError, nil)
+		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil detail tenant oleh admin", http.StatusInternalServerError)
 	}
 
 	return &dto.AdminTenantResponse{

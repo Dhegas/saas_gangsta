@@ -26,7 +26,7 @@ func NewPartnerReportUsecase(repo domain.PartnerReportRepository, cache *cache.L
 
 func (u *partnerReportUsecase) GetRevenue(ctx context.Context, tenantID string, params dto.RevenueFilterParams) (*dto.RevenueResponse, error) {
 	if err := validateDateRange(params.From, params.To); err != nil {
-		return nil, apperrors.New("BAD_REQUEST", err.Error(), http.StatusBadRequest, nil)
+		return nil, apperrors.New("VALIDATION_ERROR", "Parameter tanggal tidak valid", http.StatusUnprocessableEntity)
 	}
 
 	cacheKey := fmt.Sprintf("report:revenue:%s:%s:%s", tenantID, params.From, params.To)
@@ -40,7 +40,7 @@ func (u *partnerReportUsecase) GetRevenue(ctx context.Context, tenantID string, 
 
 	totalRevenue, totalOrders, err := u.repo.FetchRevenue(ctx, tenantID, params.From, params.To)
 	if err != nil {
-		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil data revenue", http.StatusInternalServerError, err)
+		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil data revenue", http.StatusInternalServerError)
 	}
 
 	res := &dto.RevenueResponse{
@@ -70,7 +70,7 @@ func (u *partnerReportUsecase) GetTopMenus(ctx context.Context, tenantID string,
 
 	rows, err := u.repo.FetchTopMenus(ctx, tenantID, params.From, params.To, params.Limit)
 	if err != nil {
-		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil data menu terlaris", http.StatusInternalServerError, err)
+		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil data menu terlaris", http.StatusInternalServerError)
 	}
 
 	entries := make([]dto.TopMenuEntry, 0, len(rows))
@@ -109,7 +109,7 @@ func (u *partnerReportUsecase) GetOrdersByTable(ctx context.Context, tenantID st
 
 	rows, err := u.repo.FetchOrdersByTable(ctx, tenantID, params.From, params.To, params.Limit)
 	if err != nil {
-		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil data order per meja", http.StatusInternalServerError, err)
+		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil data order per meja", http.StatusInternalServerError)
 	}
 
 	entries := make([]dto.OrdersByTableEntry, 0, len(rows))
@@ -148,7 +148,7 @@ func (u *partnerReportUsecase) GetDailySummary(ctx context.Context, tenantID str
 	}
 
 	if err := validateDateRange(from, to); err != nil {
-		return nil, apperrors.New("BAD_REQUEST", err.Error(), http.StatusBadRequest, nil)
+		return nil, apperrors.New("VALIDATION_ERROR", "Parameter tanggal tidak valid", http.StatusUnprocessableEntity)
 	}
 
 	cacheKey := fmt.Sprintf("report:daily_summary:%s:%s:%s", tenantID, from, to)
@@ -162,7 +162,7 @@ func (u *partnerReportUsecase) GetDailySummary(ctx context.Context, tenantID str
 
 	rows, err := u.repo.FetchDailySummary(ctx, tenantID, from, to)
 	if err != nil {
-		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil ringkasan harian", http.StatusInternalServerError, err)
+		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil ringkasan harian", http.StatusInternalServerError)
 	}
 
 	entries := make([]dto.DailySummaryEntry, 0, len(rows))

@@ -34,7 +34,7 @@ func NewPublicMenuHandler(usecase domain.PublicMenuUsecase) *PublicMenuHandler {
 func (h *PublicMenuHandler) GetPublicMenus(c *gin.Context) {
 	tenantID := c.GetString("tenantId")
 	if tenantID == "" {
-		apperrors.Write(c, apperrors.New("VALIDATION_ERROR", "Tenant context tidak ditemukan", http.StatusBadRequest, nil))
+		apperrors.Write(c, apperrors.New("VALIDATION_ERROR", "Tenant context tidak ditemukan", http.StatusBadRequest))
 		return
 	}
 

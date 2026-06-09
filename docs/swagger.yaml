@@ -1,5 +1,55 @@
 basePath: /api/v1
 definitions:
+  dto.AdminTenantResponse:
+    properties:
+      address:
+        type: string
+      banner_url:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      logo_url:
+        type: string
+      name:
+        type: string
+      open_hours:
+        type: string
+      phone_number:
+        type: string
+      slug:
+        type: string
+      status:
+        type: string
+      user:
+        $ref: '#/definitions/dto.TenantUserResponse'
+      user_id:
+        description: Target partner owner's ID
+        type: string
+    type: object
+  dto.AdminUserDetailResponse:
+    properties:
+      user:
+        $ref: '#/definitions/dto.AdminUserResponse'
+    type: object
+  dto.AdminUserResponse:
+    properties:
+      email:
+        type: string
+      fullName:
+        type: string
+      id:
+        type: string
+      isActive:
+        type: boolean
+      role:
+        type: string
+      tenants:
+        items:
+          $ref: '#/definitions/dto.UserTenantResponse'
+        type: array
+    type: object
   dto.CategoryOrder:
     properties:
       id:
@@ -9,6 +59,58 @@ definitions:
     required:
     - id
     - sort_order
+    type: object
+  dto.CategoryResponse:
+    properties:
+      created_at:
+        type: string
+      deleted_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      is_active:
+        type: boolean
+      name:
+        type: string
+      sort_order:
+        type: integer
+      tenant_id:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  dto.CreateAdminTenantRequest:
+    properties:
+      address:
+        type: string
+      banner_url:
+        type: string
+      description:
+        type: string
+      logo_url:
+        type: string
+      name:
+        description: Tenant name
+        type: string
+      open_hours:
+        type: string
+      phone_number:
+        type: string
+      status:
+        description: 'Optional: default "active"'
+        enum:
+        - active
+        - inactive
+        - suspended
+        type: string
+      user_id:
+        description: ID of the partner who will own this tenant
+        type: string
+    required:
+    - name
+    - user_id
     type: object
   dto.CreateCategoryRequest:
     properties:
@@ -21,18 +123,6 @@ definitions:
         type: integer
     required:
     - name
-    type: object
-  dto.CreateCustomerRequest:
-    properties:
-      full_name:
-        maxLength: 150
-        minLength: 2
-        type: string
-      phone_number:
-        maxLength: 20
-        type: string
-    required:
-    - full_name
     type: object
   dto.CreateMenuRequest:
     properties:
@@ -68,6 +158,9 @@ definitions:
     type: object
   dto.CreateOrderRequest:
     properties:
+      dining_table_name:
+        maxLength: 50
+        type: string
       dining_tables_id:
         type: string
       items:
@@ -76,14 +169,23 @@ definitions:
         minItems: 1
         type: array
     required:
-    - dining_tables_id
     - items
     type: object
   dto.CreatePartnerTenantRequest:
     properties:
+      address:
+        type: string
+      banner_url:
+        type: string
+      description:
+        type: string
+      logo_url:
+        type: string
       name:
-        maxLength: 150
-        minLength: 2
+        type: string
+      open_hours:
+        type: string
+      phone_number:
         type: string
     required:
     - name
@@ -115,6 +217,15 @@ definitions:
     required:
     - table_name
     type: object
+  dto.ListAdminUsersResponse:
+    properties:
+      pagination:
+        $ref: '#/definitions/github_com_dhegas_saas_gangsta_internal_domains_user_management_dto.PaginationResponse'
+      users:
+        items:
+          $ref: '#/definitions/dto.AdminUserResponse'
+        type: array
+    type: object
   dto.LoginRequest:
     properties:
       email:
@@ -126,9 +237,183 @@ definitions:
     - email
     - password
     type: object
+  dto.LoginResponse:
+    properties:
+      accessToken:
+        type: string
+      refreshToken:
+        type: string
+      user:
+        $ref: '#/definitions/github_com_dhegas_saas_gangsta_internal_domains_user_auth_dto.UserResponse'
+    type: object
   dto.LogoutRequest:
     properties:
       refreshToken:
+        type: string
+    type: object
+  dto.LogoutResponse:
+    properties:
+      loggedOut:
+        type: boolean
+    type: object
+  dto.MeResponse:
+    properties:
+      user:
+        $ref: '#/definitions/github_com_dhegas_saas_gangsta_internal_domains_user_auth_dto.UserResponse'
+    type: object
+  dto.MenuResponse:
+    properties:
+      category_id:
+        type: string
+      created_at:
+        type: string
+      deleted_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      image_url:
+        type: string
+      is_available:
+        type: boolean
+      name:
+        type: string
+      price:
+        type: number
+      tenant_id:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  dto.PaginationMeta:
+    properties:
+      limit:
+        type: integer
+      page:
+        type: integer
+      total:
+        type: integer
+      totalPages:
+        type: integer
+    type: object
+  dto.PartnerTenantResponse:
+    properties:
+      address:
+        type: string
+      banner_url:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      isOwner:
+        type: boolean
+      logo_url:
+        type: string
+      name:
+        type: string
+      open_hours:
+        type: string
+      phone_number:
+        type: string
+      slug:
+        type: string
+      status:
+        type: string
+    type: object
+  dto.PublicCustomerDetails:
+    properties:
+      fullName:
+        type: string
+    type: object
+  dto.PublicDiningTableDetails:
+    properties:
+      tableName:
+        type: string
+    type: object
+  dto.PublicOrderDetailsResponse:
+    properties:
+      createdAt:
+        type: string
+      customer:
+        $ref: '#/definitions/dto.PublicCustomerDetails'
+      diningTable:
+        $ref: '#/definitions/dto.PublicDiningTableDetails'
+      id:
+        type: string
+      items:
+        items:
+          $ref: '#/definitions/dto.PublicOrderItemResponse'
+        type: array
+      status:
+        type: string
+      totalPrice:
+        type: number
+      userId:
+        type: string
+    type: object
+  dto.PublicOrderItemResponse:
+    properties:
+      menuName:
+        type: string
+      notes:
+        type: string
+      quantity:
+        type: integer
+      subtotal:
+        type: number
+    type: object
+  dto.PublicTableResponse:
+    properties:
+      id:
+        type: string
+      status:
+        description: '"occupied" or "kosong"'
+        type: string
+      tableName:
+        type: string
+      tenantId:
+        type: string
+    type: object
+  dto.PublicTenantDetailResponse:
+    properties:
+      address:
+        type: string
+      bannerUrl:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      logoUrl:
+        type: string
+      name:
+        type: string
+      openHours:
+        type: string
+      phoneNumber:
+        type: string
+      slug:
+        type: string
+    type: object
+  dto.PublicTenantResponse:
+    properties:
+      address:
+        type: string
+      bannerUrl:
+        type: string
+      id:
+        type: string
+      isOpen:
+        type: boolean
+      logoUrl:
+        type: string
+      name:
+        type: string
+      openHours:
+        type: string
+      slug:
         type: string
     type: object
   dto.RefreshTokenRequest:
@@ -149,10 +434,17 @@ definitions:
       password:
         minLength: 6
         type: string
+      role:
+        type: string
     required:
     - email
     - fullName
     - password
+    type: object
+  dto.RegisterResponse:
+    properties:
+      user:
+        $ref: '#/definitions/github_com_dhegas_saas_gangsta_internal_domains_user_auth_dto.UserResponse'
     type: object
   dto.ReorderCategoryRequest:
     properties:
@@ -163,6 +455,13 @@ definitions:
         type: array
     required:
     - items
+    type: object
+  dto.TenantUserResponse:
+    properties:
+      full_name:
+        type: string
+      id:
+        type: string
     type: object
   dto.ToggleCategoryActiveRequest:
     properties:
@@ -185,18 +484,6 @@ definitions:
       name:
         maxLength: 120
         type: string
-    type: object
-  dto.UpdateCustomerRequest:
-    properties:
-      full_name:
-        maxLength: 150
-        minLength: 2
-        type: string
-      phone_number:
-        maxLength: 20
-        type: string
-    required:
-    - full_name
     type: object
   dto.UpdateMenuRequest:
     properties:
@@ -225,6 +512,19 @@ definitions:
     required:
     - status
     type: object
+  dto.UpdatePartnerTenantRequest:
+    properties:
+      address:
+        type: string
+      description:
+        type: string
+      name:
+        type: string
+      phone_number:
+        type: string
+    required:
+    - name
+    type: object
   dto.UpdateSubscriptionPlanRequest:
     properties:
       billingCycle:
@@ -245,6 +545,55 @@ definitions:
         type: string
     required:
     - table_name
+    type: object
+  dto.UserTenantResponse:
+    properties:
+      address:
+        type: string
+      banner_url:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      logo_url:
+        type: string
+      name:
+        type: string
+      open_hours:
+        type: string
+      phone_number:
+        type: string
+      slug:
+        type: string
+      status:
+        type: string
+    type: object
+  github_com_dhegas_saas_gangsta_internal_domains_user_auth_dto.UserResponse:
+    properties:
+      email:
+        type: string
+      fullName:
+        type: string
+      id:
+        type: string
+      phoneNumber:
+        type: string
+      role:
+        type: string
+      tenantId:
+        type: string
+    type: object
+  github_com_dhegas_saas_gangsta_internal_domains_user_management_dto.PaginationResponse:
+    properties:
+      limit:
+        type: integer
+      page:
+        type: integer
+      total_items:
+        type: integer
+      total_pages:
+        type: integer
     type: object
   response.Envelope:
     properties:
@@ -286,6 +635,293 @@ paths:
       summary: Get Admin Dashboard Stats
       tags:
       - Admin Dashboard
+  /admin/menus:
+    get:
+      description: Admin mengambil daftar menu milik tenant partner tertentu
+      parameters:
+      - description: Tenant ID yang ingin dikelola
+        in: header
+        name: X-Tenant-ID
+        required: true
+        type: string
+      - description: Filter berdasarkan Category ID
+        in: query
+        name: category_id
+        type: string
+      - description: Filter berdasarkan ketersediaan
+        in: query
+        name: is_available
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Envelope'
+      security:
+      - BearerAuth: []
+      summary: '[Admin] List Menus by Tenant'
+      tags:
+      - Admin
+    post:
+      consumes:
+      - application/json
+      description: Admin membuat menu baru pada tenant partner tertentu
+      parameters:
+      - description: Tenant ID yang ingin dikelola
+        in: header
+        name: X-Tenant-ID
+        required: true
+        type: string
+      - description: Payload Create Menu
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateMenuRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Envelope'
+      security:
+      - BearerAuth: []
+      summary: '[Admin] Create Menu'
+      tags:
+      - Admin
+  /admin/menus/{id}:
+    delete:
+      description: Admin menghapus (soft delete) menu pada tenant partner tertentu
+      parameters:
+      - description: Tenant ID yang ingin dikelola
+        in: header
+        name: X-Tenant-ID
+        required: true
+        type: string
+      - description: Menu ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Envelope'
+      security:
+      - BearerAuth: []
+      summary: '[Admin] Delete Menu'
+      tags:
+      - Admin
+    get:
+      description: Admin mengambil detail satu menu dari tenant partner tertentu
+      parameters:
+      - description: Tenant ID yang ingin dikelola
+        in: header
+        name: X-Tenant-ID
+        required: true
+        type: string
+      - description: Menu ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Envelope'
+      security:
+      - BearerAuth: []
+      summary: '[Admin] Detail Menu'
+      tags:
+      - Admin
+    put:
+      consumes:
+      - application/json
+      description: Admin memperbarui informasi menu pada tenant partner tertentu
+      parameters:
+      - description: Tenant ID yang ingin dikelola
+        in: header
+        name: X-Tenant-ID
+        required: true
+        type: string
+      - description: Menu ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Payload Update Menu
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateMenuRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Envelope'
+      security:
+      - BearerAuth: []
+      summary: '[Admin] Update Menu'
+      tags:
+      - Admin
+  /admin/menus/{id}/toggle-available:
+    patch:
+      consumes:
+      - application/json
+      description: Admin mengubah status ketersediaan menu pada tenant partner tertentu
+      parameters:
+      - description: Tenant ID yang ingin dikelola
+        in: header
+        name: X-Tenant-ID
+        required: true
+        type: string
+      - description: Menu ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Payload Toggle
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.ToggleMenuAvailableRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Envelope'
+      security:
+      - BearerAuth: []
+      summary: '[Admin] Toggle Menu Availability'
+      tags:
+      - Admin
   /admin/subscriptions/plans:
     get:
       description: 'Mengambil daftar semua paket langganan (misal: Basic, Pro, Enterprise)'
@@ -382,6 +1018,295 @@ paths:
       summary: Update Subscription Plan
       tags:
       - Admin Subscription
+  /admin/tenants:
+    get:
+      description: Admin mengambil daftar semua tenant yang ada di database
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Envelope'
+      security:
+      - BearerAuth: []
+      summary: List all tenants
+      tags:
+      - Admin
+    post:
+      consumes:
+      - application/json
+      description: Admin membuat tenant baru untuk partner tertentu
+      parameters:
+      - description: Create admin tenant payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateAdminTenantRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Envelope'
+      security:
+      - BearerAuth: []
+      summary: Create admin tenant
+      tags:
+      - Admin
+  /admin/tenants/{id}:
+    delete:
+      description: Admin men-soft delete tenant berdasarkan ID
+      parameters:
+      - description: Tenant ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Envelope'
+      security:
+      - BearerAuth: []
+      summary: Soft delete tenant
+      tags:
+      - Admin
+    get:
+      description: Admin mengambil detail satu tenant berdasarkan ID
+      parameters:
+      - description: Tenant ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Envelope'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.AdminTenantResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Envelope'
+      security:
+      - BearerAuth: []
+      summary: Get tenant detail by ID
+      tags:
+      - Admin
+  /admin/tenants/users/{userId}:
+    get:
+      description: Admin mengambil daftar tenant berdasarkan User ID partner
+      parameters:
+      - description: User ID Partner
+        in: path
+        name: userId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Envelope'
+      security:
+      - BearerAuth: []
+      summary: Get tenants by user ID
+      tags:
+      - Admin
+  /admin/users:
+    get:
+      description: Admin mengambil daftar seluruh user dengan opsi filter role (CUSTOMER
+        / PARTNER)
+      parameters:
+      - description: Filter by Role (CUSTOMER / PARTNER)
+        in: query
+        name: role
+        type: string
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Items per page (max 50)
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Envelope'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.ListAdminUsersResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Envelope'
+      security:
+      - BearerAuth: []
+      summary: List all users in the system (Admin only)
+      tags:
+      - Admin
+  /admin/users/{id}:
+    get:
+      description: Admin mengambil detail informasi seorang user berdasarkan ID
+      parameters:
+      - description: User ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Envelope'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.AdminUserDetailResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Envelope'
+      security:
+      - BearerAuth: []
+      summary: Get user details (Admin only)
+      tags:
+      - Admin
   /auth/login:
     post:
       consumes:
@@ -400,7 +1325,12 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/response.Envelope'
+            allOf:
+            - $ref: '#/definitions/response.Envelope'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.LoginResponse'
+              type: object
         "400":
           description: Bad Request
           schema:
@@ -441,7 +1371,12 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/response.Envelope'
+            allOf:
+            - $ref: '#/definitions/response.Envelope'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.LogoutResponse'
+              type: object
         "401":
           description: Unauthorized
           schema:
@@ -464,7 +1399,12 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/response.Envelope'
+            allOf:
+            - $ref: '#/definitions/response.Envelope'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.MeResponse'
+              type: object
         "401":
           description: Unauthorized
           schema:
@@ -496,7 +1436,12 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/response.Envelope'
+            allOf:
+            - $ref: '#/definitions/response.Envelope'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.LoginResponse'
+              type: object
         "400":
           description: Bad Request
           schema:
@@ -530,7 +1475,12 @@ paths:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/response.Envelope'
+            allOf:
+            - $ref: '#/definitions/response.Envelope'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.RegisterResponse'
+              type: object
         "400":
           description: Bad Request
           schema:
@@ -988,6 +1938,10 @@ paths:
       description: Mengambil daftar menu per tenant (mendukung filter category_id
         dan is_available)
       parameters:
+      - description: Tenant ID (Wajib untuk CUSTOMER)
+        in: query
+        name: tenantId
+        type: string
       - description: Filter berdasarkan Category ID
         in: query
         name: category_id
@@ -1087,6 +2041,10 @@ paths:
         in: path
         name: id
         required: true
+        type: string
+      - description: Tenant ID (Wajib untuk CUSTOMER)
+        in: query
+        name: tenantId
         type: string
       produces:
       - application/json
@@ -1339,132 +2297,6 @@ paths:
       summary: Detail Order
       tags:
       - Order Management
-  /orders/{id}/customer:
-    get:
-      description: Mengambil data customer yang terkait dengan sebuah order.
-      parameters:
-      - description: Order ID
-        in: path
-        name: id
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties: true
-            type: object
-        "404":
-          description: Not Found
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Detail Customer dari Order
-      tags:
-      - Customer Management
-    post:
-      consumes:
-      - application/json
-      description: Menambahkan data customer yang terkait dengan sebuah order. Customer
-        hanya dapat dibuat sekali per order.
-      parameters:
-      - description: Order ID
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: Payload Create Customer
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/dto.CreateCustomerRequest'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Created
-          schema:
-            additionalProperties: true
-            type: object
-        "400":
-          description: Bad Request
-          schema:
-            additionalProperties: true
-            type: object
-        "404":
-          description: Not Found
-          schema:
-            additionalProperties: true
-            type: object
-        "409":
-          description: Conflict
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Tambah Customer ke Order
-      tags:
-      - Customer Management
-    put:
-      consumes:
-      - application/json
-      description: Memperbarui data customer yang terkait dengan sebuah order.
-      parameters:
-      - description: Order ID
-        in: path
-        name: id
-        required: true
-        type: string
-      - description: Payload Update Customer
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/dto.UpdateCustomerRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            additionalProperties: true
-            type: object
-        "400":
-          description: Bad Request
-          schema:
-            additionalProperties: true
-            type: object
-        "404":
-          description: Not Found
-          schema:
-            additionalProperties: true
-            type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            additionalProperties: true
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Update Data Customer dari Order
-      tags:
-      - Customer Management
   /orders/{id}/status:
     patch:
       consumes:
@@ -1576,6 +2408,432 @@ paths:
       summary: Create partner tenant
       tags:
       - Partner
+  /partner/tenants/{id}:
+    delete:
+      description: Partner menghapus tenant miliknya secara logis
+      parameters:
+      - description: Tenant ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Envelope'
+      security:
+      - BearerAuth: []
+      summary: Soft delete partner tenant
+      tags:
+      - Partner
+    get:
+      description: Mengambil detail satu tenant berdasarkan ID (hanya jika milik partner
+        bersangkutan)
+      parameters:
+      - description: Tenant ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Envelope'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.PartnerTenantResponse'
+              type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Envelope'
+      security:
+      - BearerAuth: []
+      summary: Get partner tenant detail
+      tags:
+      - Partner
+    put:
+      consumes:
+      - application/json
+      description: Partner mengubah data tenant miliknya (seperti nama, deskripsi,
+        alamat, no telp)
+      parameters:
+      - description: Tenant ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Update partner tenant payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdatePartnerTenantRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Envelope'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.PartnerTenantResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Envelope'
+      security:
+      - BearerAuth: []
+      summary: Update partner tenant
+      tags:
+      - Partner
+  /public/tenant/{tenantSlug}/categories:
+    get:
+      description: Mengambil daftar kategori menu aktif dalam context tenant
+      parameters:
+      - description: Tenant Slug
+        in: path
+        name: tenantSlug
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Envelope'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/dto.CategoryResponse'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Envelope'
+      summary: List active menu categories for a tenant
+      tags:
+      - Public
+  /public/tenant/{tenantSlug}/menus:
+    get:
+      description: Mengambil daftar menu aktif dalam context tenant dengan filter
+        pencarian dan kategori
+      parameters:
+      - description: Tenant Slug
+        in: path
+        name: tenantSlug
+        required: true
+        type: string
+      - description: Filter berdasarkan Category ID
+        in: query
+        name: categoryId
+        type: string
+      - description: Pencarian nama atau deskripsi menu
+        in: query
+        name: search
+        type: string
+      - description: Filter ketersediaan menu
+        in: query
+        name: isAvailable
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Envelope'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/dto.MenuResponse'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Envelope'
+      summary: List active menus for a tenant
+      tags:
+      - Public
+  /public/tenant/{tenantSlug}/orders:
+    get:
+      description: Melihat daftar pesanan secara publik (hanya untuk pesanan milik
+        customer yang login)
+      parameters:
+      - description: Tenant Slug
+        in: path
+        name: tenantSlug
+        required: true
+        type: string
+      - description: Filter by status
+        in: query
+        name: status
+        type: string
+      - description: Filter by Table ID
+        in: query
+        name: table_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Envelope'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/dto.PublicOrderDetailsResponse'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Envelope'
+      summary: Get Public Orders List
+      tags:
+      - Public Customer Order
+  /public/tenant/{tenantSlug}/orders/{orderId}:
+    get:
+      description: Melihat detail dan status pesanan secara publik (untuk tracking
+        status customer)
+      parameters:
+      - description: Tenant Slug
+        in: path
+        name: tenantSlug
+        required: true
+        type: string
+      - description: Order ID
+        in: path
+        name: orderId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Envelope'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.PublicOrderDetailsResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Envelope'
+      summary: Get Public Order Status
+      tags:
+      - Public Customer Order
+  /public/tenant/{tenantSlug}/tables:
+    get:
+      description: Mengambil daftar meja aktif dalam context tenant beserta status
+        keterisiannya
+      parameters:
+      - description: Tenant Slug
+        in: path
+        name: tenantSlug
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Envelope'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/dto.PublicTableResponse'
+                  type: array
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Envelope'
+      summary: List active dining tables for a tenant
+      tags:
+      - Public
+  /public/tenants:
+    get:
+      description: Explore public merchants/tenants with search & pagination
+      parameters:
+      - description: Search query for name, description, address
+        in: query
+        name: search
+        type: string
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Items per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Envelope'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/dto.PublicTenantResponse'
+                  type: array
+                meta:
+                  $ref: '#/definitions/dto.PaginationMeta'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Envelope'
+      summary: List public tenants
+      tags:
+      - Public
+  /public/tenants/{slug}:
+    get:
+      description: Mengambil detail satu tenant berdasarkan slug untuk branding &
+        context toko
+      parameters:
+      - description: Tenant Slug
+        in: path
+        name: slug
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/response.Envelope'
+            - properties:
+                data:
+                  $ref: '#/definitions/dto.PublicTenantDetailResponse'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/response.Envelope'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.Envelope'
+      summary: Get public tenant detail
+      tags:
+      - Public
   /reports/daily-summary:
     get:
       description: Mengambil ringkasan order dan revenue per hari. Default 7 hari

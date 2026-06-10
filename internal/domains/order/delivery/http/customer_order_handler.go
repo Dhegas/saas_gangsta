@@ -126,3 +126,34 @@ func (h *CustomerOrderHandler) GetPublicOrders(c *gin.Context) {
 
 	response.Success(c, http.StatusOK, "Orders list fetched successfully", res)
 }
+
+// GetCustomerOrderHistory godoc
+// @Summary      Get Customer Order History
+// @Description  Melihat seluruh riwayat pesanan customer dari berbagai toko
+// @Tags         Public Customer Order
+// @Produce      json
+// @Success      200        {object}  response.Envelope{data=[]dto.PublicOrderDetailsResponse}
+// @Failure      401        {object}  response.Envelope
+// @Failure      500        {object}  response.Envelope
+// @Router       /customer/orders/history [get]
+func (h *CustomerOrderHandler) GetCustomerOrderHistory(c *gin.Context) {
+	userIDVal, exists := c.Get("userId")
+	if !exists {
+		apperrors.Write(c, apperrors.New("UNAUTHORIZED", "Authentication required", http.StatusUnauthorized))
+		return
+	}
+	uID, ok := userIDVal.(string)
+	if !ok || uID == "" {
+		apperrors.Write(c, apperrors.New("UNAUTHORIZED", "Authentication required", http.StatusUnauthorized))
+		return
+	}
+
+	res, err := h.usecase.GetCustomerOrderHistory(c.Request.Context(), uID)
+	if err != nil {
+		apperrors.Write(c, err)
+		return
+	}
+
+	response.Success(c, http.StatusOK, "Customer order history fetched successfully", res)
+}
+

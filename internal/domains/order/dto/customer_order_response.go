@@ -5,6 +5,9 @@ import "time"
 
 type PublicOrderDetailsResponse struct {
 	ID            string                    `json:"id"`
+	TenantID      string                    `json:"tenantId,omitempty"`
+	TenantName    string                    `json:"tenantName,omitempty"`
+	TenantSlug    string                    `json:"tenantSlug,omitempty"`
 	Status        string                    `json:"status"`
 	TotalPrice    float64                   `json:"totalPrice"`
 	QueueNumber   string                    `json:"queueNumber"`

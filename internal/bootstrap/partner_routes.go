@@ -46,7 +46,7 @@ func RegisterPartnerRoutes(api *gin.RouterGroup, cfg *config.Config, db *gorm.DB
 
 	// Menu
 	menuRepo := menurepo.NewPartnerMenuRepository(db)
-	menuUC := menuusecase.NewPartnerMenuUsecase(menuRepo)
+	menuUC := menuusecase.NewPartnerMenuUsecase(menuRepo, localCache)
 	menuHandler := menuhttp.NewPartnerMenuHandler(menuUC)
 
 	// Category

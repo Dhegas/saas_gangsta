@@ -1,6 +1,7 @@
 package bootstrap
 
 import (
+	"github.com/dhegas/saas_gangsta/internal/common/cache"
 	"github.com/dhegas/saas_gangsta/internal/config"
 	menuhttp "github.com/dhegas/saas_gangsta/internal/domains/menu/delivery/http"
 	menurepo "github.com/dhegas/saas_gangsta/internal/domains/menu/repository"
@@ -16,7 +17,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func RegisterAdminRoutes(api *gin.RouterGroup, cfg *config.Config, db *gorm.DB) {
+func RegisterAdminRoutes(api *gin.RouterGroup, cfg *config.Config, db *gorm.DB, localCache *cache.LocalCache) {
 	tenantRepo := repository.NewAdminTenantRepository(db)
 	tenantUsecase := usecase.NewAdminTenantUsecase(tenantRepo)
 	tenantHandler := tenanthttp.NewAdminTenantHandler(tenantUsecase)
@@ -26,7 +27,7 @@ func RegisterAdminRoutes(api *gin.RouterGroup, cfg *config.Config, db *gorm.DB) 
 	userHandler := userhttp.NewUserHandler(userUsecase)
 
 	menuRepo := menurepo.NewPartnerMenuRepository(db)
-	menuUC := menuusecase.NewPartnerMenuUsecase(menuRepo)
+	menuUC := menuusecase.NewPartnerMenuUsecase(menuRepo, localCache)
 	adminMenuHandler := menuhttp.NewAdminMenuHandler(menuUC)
 
 	adminRoutes := api.Group("/admin")

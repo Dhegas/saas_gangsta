@@ -3,8 +3,10 @@ package usecase
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 
+	"github.com/dhegas/saas_gangsta/internal/common/cache"
 	apperrors "github.com/dhegas/saas_gangsta/internal/common/errors"
 	"github.com/dhegas/saas_gangsta/internal/domains/menu/domain"
 	"github.com/dhegas/saas_gangsta/internal/domains/menu/dto"
@@ -12,11 +14,15 @@ import (
 )
 
 type partnerMenuUsecase struct {
-	repo domain.PartnerMenuRepository
+	repo  domain.PartnerMenuRepository
+	cache *cache.LocalCache
 }
 
-func NewPartnerMenuUsecase(repo domain.PartnerMenuRepository) domain.PartnerMenuUsecase {
-	return &partnerMenuUsecase{repo: repo}
+func NewPartnerMenuUsecase(repo domain.PartnerMenuRepository, cache *cache.LocalCache) domain.PartnerMenuUsecase {
+	return &partnerMenuUsecase{
+		repo:  repo,
+		cache: cache,
+	}
 }
 
 func (u *partnerMenuUsecase) GetAllMenus(ctx context.Context, tenantID string, filter dto.MenuFilterParams) ([]dto.MenuResponse, error) {
@@ -92,6 +98,10 @@ func (u *partnerMenuUsecase) CreateMenu(ctx context.Context, tenantID string, re
 		return nil, apperrors.New("INTERNAL_ERROR", "Gagal menyimpan menu", http.StatusInternalServerError)
 	}
 
+	if u.cache != nil {
+		u.cache.DeleteByPrefix(fmt.Sprintf("public:menus:tenant:%s", tenantID))
+	}
+
 	response := toMenuResponse(entity)
 	return &response, nil
 }
@@ -147,6 +157,11 @@ func (u *partnerMenuUsecase) UpdateMenu(ctx context.Context, tenantID, menuID st
 		return nil, apperrors.New("INTERNAL_ERROR", "Gagal memperbarui menu", http.StatusInternalServerError)
 	}
 
+	if u.cache != nil {
+		u.cache.DeleteByPrefix(fmt.Sprintf("public:menus:tenant:%s", tenantID))
+		u.cache.DeleteByPrefix(fmt.Sprintf("public:categories:tenant:%s", tenantID))
+	}
+
 	response := toMenuResponse(menu)
 	return &response, nil
 }
@@ -159,6 +174,12 @@ func (u *partnerMenuUsecase) SoftDeleteMenu(ctx context.Context, tenantID, menuI
 		}
 		return apperrors.New("INTERNAL_ERROR", "Gagal menghapus menu", http.StatusInternalServerError)
 	}
+
+	if u.cache != nil {
+		u.cache.DeleteByPrefix(fmt.Sprintf("public:menus:tenant:%s", tenantID))
+		u.cache.DeleteByPrefix(fmt.Sprintf("public:categories:tenant:%s", tenantID))
+	}
+
 	return nil
 }
 
@@ -170,6 +191,11 @@ func (u *partnerMenuUsecase) ToggleMenuAvailable(ctx context.Context, tenantID, 
 		}
 		return apperrors.New("INTERNAL_ERROR", "Gagal memperbarui status ketersediaan menu", http.StatusInternalServerError)
 	}
+
+	if u.cache != nil {
+		u.cache.DeleteByPrefix(fmt.Sprintf("public:menus:tenant:%s", tenantID))
+	}
+
 	return nil
 }
 

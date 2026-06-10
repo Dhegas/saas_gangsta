@@ -132,13 +132,18 @@ func (u *partnerOrderUsecase) CreateOrder(ctx context.Context, tenantID string, 
 	}
 
 	// 5. Bangun entitas Order (tanpa mengisi relasi User agar GORM tidak mencoba melakukan INSERT ke tabel users)
+	customerName := authUser.FullName
+	if req.CustomerName != nil && *req.CustomerName != "" {
+		customerName = *req.CustomerName
+	}
+
 	orderEntity := &domain.OrderEntity{
 		TenantID:       tenantID,
 		UserID:         req.UserID,
 		DiningTablesID: diningTableID,
 		Status:         "PENDING",
 		TotalPrice:     totalOrderPrice,
-		CustomerName:   authUser.FullName,
+		CustomerName:   customerName,
 	}
 
 	var saveErr error

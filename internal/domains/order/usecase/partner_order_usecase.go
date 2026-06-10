@@ -14,6 +14,7 @@ import (
 	"github.com/dhegas/saas_gangsta/internal/domains/order/domain"
 	"github.com/dhegas/saas_gangsta/internal/domains/order/dto"
 	authrepo "github.com/dhegas/saas_gangsta/internal/domains/user/auth/repository"
+	"github.com/dhegas/saas_gangsta/internal/infrastructure/websocket"
 	"github.com/jackc/pgx/v5/pgconn"
 	"gorm.io/gorm"
 )
@@ -24,13 +25,15 @@ type partnerOrderUsecase struct {
 	repo     domain.PartnerOrderRepository
 	authRepo authrepo.AuthRepository
 	cfg      *config.Config
+	wsHub    *websocket.Hub
 }
 
-func NewPartnerOrderUsecase(repo domain.PartnerOrderRepository, authRepo authrepo.AuthRepository, cfg *config.Config) domain.PartnerOrderUsecase {
+func NewPartnerOrderUsecase(repo domain.PartnerOrderRepository, authRepo authrepo.AuthRepository, cfg *config.Config, wsHub *websocket.Hub) domain.PartnerOrderUsecase {
 	return &partnerOrderUsecase{
 		repo:     repo,
 		authRepo: authRepo,
 		cfg:      cfg,
+		wsHub:    wsHub,
 	}
 }
 
@@ -194,6 +197,19 @@ func (u *partnerOrderUsecase) CreateOrder(ctx context.Context, tenantID string, 
 	}
 
 	response := toOrderResponse(orderEntity)
+
+	if u.wsHub != nil {
+		customerID := ""
+		if response.UserID != nil {
+			customerID = *response.UserID
+		}
+		u.wsHub.SendTo(tenantID, map[string]interface{}{
+			"type":        "new_order",
+			"order_id":    response.ID,
+			"customer_id": customerID,
+			"status":      strings.ToLower(response.Status),
+		})
+	}
 
 	return &response, nil
 }

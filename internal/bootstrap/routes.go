@@ -11,6 +11,7 @@ import (
 	"github.com/dhegas/saas_gangsta/internal/common/response"
 	"github.com/dhegas/saas_gangsta/internal/config"
 	tenantrepo "github.com/dhegas/saas_gangsta/internal/domains/tenant/repository"
+	"github.com/dhegas/saas_gangsta/internal/domains/user/auth"
 	authhttp "github.com/dhegas/saas_gangsta/internal/domains/user/auth/delivery/http"
 	authrepo "github.com/dhegas/saas_gangsta/internal/domains/user/auth/repository"
 	authusecase "github.com/dhegas/saas_gangsta/internal/domains/user/auth/usecase"
@@ -18,6 +19,7 @@ import (
 	userrepo "github.com/dhegas/saas_gangsta/internal/domains/user/management/repository"
 	userusecase "github.com/dhegas/saas_gangsta/internal/domains/user/management/usecase"
 	"github.com/dhegas/saas_gangsta/internal/infrastructure/database"
+	"github.com/dhegas/saas_gangsta/internal/infrastructure/websocket"
 	"github.com/dhegas/saas_gangsta/internal/middleware"
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"
@@ -26,7 +28,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func registerRoutes(router *gin.Engine, cfg *config.Config, db *gorm.DB, redisClient *redis.Client) {
+func registerRoutes(router *gin.Engine, cfg *config.Config, db *gorm.DB, redisClient *redis.Client, wsHub *websocket.Hub) {
 	docs.SwaggerInfo.BasePath = "/api/v1"
 
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
@@ -68,6 +70,77 @@ func registerRoutes(router *gin.Engine, cfg *config.Config, db *gorm.DB, redisCl
 
 	router.GET("/ready", readinessHandler)
 
+	// Register WebSocket route
+	router.GET("/ws", func(c *gin.Context) {
+		token := c.Query("token")
+		if token == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Token is required"})
+			return
+		}
+
+		claims, err := auth.ParseAccessToken(token, cfg.JWTSecret)
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+			return
+		}
+
+		conn, err := websocket.Upgrader.Upgrade(c.Writer, c.Request, nil)
+		if err != nil {
+			return
+		}
+
+		var clientID string
+		if claims.Role == "CUSTOMER" {
+			clientID = claims.Subject
+		} else if claims.Role == "PARTNER" {
+			// Check if tenant_id query parameter is provided to support branch-specific WebSocket registration
+			reqTenantID := c.Query("tenant_id")
+			if reqTenantID == "" {
+				reqTenantID = c.Query("tenantId")
+			}
+
+			if reqTenantID != "" {
+				// Verify that this partner user owns/has access to this tenant_id
+				var count int64
+				err := db.Table("tenants").
+					Where("id = NULLIF(?, '')::uuid AND user_id = NULLIF(?, '')::uuid AND deleted_at IS NULL", reqTenantID, claims.Subject).
+					Count(&count).Error
+				if err == nil && count > 0 {
+					clientID = reqTenantID
+				} else {
+					// Unauthorized access to this tenant ID or invalid tenant ID
+					_ = conn.WriteJSON(gin.H{"error": "Unauthorized or invalid tenant access"})
+					conn.Close()
+					return
+				}
+			} else {
+				clientID = claims.TenantID
+			}
+		} else {
+			clientID = claims.Subject
+		}
+
+		if clientID == "" {
+			conn.Close()
+			return
+		}
+
+		wsHub.Register(clientID, conn)
+
+		go func() {
+			defer func() {
+				wsHub.Unregister(clientID, conn)
+				conn.Close()
+			}()
+			for {
+				_, _, err := conn.ReadMessage()
+				if err != nil {
+					break
+				}
+			}
+		}()
+	})
+
 	authRepository := authrepo.NewAuthRepository(db)
 	authUC := authusecase.NewAuthUsecase(authRepository, cfg)
 	authHandler := authhttp.NewAuthHandler(authUC)
@@ -83,8 +156,8 @@ func registerRoutes(router *gin.Engine, cfg *config.Config, db *gorm.DB, redisCl
 		registerAuthRoutes(api, cfg, authHandler)
 		registerUserRoutes(api, cfg, db, userHandler)
 		RegisterPublicRoutes(api, cfg, db, localCache)
-		RegisterCustomerRoutes(api, cfg, db, localCache)
-		RegisterPartnerRoutes(api, cfg, db, localCache)
+		RegisterCustomerRoutes(api, cfg, db, localCache, wsHub)
+		RegisterPartnerRoutes(api, cfg, db, localCache, wsHub)
 		RegisterAdminRoutes(api, cfg, db)
 
 		api.GET("/health", func(c *gin.Context) {

@@ -9,17 +9,18 @@ import (
 	orderhttp "github.com/dhegas/saas_gangsta/internal/domains/order/delivery/http"
 	orderrepo "github.com/dhegas/saas_gangsta/internal/domains/order/repository"
 	orderusecase "github.com/dhegas/saas_gangsta/internal/domains/order/usecase"
+	"github.com/dhegas/saas_gangsta/internal/infrastructure/websocket"
 	authrepo "github.com/dhegas/saas_gangsta/internal/domains/user/auth/repository"
 	"github.com/dhegas/saas_gangsta/internal/middleware"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
-func RegisterCustomerRoutes(api *gin.RouterGroup, cfg *config.Config, db *gorm.DB, localCache *cache.LocalCache) {
+func RegisterCustomerRoutes(api *gin.RouterGroup, cfg *config.Config, db *gorm.DB, localCache *cache.LocalCache, wsHub *websocket.Hub) {
 	// Order
 	orderRepo := orderrepo.NewPartnerOrderRepository(db)
 	authRepo := authrepo.NewAuthRepository(db)
-	orderUC := orderusecase.NewPartnerOrderUsecase(orderRepo, authRepo, cfg)
+	orderUC := orderusecase.NewPartnerOrderUsecase(orderRepo, authRepo, cfg, wsHub)
 	orderHandler := orderhttp.NewPartnerOrderHandler(orderUC)
 	custOrderHandler := orderhttp.NewCustomerOrderHandler(orderUC)
 

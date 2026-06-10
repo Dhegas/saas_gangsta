@@ -27,3 +27,18 @@ func (c *LocalCache) Get(key string) (interface{}, bool) {
 	return c.client.Get(key)
 }
 
+// Delete removes a specific key from the cache.
+func (c *LocalCache) Delete(key string) {
+	c.client.Delete(key)
+}
+
+// DeleteByPrefix deletes all keys that start with a specific prefix.
+func (c *LocalCache) DeleteByPrefix(prefix string) {
+	for k := range c.client.Items() {
+		if len(k) >= len(prefix) && k[:len(prefix)] == prefix {
+			c.client.Delete(k)
+		}
+	}
+}
+
+

@@ -19,12 +19,12 @@ type CreateOrderRequest struct {
 
 // UpdateOrderStatusRequest payload untuk PATCH /api/orders/:id/status
 type UpdateOrderStatusRequest struct {
-	Status string `json:"status" binding:"required,oneof=PENDING PROCESSING COMPLETED CANCELLED"`
+	Status string `json:"status" binding:"required,oneof=PENDING PROCESSING READY COMPLETED CANCELLED"`
 }
 
 // OrderFilterParams parameter kueri untuk GET /api/orders
 type OrderFilterParams struct {
-	Status  string `form:"status" binding:"omitempty,oneof=PENDING PROCESSING COMPLETED CANCELLED"`
+	Status  string `form:"status" binding:"omitempty,oneof=PENDING PROCESSING READY COMPLETED CANCELLED"`
 	TableID string `form:"table_id" binding:"omitempty,uuid"`
 	UserID  string `form:"-"`
 }

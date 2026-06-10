@@ -216,6 +216,8 @@ func (u *partnerOrderUsecase) CreateOrder(ctx context.Context, tenantID string, 
 		})
 	}
 
+	orderCache.DeleteByPrefix(fmt.Sprintf("customer:orders:tenant:%s", tenantID))
+
 	return &response, nil
 }
 
@@ -229,7 +231,33 @@ func (u *partnerOrderUsecase) UpdateOrderStatus(ctx context.Context, tenantID, o
 		return nil, apperrors.New("INTERNAL_ERROR", "Gagal memperbarui status pesanan", http.StatusInternalServerError)
 	}
 
-	return u.GetOrderByID(ctx, tenantID, orderID)
+	response, err := u.GetOrderByID(ctx, tenantID, orderID)
+	if err != nil {
+		return nil, err
+	}
+
+	if u.wsHub != nil {
+		customerID := ""
+		if response.UserID != nil {
+			customerID = *response.UserID
+		}
+		if customerID != "" {
+			u.wsHub.SendTo(customerID, map[string]interface{}{
+				"type":     "order_status",
+				"order_id": response.ID,
+				"status":   strings.ToLower(response.Status),
+			})
+		}
+		u.wsHub.SendTo(tenantID, map[string]interface{}{
+			"type":     "order_status",
+			"order_id": response.ID,
+			"status":   strings.ToLower(response.Status),
+		})
+	}
+
+	orderCache.DeleteByPrefix(fmt.Sprintf("customer:orders:tenant:%s", tenantID))
+
+	return response, nil
 }
 
 func (u *partnerOrderUsecase) SoftDeleteOrder(ctx context.Context, tenantID, orderID string) error {
@@ -240,6 +268,9 @@ func (u *partnerOrderUsecase) SoftDeleteOrder(ctx context.Context, tenantID, ord
 		}
 		return apperrors.New("INTERNAL_ERROR", "Gagal menghapus pesanan", http.StatusInternalServerError)
 	}
+
+	orderCache.DeleteByPrefix(fmt.Sprintf("customer:orders:tenant:%s", tenantID))
+
 	return nil
 }
 

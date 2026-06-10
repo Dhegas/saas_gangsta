@@ -5,12 +5,18 @@ import (
 	menuhttp "github.com/dhegas/saas_gangsta/internal/domains/menu/delivery/http"
 	menurepo "github.com/dhegas/saas_gangsta/internal/domains/menu/repository"
 	menuusecase "github.com/dhegas/saas_gangsta/internal/domains/menu/usecase"
+	paymenthttp "github.com/dhegas/saas_gangsta/internal/domains/payment/delivery/http"
+	paymentrepo "github.com/dhegas/saas_gangsta/internal/domains/payment/repository"
+	paymentusecase "github.com/dhegas/saas_gangsta/internal/domains/payment/usecase"
 	tenanthttp "github.com/dhegas/saas_gangsta/internal/domains/tenant/delivery/http"
 	"github.com/dhegas/saas_gangsta/internal/domains/tenant/repository"
 	"github.com/dhegas/saas_gangsta/internal/domains/tenant/usecase"
 	userhttp "github.com/dhegas/saas_gangsta/internal/domains/user/management/delivery/http"
 	userrepo "github.com/dhegas/saas_gangsta/internal/domains/user/management/repository"
 	userusecase "github.com/dhegas/saas_gangsta/internal/domains/user/management/usecase"
+	wallethttp "github.com/dhegas/saas_gangsta/internal/domains/wallet/delivery/http"
+	walletrepo "github.com/dhegas/saas_gangsta/internal/domains/wallet/repository"
+	walletusecase "github.com/dhegas/saas_gangsta/internal/domains/wallet/usecase"
 	"github.com/dhegas/saas_gangsta/internal/middleware"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -51,4 +57,16 @@ func RegisterAdminRoutes(api *gin.RouterGroup, cfg *config.Config, db *gorm.DB) 
 	adminRoutes.PUT("/menus/:id", adminMenuHandler.UpdateMenu)
 	adminRoutes.DELETE("/menus/:id", adminMenuHandler.SoftDeleteMenu)
 	adminRoutes.PATCH("/menus/:id/toggle-available", adminMenuHandler.ToggleMenuAvailable)
+
+	// Admin Wallet Management
+	walletRepo := walletrepo.NewWalletRepository(db)
+	adminWalletUC := walletusecase.NewAdminWalletUsecase(walletRepo)
+	adminWalletHandler := wallethttp.NewAdminWalletHandler(adminWalletUC)
+	adminWalletHandler.RegisterRoutes(adminRoutes)
+
+	// Admin Payment Sync
+	payRepo := paymentrepo.NewPaymentRepository(db)
+	payWebhookUC := paymentusecase.NewPaymentWebhookUsecase(payRepo, cfg)
+	adminPaymentHandler := paymenthttp.NewAdminPaymentHandler(payWebhookUC)
+	adminPaymentHandler.RegisterRoutes(adminRoutes)
 }

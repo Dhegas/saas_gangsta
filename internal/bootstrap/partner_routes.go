@@ -25,6 +25,9 @@ import (
 	"github.com/dhegas/saas_gangsta/internal/domains/tenant/repository"
 	"github.com/dhegas/saas_gangsta/internal/domains/tenant/usecase"
 	authrepo "github.com/dhegas/saas_gangsta/internal/domains/user/auth/repository"
+	wallethttp "github.com/dhegas/saas_gangsta/internal/domains/wallet/delivery/http"
+	walletrepo "github.com/dhegas/saas_gangsta/internal/domains/wallet/repository"
+	walletusecase "github.com/dhegas/saas_gangsta/internal/domains/wallet/usecase"
 	"github.com/dhegas/saas_gangsta/internal/middleware"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -63,6 +66,11 @@ func RegisterPartnerRoutes(api *gin.RouterGroup, cfg *config.Config, db *gorm.DB
 	reportRepo := reportrepo.NewPartnerReportRepository(db)
 	reportUC := reportusecase.NewPartnerReportUsecase(reportRepo, localCache)
 	reportHandler := reporthttp.NewPartnerReportHandler(reportUC)
+
+	// Wallet
+	walletRepo := walletrepo.NewWalletRepository(db)
+	walletUC := walletusecase.NewPartnerWalletUsecase(walletRepo)
+	walletHandler := wallethttp.NewPartnerWalletHandler(walletUC)
 
 	// === Base Route Group ===
 	partnerRoutes := api.Group("/partner")
@@ -127,4 +135,7 @@ func RegisterPartnerRoutes(api *gin.RouterGroup, cfg *config.Config, db *gorm.DB
 	tenantScoped.GET("/reports/top-menus", reportHandler.GetTopMenus)
 	tenantScoped.GET("/reports/orders-by-table", reportHandler.GetOrdersByTable)
 	tenantScoped.GET("/reports/daily-summary", reportHandler.GetDailySummary)
+
+	// Wallet — tidak perlu TenantGuard karena scope by userID dari JWT
+	walletHandler.RegisterRoutes(partnerRoutes)
 }

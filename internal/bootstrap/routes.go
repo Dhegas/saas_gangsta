@@ -10,6 +10,9 @@ import (
 	apperrors "github.com/dhegas/saas_gangsta/internal/common/errors"
 	"github.com/dhegas/saas_gangsta/internal/common/response"
 	"github.com/dhegas/saas_gangsta/internal/config"
+	paymenthttp "github.com/dhegas/saas_gangsta/internal/domains/payment/delivery/http"
+	paymentrepo "github.com/dhegas/saas_gangsta/internal/domains/payment/repository"
+	paymentusecase "github.com/dhegas/saas_gangsta/internal/domains/payment/usecase"
 	tenantrepo "github.com/dhegas/saas_gangsta/internal/domains/tenant/repository"
 	authhttp "github.com/dhegas/saas_gangsta/internal/domains/user/auth/delivery/http"
 	authrepo "github.com/dhegas/saas_gangsta/internal/domains/user/auth/repository"
@@ -78,12 +81,19 @@ func registerRoutes(router *gin.Engine, cfg *config.Config, db *gorm.DB, redisCl
 
 	localCache := cache.NewLocalCache()
 
+	// Payment — inisiasi Snap (customer) + webhook Midtrans
+	payRepo := paymentrepo.NewPaymentRepository(db)
+	webhookUC := paymentusecase.NewPaymentWebhookUsecase(payRepo, cfg)
+	snapUC := paymentusecase.NewPaymentSnapUsecase(payRepo, cfg)
+	webhookHandler := paymenthttp.NewWebhookHandler(webhookUC)
+	snapHandler := paymenthttp.NewSnapHandler(snapUC)
+
 	api := router.Group("/api/v1")
 	{
 		registerAuthRoutes(api, cfg, authHandler)
 		registerUserRoutes(api, cfg, db, userHandler)
 		RegisterPublicRoutes(api, cfg, db, localCache)
-		RegisterCustomerRoutes(api, cfg, db, localCache)
+		RegisterCustomerRoutes(api, cfg, db, localCache, snapHandler)
 		RegisterPartnerRoutes(api, cfg, db, localCache)
 		RegisterAdminRoutes(api, cfg, db)
 
@@ -97,6 +107,9 @@ func registerRoutes(router *gin.Engine, cfg *config.Config, db *gorm.DB, redisCl
 		api.GET("/ready", readinessHandler)
 	}
 
+	// Webhook Midtrans — di luar /api/v1 agar tidak kena prefix
+	// Tidak butuh JWT, divalidasi via signature Midtrans
+	router.POST("/webhook/midtrans", webhookHandler.HandleMidtrans)
 }
 
 func registerAuthRoutes(api *gin.RouterGroup, cfg *config.Config, authHandler *authhttp.AuthHandler) {

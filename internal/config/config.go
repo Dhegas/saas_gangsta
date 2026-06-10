@@ -26,6 +26,11 @@ type Config struct {
 	JWTRefreshTokenExpiry time.Duration
 
 	CORSAllowedOrigins []string
+
+	// Midtrans Payment Gateway
+	MidtransServerKey string
+	MidtransClientKey string
+	MidtransEnv       string // "sandbox" atau "production"
 }
 
 func Load() (*Config, error) {
@@ -44,6 +49,9 @@ func Load() (*Config, error) {
 		CORSAllowedOrigins:     splitCSV(getEnv("CORS_ALLOWED_ORIGINS", "http://localhost:3000")),
 		JWTAccessTokenExpiry:   15 * time.Minute,
 		JWTRefreshTokenExpiry:  7 * 24 * time.Hour,
+		MidtransServerKey:      strings.TrimSpace(getEnv("MIDTRANS_SERVER_KEY", "")),
+		MidtransClientKey:      strings.TrimSpace(getEnv("MIDTRANS_CLIENT_KEY", "")),
+		MidtransEnv:            strings.TrimSpace(getEnv("MIDTRANS_ENV", "sandbox")),
 	}
 
 	if cfg.DatabaseURL == "" {

@@ -9,13 +9,14 @@ import (
 	orderhttp "github.com/dhegas/saas_gangsta/internal/domains/order/delivery/http"
 	orderrepo "github.com/dhegas/saas_gangsta/internal/domains/order/repository"
 	orderusecase "github.com/dhegas/saas_gangsta/internal/domains/order/usecase"
+	paymenthttp "github.com/dhegas/saas_gangsta/internal/domains/payment/delivery/http"
 	authrepo "github.com/dhegas/saas_gangsta/internal/domains/user/auth/repository"
 	"github.com/dhegas/saas_gangsta/internal/middleware"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
-func RegisterCustomerRoutes(api *gin.RouterGroup, cfg *config.Config, db *gorm.DB, localCache *cache.LocalCache) {
+func RegisterCustomerRoutes(api *gin.RouterGroup, cfg *config.Config, db *gorm.DB, localCache *cache.LocalCache, snapHandler *paymenthttp.SnapHandler) {
 	// Order
 	orderRepo := orderrepo.NewPartnerOrderRepository(db)
 	authRepo := authrepo.NewAuthRepository(db)
@@ -50,4 +51,7 @@ func RegisterCustomerRoutes(api *gin.RouterGroup, cfg *config.Config, db *gorm.D
 		customerTenantRoutes.GET("/orders", custOrderHandler.GetPublicOrders)
 		customerTenantRoutes.GET("/orders/:orderId", custOrderHandler.GetOrderStatus)
 	}
+
+	// Payment — inisiasi Snap Midtrans
+	customerRoutes.POST("/payments/initiate", snapHandler.CreateSnapTransaction)
 }

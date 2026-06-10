@@ -95,7 +95,7 @@ func TestCreateOrder_TableValidation(t *testing.T) {
 		authRepo := &mockAuthRepo{
 			user: userMock,
 		}
-		uc := NewPartnerOrderUsecase(repo, authRepo, cfg)
+		uc := NewPartnerOrderUsecase(repo, authRepo, cfg, nil)
 
 		req := dto.CreateOrderRequest{
 			UserID: &userID,
@@ -124,7 +124,7 @@ func TestCreateOrder_TableValidation(t *testing.T) {
 		authRepo := &mockAuthRepo{
 			user: userMock,
 		}
-		uc := NewPartnerOrderUsecase(repo, authRepo, cfg)
+		uc := NewPartnerOrderUsecase(repo, authRepo, cfg, nil)
 
 		req := dto.CreateOrderRequest{
 			UserID:          &userID,
@@ -151,7 +151,7 @@ func TestCreateOrder_TableValidation(t *testing.T) {
 		authRepo := &mockAuthRepo{
 			user: userMock,
 		}
-		uc := NewPartnerOrderUsecase(repo, authRepo, cfg)
+		uc := NewPartnerOrderUsecase(repo, authRepo, cfg, nil)
 
 		req := dto.CreateOrderRequest{
 			UserID:          &userID,

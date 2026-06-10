@@ -14,6 +14,7 @@ import (
 	"github.com/dhegas/saas_gangsta/internal/domains/order/domain"
 	"github.com/dhegas/saas_gangsta/internal/domains/order/dto"
 	authrepo "github.com/dhegas/saas_gangsta/internal/domains/user/auth/repository"
+	"github.com/dhegas/saas_gangsta/internal/infrastructure/websocket"
 	"github.com/jackc/pgx/v5/pgconn"
 	"gorm.io/gorm"
 )
@@ -24,13 +25,15 @@ type partnerOrderUsecase struct {
 	repo     domain.PartnerOrderRepository
 	authRepo authrepo.AuthRepository
 	cfg      *config.Config
+	wsHub    *websocket.Hub
 }
 
-func NewPartnerOrderUsecase(repo domain.PartnerOrderRepository, authRepo authrepo.AuthRepository, cfg *config.Config) domain.PartnerOrderUsecase {
+func NewPartnerOrderUsecase(repo domain.PartnerOrderRepository, authRepo authrepo.AuthRepository, cfg *config.Config, wsHub *websocket.Hub) domain.PartnerOrderUsecase {
 	return &partnerOrderUsecase{
 		repo:     repo,
 		authRepo: authRepo,
 		cfg:      cfg,
+		wsHub:    wsHub,
 	}
 }
 
@@ -132,13 +135,18 @@ func (u *partnerOrderUsecase) CreateOrder(ctx context.Context, tenantID string, 
 	}
 
 	// 5. Bangun entitas Order (tanpa mengisi relasi User agar GORM tidak mencoba melakukan INSERT ke tabel users)
+	customerName := authUser.FullName
+	if req.CustomerName != nil && *req.CustomerName != "" {
+		customerName = *req.CustomerName
+	}
+
 	orderEntity := &domain.OrderEntity{
 		TenantID:       tenantID,
 		UserID:         req.UserID,
 		DiningTablesID: diningTableID,
 		Status:         "PENDING",
 		TotalPrice:     totalOrderPrice,
-		CustomerName:   authUser.FullName,
+		CustomerName:   customerName,
 	}
 
 	var saveErr error
@@ -195,6 +203,21 @@ func (u *partnerOrderUsecase) CreateOrder(ctx context.Context, tenantID string, 
 
 	response := toOrderResponse(orderEntity)
 
+	if u.wsHub != nil {
+		customerID := ""
+		if response.UserID != nil {
+			customerID = *response.UserID
+		}
+		u.wsHub.SendTo(tenantID, map[string]interface{}{
+			"type":        "new_order",
+			"order_id":    response.ID,
+			"customer_id": customerID,
+			"status":      strings.ToLower(response.Status),
+		})
+	}
+
+	orderCache.DeleteByPrefix(fmt.Sprintf("customer:orders:tenant:%s", tenantID))
+
 	return &response, nil
 }
 
@@ -208,7 +231,33 @@ func (u *partnerOrderUsecase) UpdateOrderStatus(ctx context.Context, tenantID, o
 		return nil, apperrors.New("INTERNAL_ERROR", "Gagal memperbarui status pesanan", http.StatusInternalServerError)
 	}
 
-	return u.GetOrderByID(ctx, tenantID, orderID)
+	response, err := u.GetOrderByID(ctx, tenantID, orderID)
+	if err != nil {
+		return nil, err
+	}
+
+	if u.wsHub != nil {
+		customerID := ""
+		if response.UserID != nil {
+			customerID = *response.UserID
+		}
+		if customerID != "" {
+			u.wsHub.SendTo(customerID, map[string]interface{}{
+				"type":     "order_status",
+				"order_id": response.ID,
+				"status":   strings.ToLower(response.Status),
+			})
+		}
+		u.wsHub.SendTo(tenantID, map[string]interface{}{
+			"type":     "order_status",
+			"order_id": response.ID,
+			"status":   strings.ToLower(response.Status),
+		})
+	}
+
+	orderCache.DeleteByPrefix(fmt.Sprintf("customer:orders:tenant:%s", tenantID))
+
+	return response, nil
 }
 
 func (u *partnerOrderUsecase) SoftDeleteOrder(ctx context.Context, tenantID, orderID string) error {
@@ -219,6 +268,9 @@ func (u *partnerOrderUsecase) SoftDeleteOrder(ctx context.Context, tenantID, ord
 		}
 		return apperrors.New("INTERNAL_ERROR", "Gagal menghapus pesanan", http.StatusInternalServerError)
 	}
+
+	orderCache.DeleteByPrefix(fmt.Sprintf("customer:orders:tenant:%s", tenantID))
+
 	return nil
 }
 

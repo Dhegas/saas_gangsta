@@ -24,6 +24,7 @@ import (
 	tenanthttp "github.com/dhegas/saas_gangsta/internal/domains/tenant/delivery/http"
 	"github.com/dhegas/saas_gangsta/internal/domains/tenant/repository"
 	"github.com/dhegas/saas_gangsta/internal/domains/tenant/usecase"
+	"github.com/dhegas/saas_gangsta/internal/infrastructure/websocket"
 	authrepo "github.com/dhegas/saas_gangsta/internal/domains/user/auth/repository"
 	wallethttp "github.com/dhegas/saas_gangsta/internal/domains/wallet/delivery/http"
 	walletrepo "github.com/dhegas/saas_gangsta/internal/domains/wallet/repository"
@@ -33,7 +34,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func RegisterPartnerRoutes(api *gin.RouterGroup, cfg *config.Config, db *gorm.DB, localCache *cache.LocalCache) {
+func RegisterPartnerRoutes(api *gin.RouterGroup, cfg *config.Config, db *gorm.DB, localCache *cache.LocalCache, wsHub *websocket.Hub) {
 	// === Dependency Init ===
 
 	// Tenant
@@ -44,12 +45,12 @@ func RegisterPartnerRoutes(api *gin.RouterGroup, cfg *config.Config, db *gorm.DB
 	// Order
 	orderRepo := orderrepo.NewPartnerOrderRepository(db)
 	authRepo := authrepo.NewAuthRepository(db)
-	orderUC := orderusecase.NewPartnerOrderUsecase(orderRepo, authRepo, cfg)
+	orderUC := orderusecase.NewPartnerOrderUsecase(orderRepo, authRepo, cfg, wsHub)
 	orderHandler := orderhttp.NewPartnerOrderHandler(orderUC)
 
 	// Menu
 	menuRepo := menurepo.NewPartnerMenuRepository(db)
-	menuUC := menuusecase.NewPartnerMenuUsecase(menuRepo)
+	menuUC := menuusecase.NewPartnerMenuUsecase(menuRepo, localCache)
 	menuHandler := menuhttp.NewPartnerMenuHandler(menuUC)
 
 	// Category

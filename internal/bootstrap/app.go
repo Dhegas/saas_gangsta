@@ -10,6 +10,7 @@ import (
 	"github.com/dhegas/saas_gangsta/internal/common/response"
 	"github.com/dhegas/saas_gangsta/internal/config"
 	"github.com/dhegas/saas_gangsta/internal/infrastructure/database"
+	"github.com/dhegas/saas_gangsta/internal/infrastructure/websocket"
 	"github.com/dhegas/saas_gangsta/internal/middleware"
 	logpkg "github.com/dhegas/saas_gangsta/pkg/logger"
 	"github.com/gin-gonic/gin"
@@ -23,6 +24,7 @@ type App struct {
 	DB      *gorm.DB
 	Redis   *redis.Client
 	Router  *gin.Engine
+	WSHub   *websocket.Hub
 }
 
 func New() (*App, error) {
@@ -54,6 +56,8 @@ func New() (*App, error) {
 	// }
 	var redisClient *redis.Client = nil
 
+	wsHub := websocket.NewHub(log)
+
 	router := gin.New()
 	router.RedirectTrailingSlash = false
 	router.HandleMethodNotAllowed = true
@@ -76,7 +80,7 @@ func New() (*App, error) {
 		})
 	})
 
-	registerRoutes(router, cfg, db, redisClient)
+	registerRoutes(router, cfg, db, redisClient, wsHub)
 
 	return &App{
 		Config: cfg,
@@ -84,5 +88,6 @@ func New() (*App, error) {
 		DB:     db,
 		Redis:  redisClient,
 		Router: router,
+		WSHub:  wsHub,
 	}, nil
 }

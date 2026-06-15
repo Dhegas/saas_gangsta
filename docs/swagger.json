@@ -490,6 +490,67 @@
                 }
             }
         },
+        "/admin/payments/sync": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Sinkronisasi status pembayaran lokal dengan Midtrans. Jika transaksi di Midtrans sudah sukses tetapi lokal belum terupdate, perbaiki data secara aman.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin Payment"
+                ],
+                "summary": "Sinkronisasi Status Pembayaran dengan Midtrans (Admin)",
+                "parameters": [
+                    {
+                        "description": "Order ID",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.CreateSnapRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/admin/subscriptions/plans": {
             "get": {
                 "security": [
@@ -1094,6 +1155,230 @@
                         "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/response.Envelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/wallet/partners": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Admin melihat ringkasan wallet seluruh partner di platform",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin Wallet"
+                ],
+                "summary": "Daftar Wallet Semua Partner (Admin)",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Halaman (default: 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Jumlah per halaman (default: 20)",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/wallet/withdrawals": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Admin melihat semua permintaan withdraw dengan filter status opsional",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin Wallet"
+                ],
+                "summary": "Daftar Semua Withdraw (Admin)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter: PENDING, APPROVED, TRANSFERRED, REJECTED",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Halaman (default: 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Jumlah per halaman (default: 20)",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/wallet/withdrawals/{id}/approve": {
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Admin menyetujui permintaan withdraw partner (status: PENDING → APPROVED)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin Wallet"
+                ],
+                "summary": "Setujui Withdraw",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Withdraw ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/wallet/withdrawals/{id}/reject": {
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Admin menolak permintaan withdraw (status: PENDING → REJECTED). Saldo otomatis dikembalikan ke wallet partner.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin Wallet"
+                ],
+                "summary": "Tolak Withdraw",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Withdraw ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Alasan penolakan",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.AdminReviewRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/wallet/withdrawals/{id}/transfer": {
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Admin menandai bahwa transfer manual ke rekening partner sudah dilakukan (status: PENDING/APPROVED → TRANSFERRED). total_withdrawn partner bertambah.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin Wallet"
+                ],
+                "summary": "Tandai Transfer Selesai",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Withdraw ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
                         }
                     }
                 }
@@ -1775,6 +2060,67 @@
                     },
                     "500": {
                         "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/customer/payments/initiate": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Membuat Snap token Midtrans untuk order yang belum dibayar. Customer menggunakan snap_token atau redirect_url untuk menyelesaikan pembayaran di halaman Midtrans.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Payment"
+                ],
+                "summary": "Inisiasi Pembayaran Midtrans Snap",
+                "parameters": [
+                    {
+                        "description": "Order ID",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.CreateSnapRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
@@ -3017,6 +3363,228 @@
                 }
             }
         },
+        "/partner/wallet": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Mengambil ringkasan saldo, total pendapatan, dan total withdraw partner yang sedang login",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Partner Wallet"
+                ],
+                "summary": "Dashboard Wallet Partner",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/partner/wallet/transactions": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Mengambil riwayat CREDIT dan DEBIT wallet partner dengan pagination",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Partner Wallet"
+                ],
+                "summary": "Riwayat Transaksi Wallet",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Halaman (default: 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Jumlah per halaman (default: 20, max: 100)",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/partner/wallet/withdraw": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Partner membuat permintaan withdraw. Saldo langsung dikurangi dan masuk status PENDING. Minimum withdraw Rp20.000. Fee withdraw Rp2.000 dipotong dari net amount.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Partner Wallet"
+                ],
+                "summary": "Buat Permintaan Penarikan Saldo",
+                "parameters": [
+                    {
+                        "description": "Data penarikan",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.CreateWithdrawRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/partner/wallet/withdrawals": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Mengambil semua permintaan withdraw partner yang sedang login",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Partner Wallet"
+                ],
+                "summary": "Daftar Withdraw Saya",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter status: PENDING, APPROVED, TRANSFERRED, REJECTED",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Halaman (default: 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Jumlah per halaman (default: 20)",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/partner/wallet/withdrawals/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Mengambil detail satu permintaan withdraw milik partner (proteksi IDOR)",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Partner Wallet"
+                ],
+                "summary": "Detail Withdraw",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Withdraw ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/public/tenant/{tenantSlug}/categories": {
             "get": {
                 "description": "Mengambil daftar kategori menu aktif dalam context tenant",
@@ -3713,9 +4281,70 @@
                     }
                 }
             }
+        },
+        "/webhook/midtrans": {
+            "post": {
+                "description": "Endpoint untuk menerima notifikasi pembayaran dari Midtrans. Tidak membutuhkan autentikasi JWT — divalidasi via signature Midtrans.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Webhook"
+                ],
+                "summary": "Midtrans Payment Webhook",
+                "parameters": [
+                    {
+                        "description": "Midtrans Notification Payload",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.MidtransWebhookPayload"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
+        "dto.AdminReviewRequest": {
+            "type": "object",
+            "required": [
+                "admin_note"
+            ],
+            "properties": {
+                "admin_note": {
+                    "type": "string",
+                    "minLength": 3
+                }
+            }
+        },
         "dto.AdminTenantResponse": {
             "type": "object",
             "properties": {
@@ -3950,9 +4579,14 @@
         "dto.CreateOrderRequest": {
             "type": "object",
             "required": [
-                "items"
+                "items",
+                "payment_method"
             ],
             "properties": {
+                "customer_name": {
+                    "type": "string",
+                    "maxLength": 100
+                },
                 "dining_table_name": {
                     "type": "string",
                     "maxLength": 50
@@ -3966,6 +4600,17 @@
                     "items": {
                         "$ref": "#/definitions/dto.CreateOrderItemRequest"
                     }
+                },
+                "payment_method": {
+                    "type": "string",
+                    "enum": [
+                        "QRIS",
+                        "TRANSFER_BANK",
+                        "CASH",
+                        "E_WALLET",
+                        "KARTU_KREDIT",
+                        "MINIMARKET"
+                    ]
                 }
             }
         },
@@ -3994,6 +4639,17 @@
                     "type": "string"
                 },
                 "phone_number": {
+                    "type": "string"
+                }
+            }
+        },
+        "dto.CreateSnapRequest": {
+            "type": "object",
+            "required": [
+                "order_id"
+            ],
+            "properties": {
+                "order_id": {
                     "type": "string"
                 }
             }
@@ -4034,6 +4690,35 @@
                 "table_name": {
                     "type": "string",
                     "maxLength": 50
+                }
+            }
+        },
+        "dto.CreateWithdrawRequest": {
+            "type": "object",
+            "required": [
+                "account_holder",
+                "amount",
+                "bank_account",
+                "bank_name"
+            ],
+            "properties": {
+                "account_holder": {
+                    "type": "string",
+                    "maxLength": 150,
+                    "minLength": 2
+                },
+                "amount": {
+                    "type": "number"
+                },
+                "bank_account": {
+                    "type": "string",
+                    "maxLength": 50,
+                    "minLength": 5
+                },
+                "bank_name": {
+                    "type": "string",
+                    "maxLength": 100,
+                    "minLength": 2
                 }
             }
         },
@@ -4143,6 +4828,47 @@
                 }
             }
         },
+        "dto.MidtransWebhookPayload": {
+            "type": "object",
+            "properties": {
+                "currency": {
+                    "type": "string"
+                },
+                "fraud_status": {
+                    "type": "string"
+                },
+                "gross_amount": {
+                    "type": "string"
+                },
+                "merchant_id": {
+                    "type": "string"
+                },
+                "order_id": {
+                    "type": "string"
+                },
+                "payment_type": {
+                    "type": "string"
+                },
+                "signature_key": {
+                    "type": "string"
+                },
+                "status_code": {
+                    "type": "string"
+                },
+                "status_message": {
+                    "type": "string"
+                },
+                "transaction_id": {
+                    "type": "string"
+                },
+                "transaction_status": {
+                    "type": "string"
+                },
+                "transaction_time": {
+                    "type": "string"
+                }
+            }
+        },
         "dto.PaginationMeta": {
             "type": "object",
             "properties": {
@@ -4234,6 +4960,12 @@
                     "items": {
                         "$ref": "#/definitions/dto.PublicOrderItemResponse"
                     }
+                },
+                "paymentMethod": {
+                    "type": "string"
+                },
+                "queueNumber": {
+                    "type": "string"
                 },
                 "status": {
                     "type": "string"
@@ -4479,6 +5211,7 @@
                     "enum": [
                         "PENDING",
                         "PROCESSING",
+                        "READY",
                         "COMPLETED",
                         "CANCELLED"
                     ]

@@ -239,6 +239,14 @@ func (u *paymentWebhookUsecase) SyncPaymentStatus(ctx context.Context, orderID s
 // validateSignature memvalidasi signature dari Midtrans
 // Formula: SHA512(order_id + status_code + gross_amount + ServerKey)
 func (u *paymentWebhookUsecase) validateSignature(payload dto.MidtransWebhookPayload) bool {
+	// Bypass signature validation in local/development environment if signature_key is "bypass" or empty
+	if u.cfg.AppEnv != "production" && (payload.SignatureKey == "bypass" || payload.SignatureKey == "") {
+		slog.Info("midtrans webhook signature bypassed for development environment",
+			slog.String("order_id", payload.OrderID),
+		)
+		return true
+	}
+
 	raw := payload.OrderID + payload.StatusCode + payload.GrossAmount + u.cfg.MidtransServerKey
 	hash := sha512.Sum512([]byte(raw))
 	expected := fmt.Sprintf("%x", hash)

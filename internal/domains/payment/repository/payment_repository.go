@@ -214,14 +214,14 @@ func (r *paymentRepository) ProcessWebhookPayment(ctx context.Context, req payme
 		// Jika order_id sudah ada (UNIQUE constraint), ini akan gagal → idempotency layer 2
 		orderID := req.OrderID
 		if err := tx.Table("wallet_transactions").Create(map[string]interface{}{
-			"wallet_id":   wallet.ID,
-			"order_id":    &orderID,
-			"type":        "CREDIT",
-			"amount":      req.GrossAmount,
-			"fee_amount":  req.FeeAmount,
-			"net_amount":  req.NetAmount,
-			"description": "Pendapatan dari order #" + req.OrderID,
-			"created_at":  now,
+			"wallet_id":        wallet.ID,
+			"order_id":         &orderID,
+			"transaction_type": "ORDER_PAYMENT",
+			"amount":           req.GrossAmount,
+			"fee_amount":       req.FeeAmount,
+			"net_amount":       req.NetAmount,
+			"description":      "Pendapatan dari order #" + req.OrderID,
+			"created_at":       now,
 		}).Error; err != nil {
 			return err
 		}

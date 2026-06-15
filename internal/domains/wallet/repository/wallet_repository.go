@@ -142,7 +142,7 @@ func (r *walletRepository) CreateWithdraw(ctx context.Context, walletID, userID 
 		if err := tx.Table("wallet_transactions").Create(map[string]interface{}{
 			"wallet_id":   walletID,
 			"order_id":    nil,
-			"type":        "DEBIT",
+			"transaction_type": "WITHDRAW",
 			"amount":      req.Amount,
 			"fee_amount":  feeAmount,
 			"net_amount":  netAmount,
@@ -289,7 +289,7 @@ func (r *walletRepository) RejectWithdraw(ctx context.Context, withdrawID, admin
 		if err := tx.Table("wallet_transactions").Create(map[string]interface{}{
 			"wallet_id":   withdraw.WalletID,
 			"order_id":    nil,
-			"type":        "CREDIT",
+			"transaction_type": "WITHDRAW_REFUND",
 			"amount":      withdraw.Amount,
 			"fee_amount":  0,
 			"net_amount":  withdraw.Amount,

@@ -50,7 +50,7 @@ type WalletTransactionEntity struct {
 	ID          string    `gorm:"primaryKey;default:gen_random_uuid()"`
 	WalletID    string    `gorm:"not null"`
 	OrderID     *string   `gorm:"index"`
-	Type        string    `gorm:"not null"`
+	Type        string    `gorm:"column:transaction_type;not null"`
 	Amount      float64   `gorm:"not null"`
 	FeeAmount   float64   `gorm:"not null;default:0"`
 	NetAmount   float64   `gorm:"not null"`

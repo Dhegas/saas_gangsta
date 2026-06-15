@@ -414,4 +414,64 @@ func (u *partnerOrderUsecase) GetPublicOrdersList(ctx context.Context, tenantID 
 	return result, nil
 }
 
+func (u *partnerOrderUsecase) GetCustomerOrderHistory(ctx context.Context, userID string) ([]dto.PublicOrderDetailsResponse, error) {
+	orders, tenantInfos, tableNames, err := u.repo.FindCustomerOrderHistory(ctx, userID)
+	if err != nil {
+		return nil, apperrors.New("INTERNAL_ERROR", "Gagal mengambil riwayat pesanan customer", http.StatusInternalServerError)
+	}
+
+	result := make([]dto.PublicOrderDetailsResponse, 0, len(orders))
+	for _, o := range orders {
+		customerName := o.CustomerName
+		if customerName == "" && o.User != nil {
+			customerName = o.User.FullName
+		}
+		customerResp := dto.PublicCustomerDetails{
+			FullName: customerName,
+		}
+
+		itemsResp := make([]dto.PublicOrderItemResponse, 0, len(o.Items))
+		for _, item := range o.Items {
+			itemsResp = append(itemsResp, dto.PublicOrderItemResponse{
+				MenuName: item.MenuName,
+				Quantity: item.Quantity,
+				Notes:    item.Notes,
+				Subtotal: item.Subtotal,
+			})
+		}
+
+		var tableName string
+		if o.DiningTablesID != nil {
+			tableName = tableNames[*o.DiningTablesID]
+		}
+
+		var tenantName, tenantSlug string
+		if tenantInfo, ok := tenantInfos[o.TenantID]; ok {
+			tenantName = tenantInfo.Name
+			tenantSlug = tenantInfo.Slug
+		}
+
+		result = append(result, dto.PublicOrderDetailsResponse{
+			ID:            o.ID,
+			TenantID:      o.TenantID,
+			TenantName:    tenantName,
+			TenantSlug:    tenantSlug,
+			Status:        o.Status,
+			TotalPrice:    o.TotalPrice,
+			QueueNumber:   o.QueueNumber,
+			PaymentMethod: o.PaymentMethod,
+			CreatedAt:     o.CreatedAt,
+			UserID:        o.UserID,
+			Customer:      customerResp,
+			DiningTable: dto.PublicDiningTableDetails{
+				TableName: tableName,
+			},
+			Items: itemsResp,
+		})
+	}
+
+	return result, nil
+}
+
+
 

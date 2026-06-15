@@ -44,6 +44,7 @@ func RegisterCustomerRoutes(api *gin.RouterGroup, cfg *config.Config, db *gorm.D
 	{
 		// Membuat order baru (TenantResolver untuk resolve tenantId dari slug)
 		customerOrderRoutes.POST("/tenant/:tenantSlug", middleware.TenantResolver(db), orderHandler.CreateOrder)
+		customerOrderRoutes.GET("/history", custOrderHandler.GetCustomerOrderHistory)
 	}
 
 	// Tenant-resolved customer orders

@@ -231,5 +231,81 @@ func (r *partnerOrderRepository) GetMaxQueueNumberToday(ctx context.Context, ten
 	return maxVal, err
 }
 
+func (r *partnerOrderRepository) FindCustomerOrderHistory(ctx context.Context, userID string) ([]orderdomain.OrderEntity, map[string]orderdomain.TenantInfo, map[string]string, error) {
+	var orders []orderdomain.OrderEntity
+	err := r.db.WithContext(ctx).Preload("Items").Preload("User").
+		Where("user_id = ? AND deleted_at IS NULL", userID).
+		Order("created_at DESC").
+		Find(&orders).Error
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	tenantInfos := make(map[string]orderdomain.TenantInfo)
+	tableNames := make(map[string]string)
+
+	if len(orders) == 0 {
+		return orders, tenantInfos, tableNames, nil
+	}
+
+	tenantIDs := make([]string, 0)
+	tableIDs := make([]string, 0)
+	seenTenants := make(map[string]bool)
+	seenTables := make(map[string]bool)
+
+	for _, o := range orders {
+		if o.TenantID != "" && !seenTenants[o.TenantID] {
+			seenTenants[o.TenantID] = true
+			tenantIDs = append(tenantIDs, o.TenantID)
+		}
+		if o.DiningTablesID != nil && *o.DiningTablesID != "" && !seenTables[*o.DiningTablesID] {
+			seenTables[*o.DiningTablesID] = true
+			tableIDs = append(tableIDs, *o.DiningTablesID)
+		}
+	}
+
+	if len(tenantIDs) > 0 {
+		var tenants []struct {
+			ID   string `gorm:"column:id"`
+			Name string `gorm:"column:name"`
+			Slug string `gorm:"column:slug"`
+		}
+		err = r.db.WithContext(ctx).Table("tenants").
+			Select("id::text AS id, name, slug").
+			Where("id IN ? AND deleted_at IS NULL", tenantIDs).
+			Scan(&tenants).Error
+		if err != nil {
+			return nil, nil, nil, err
+		}
+		for _, t := range tenants {
+			tenantInfos[t.ID] = orderdomain.TenantInfo{
+				ID:   t.ID,
+				Name: t.Name,
+				Slug: t.Slug,
+			}
+		}
+	}
+
+	if len(tableIDs) > 0 {
+		var tables []struct {
+			ID        string
+			TableName string `gorm:"column:table_name"`
+		}
+		err = r.db.WithContext(ctx).Table("dining_tables").
+			Select("id, table_name").
+			Where("id IN ? AND deleted_at IS NULL", tableIDs).
+			Scan(&tables).Error
+		if err != nil {
+			return nil, nil, nil, err
+		}
+		for _, t := range tables {
+			tableNames[t.ID] = t.TableName
+		}
+	}
+
+	return orders, tenantInfos, tableNames, nil
+}
+
+
 
 

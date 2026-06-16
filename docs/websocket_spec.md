@@ -1,77 +1,78 @@
-# Spesifikasi & Panduan Integrasi WebSocket Real-Time Order
+# Spesifikasi & Panduan Integrasi WebSocket Real-Time Order & Status
 
-Dokumen ini menjelaskan arsitektur WebSocket yang telah diimplementasikan pada backend dan cara melakukan integrasi serta penanganan di frontend menggunakan **Flutter**.
+Dokumen ini menjelaskan arsitektur WebSocket bidirectional yang diimplementasikan pada backend Golang dan cara penanganan integrasinya di frontend **Flutter** untuk dua alur utama:
+1. **Customer → Merchant (KDS)**: Notifikasi pesanan baru masuk secara real-time.
+2. **Merchant → Customer**: Notifikasi perubahan status pesanan secara real-time.
 
 ---
 
 ## 1. Gambaran Umum & Arsitektur
 
-WebSocket ini dirancang untuk memproses notifikasi pesanan masuk secara real-time dari aplikasi Customer menuju Kitchen Display System (KDS) milik Partner (Mitra) pada cabang tenant yang sesuai.
+WebSocket Hub mengelola koneksi aktif dan mendistribusikan event berdasarkan ID registrasi client (`clientID`).
+- Koneksi **Merchant (KDS)** didaftarkan menggunakan **Tenant ID** (UUID Cabang).
+- Koneksi **Customer** didaftarkan menggunakan **User ID** (UUID Akun Customer).
 
-### Diagram Alur Koneksi & Notifikasi
+### Diagram Alur Real-Time
 
 ```mermaid
 sequenceDiagram
     autonumber
     actor Customer as Flutter Customer
-    participant Server as Golang Backend (Gin)
-    actor Partner as Flutter Tenant (KDS)
+    participant Server as Golang Backend (Hub)
+    actor Partner as Flutter Merchant (KDS)
     participant DB as Supabase PostgreSQL
 
-    %% Koneksi WebSocket Partner (KDS)
-    Partner->>Server: Handshake ws://[host]/ws?token=<jwt>&tenant_id=<tenant_id>
-    Note over Server: Validasi JWT & Kepemilikan Cabang
-    Server-->>Partner: WS Connected (Terdaftar di Hub under tenant_id)
+    %% Koneksi Awal
+    Partner->>Server: Connect ws://[host]/ws?token=<jwt>&tenant_id=<tenant_id>
+    Note over Server: Validasi kepemilikan cabang & register ke Hub (Key: tenant_id)
+    Customer->>Server: Connect ws://[host]/ws?token=<jwt>
+    Note over Server: Register ke Hub (Key: customer_id)
 
-    %% Transaksi Pembelian
+    %% Alur 1: Pesanan Baru Masuk
     Customer->>Server: HTTP POST /api/v1/customer/orders/tenant/[slug]
-    Note over Server: Simpan ke DB (GORM)
-    Server->>DB: INSERT INTO orders & order_items
-    DB-->>Server: OK (Order Created)
+    Server->>DB: INSERT order & order_items
+    DB-->>Server: OK (Created)
+    Note over Server: Hapus Cache Order List Tenant
+    Server->>Partner: WebSocket Push { type: "new_order", order_id, ... }
+    Note over Partner: Play Sound & Refresh List KDS (🔔 Pesanan Baru)
 
-    %% Real-time Push
-    Note over Server: Cari koneksi di Hub berdasarkan tenant_id
-    Server->>Partner: WebSocket Push (new_order payload)
-    Note over Partner: UI KDS Update (🔔 Pesanan Baru)
+    %% Alur 2: Update Status Pesanan
+    Partner->>Server: HTTP PATCH /api/v1/orders/[order_id]/status { status: "PROCESSING" }
+    Server->>DB: UPDATE order SET status = 'PROCESSING'
+    DB-->>Server: OK (Updated)
+    Note over Server: Hapus Cache Order List Tenant
+    Server->>Customer: WebSocket Push { type: "order_status", order_id, status: "processing" }
+    Note over Customer: Play Sound & Silent Refresh List (🔔 Status: Diproses)
+    Server->>Partner: WebSocket Push { type: "order_status", order_id, status: "processing" }
+    Note over Partner: Sync status di layar merchant lain
 ```
 
 ---
 
-## 2. Spesifikasi Endpoint Backend
+## 2. Spesifikasi Endpoint & Handshake
 
 ### **Endpoint URL**
-
 ```
-ws://localhost:8080/ws?token=<JWT_TOKEN>&tenant_id=<TENANT_UUID>
+ws://[host]/ws?token=<JWT_TOKEN>&tenant_id=<TENANT_UUID>
 ```
 
-### **Parameter Query**
+### **Parameter Query Handshake**
 
-| Parameter   | Tipe   | Wajib      | Keterangan                                                      |
-| ----------- | ------ | ---------- | --------------------------------------------------------------- |
-| `token`     | String | Ya         | JWT Access Token dari response login Supabase Auth.             |
-| `tenant_id` | String | Ya (Mitra) | UUID cabang tenant yang saat ini sedang dibuka/dikelola di KDS. |
+| Parameter | Tipe | Wajib | Keterangan |
+| :--- | :--- | :--- | :--- |
+| `token` | String | Ya | JWT Access Token dari login aktif. |
+| `tenant_id` | String | Opsional | UUID Cabang. Wajib dikirim oleh role `PARTNER` untuk mengarahkan notifikasi ke cabang yang benar. Untuk `CUSTOMER`, parameter ini dikosongkan. |
 
-### **Alur Keamanan & Validasi Koneksi**
-
-1. **Verifikasi Token**: Server memverifikasi kecocokan JWT token menggunakan `JWT_SECRET`. Jika tidak valid, koneksi ditolak (`401 Unauthorized`).
-2. **Validasi Kepemilikan Cabang**: Khusus peran `PARTNER`, server melakukan query ke database PostgreSQL dengan casting tipe data UUID:
-   ```sql
-   SELECT count(*) FROM tenants
-   WHERE id = NULLIF(tenant_id, '')::uuid
-     AND user_id = NULLIF(user_id, '')::uuid
-     AND deleted_at IS NULL;
-   ```
-
-   - Jika partner terbukti memiliki hak akses ke cabang tersebut (`count > 0`), koneksi didaftarkan ke hub dengan ID cabang (`tenant_id`).
-   - Jika tidak cocok, koneksi langsung diputus secara sepihak untuk mencegah IDOR (menyadap cabang orang lain).
+### **Logika Registrasi Role di Backend**
+* **Customer**: Saat token diverifikasi memiliki role `CUSTOMER`, server akan mendaftarkan koneksi menggunakan `claims.Subject` (User ID Customer) sebagai `clientID` di Hub.
+* **Partner**: Saat token diverifikasi memiliki role `PARTNER`, server memvalidasi kepemilikan `tenant_id` ke DB. Jika valid, koneksi didaftarkan menggunakan `tenant_id` sebagai `clientID` di Hub.
 
 ---
 
-## 3. Format Payload Pesanan Baru (Real-Time Push)
+## 3. Format Payload (Real-Time Push)
 
-Ketika Customer sukses melakukan checkout via REST API, backend akan mengirimkan payload JSON berikut secara realtime ke koneksi KDS cabang bersangkutan:
-
+### **A. Event: Pesanan Baru (`new_order`)**
+Dikirim oleh backend ke Merchant (KDS) ketika customer selesai melakukan checkout.
 ```json
 {
   "type": "new_order",
@@ -81,26 +82,34 @@ Ketika Customer sukses melakukan checkout via REST API, backend akan mengirimkan
 }
 ```
 
----
-
-## 4. Panduan Integrasi Frontend (Flutter)
-
-### **Langkah A — Instalasi Package**
-
-Tambahkan package `web_socket_channel` pada file `pubspec.yaml`:
-
-```yaml
-dependencies:
-  flutter:
-    sdk: flutter
-  web_socket_channel: ^3.0.1
+### **B. Event: Perubahan Status (`order_status`)**
+Dikirim oleh backend ke Customer (dan Merchant) ketika status pesanan diubah oleh merchant.
+```json
+{
+  "type": "order_status",
+  "order_id": "46a33c95-98ef-4f7e-90cc-991551de8d59",
+  "status": "processing"
+}
 ```
 
-Jalankan perintah `flutter pub get`.
+---
 
-### **Langkah B — Pembuatan Service (`websocket_service.dart`)**
+## 4. Mekanisme Invalidation Cache di Backend
 
-Buat file `lib/core/services/websocket_service.dart` untuk membungkus fungsionalitas WebSocket secara clean:
+Backend mengimplementasikan caching lokal selama 1 menit untuk query daftar pesanan guna mengurangi beban database (`GET /public/tenant/{slug}/orders`).
+
+Agar real-time sinkronisasi berjalan sempurna:
+- Setiap kali terjadi mutasi pesanan (**pembuatan**, **perubahan status**, atau **soft-delete**), backend wajib memanggil:
+  ```go
+  orderCache.DeleteByPrefix(fmt.Sprintf("customer:orders:tenant:%s", tenantID))
+  ```
+- Ini akan memaksa API client langsung mendapatkan data terbaru dari database saat terpancing event WebSocket.
+
+---
+
+## 5. Implementasi Flutter Service Wrapper
+
+Gunakan file `websocket_service.dart` berikut sebagai acuan integrasi client:
 
 ```dart
 import 'dart:convert';
@@ -112,23 +121,24 @@ class WebSocketService {
   WebSocketChannel? _channel;
   bool _isConnecting = false;
 
-  // Callback untuk meneruskan event pesanan baru ke State Management / UI
-  Function(Map<String, dynamic>)? onNewOrderReceived;
+  // Hooks Callback
+  Function(Map<String, dynamic>)? onNewOrderReceived; // Khusus Merchant
+  Function(Map<String, dynamic>)? onMessageReceived;  // Generik (Customer/Merchant)
 
-  // Menghubungkan WebSocket ke Server
-  void connect({required String token, required String tenantId}) {
+  void connect({required String token, String? tenantId}) {
     if (_channel != null || _isConnecting) return;
     _isConnecting = true;
 
-    // Gunakan ws:// untuk localhost dan wss:// untuk production HTTPS
-    final String wsUrl = "ws://localhost:8080/ws?token=$token&tenant_id=$tenantId";
+    // Menyesuaikan parameter query untuk Customer (tanpa tenantId) dan Merchant (dengan tenantId)
+    final uriStr = tenantId != null && tenantId.isNotEmpty
+        ? "ws://localhost:8080/ws?token=$token&tenant_id=$tenantId"
+        : "ws://localhost:8080/ws?token=$token";
 
     try {
-      _channel = WebSocketChannel.connect(Uri.parse(wsUrl));
+      _channel = WebSocketChannel.connect(Uri.parse(uriStr));
       _isConnecting = false;
-      print("🔌 WebSocket KDS Terhubung ke Cabang: $tenantId");
+      print("🔌 WebSocket Terhubung.");
 
-      // Dengarkan stream dari server
       _channel!.stream.listen(
         (rawMessage) {
           _handleIncomingMessage(rawMessage);
@@ -138,93 +148,62 @@ class WebSocketService {
           _reconnect(token: token, tenantId: tenantId);
         },
         onDone: () {
-          print("🔌 WebSocket Terputus. Mencoba menghubungkan kembali dalam 5 detik...");
+          print("🔌 WebSocket Terputus. Menghubungkan ulang dalam 5 detik...");
           _reconnect(token: token, tenantId: tenantId);
         },
       );
     } catch (e) {
       _isConnecting = false;
-      print("❌ Gagal membuat koneksi WebSocket: $e");
+      print("❌ Gagal terhubung WebSocket: $e");
       _reconnect(token: token, tenantId: tenantId);
     }
   }
 
-  // Parsing data JSON yang diterima
   void _handleIncomingMessage(dynamic rawMessage) {
     try {
       final Map<String, dynamic> data = jsonDecode(rawMessage);
 
-      // Filter tipe event
-      if (data['type'] == 'new_order') {
-        if (onNewOrderReceived != null) {
-          onNewOrderReceived!(data);
-        }
+      // Trigger callback generik
+      if (onMessageReceived != null) {
+        onMessageReceived!(data);
+      }
+
+      // Backward compatibility untuk KDS lama
+      if (data['type'] == 'new_order' && onNewOrderReceived != null) {
+        onNewOrderReceived!(data);
       }
     } catch (e) {
       print("Gagal parse data WebSocket: $e");
     }
   }
 
-  // Logika Auto-Reconnect jika koneksi terputus tiba-tiba
-  void _reconnect({required String token, required String tenantId}) {
+  void _reconnect({required String token, String? tenantId}) {
     _channel = null;
     Timer(const Duration(seconds: 5), () {
       connect(token: token, tenantId: tenantId);
     });
   }
 
-  // Memutuskan koneksi secara bersih saat keluar/logout
   void disconnect() {
     if (_channel != null) {
       _channel!.sink.close(status.goingAway);
       _channel = null;
-      print("🔌 WebSocket KDS diputus secara manual.");
+      print("🔌 WebSocket diputus manual.");
     }
   }
 }
 ```
 
-### **Langkah C — Cara Penggunaan di Screen / State (BLoC / Provider)**
+---
 
-Inisialisasi koneksi saat halaman KDS dibuka dan tutup koneksi saat halaman dihancurkan:
+## 6. Siklus Status Pesanan (Order Lifecycle)
 
-```dart
-class _KdsScreenState extends State<KdsScreen> {
-  final WebSocketService _wsService = WebSocketService();
+Berikut adalah pemetaan status pesanan yang digunakan dalam sistem:
 
-  @override
-  void initState() {
-    super.initState();
-
-    // 1. Lakukan koneksi saat inisialisasi state
-    _wsService.connect(
-      token: userToken,       // Dapatkan token login aktif
-      tenantId: activeBranch, // Cabang aktif yang sedang dikelola
-    );
-
-    // 2. Berlangganan event pesanan baru
-    _wsService.onNewOrderReceived = (orderData) {
-      // Pemicu suara notifikasi atau update list data order
-      print("🔔 Pesanan Baru Diterima: ${orderData['order_id']}");
-
-      // Contoh: Refresh list pesanan lewat State Management Anda
-      // context.read<OrderBloc>().add(FetchOrdersEvent());
-    };
-  }
-
-  @override
-  void dispose() {
-    // 3. Pastikan koneksi ditutup secara bersih
-    _wsService.disconnect();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-     return Scaffold(
-        appBar: AppBar(title: const Text("Kitchen Display System")),
-        body: const Center(child: Text("Menunggu Pesanan Real-Time...")),
-     );
-  }
-}
-```
+| Status Kode (DB) | Teks UI (Indonesia) | Warna Chip UI | Keterangan |
+| :--- | :--- | :--- | :--- |
+| `PENDING` | Menunggu Konfirmasi | Jingga / Orange | Pesanan baru dibuat, menunggu aksi merchant. |
+| `PROCESSING` | Diproses | Biru / Primary | Merchant mulai memproses/memasak pesanan. |
+| `READY` | Siap Disajikan | Teal | Makanan siap diambil pelanggan / diantar ke meja. |
+| `COMPLETED` | Selesai | Hijau | Pesanan selesai disajikan/dibayar penuh. |
+| `CANCELLED` | Dibatalkan | Merah | Pesanan dibatalkan oleh kasir/sistem. |

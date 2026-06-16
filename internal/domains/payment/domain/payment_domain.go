@@ -17,6 +17,8 @@ type OrderPaymentEntity struct {
 	TenantID              string
 	TotalPrice            float64
 	PaymentStatus         string
+	PaymentMethod         *string
+	PaymentChannel        *string
 	MidtransOrderID       *string
 	MidtransTransactionID *string
 	PaidAt                *time.Time
@@ -118,6 +120,8 @@ type ProcessPaymentRequest struct {
 	OrderID               string
 	TenantID              string
 	MidtransTransactionID string
+	PaymentMethod         string
+	PaymentChannel        string
 	GrossAmount           float64
 	FeeAmount             float64
 	NetAmount             float64

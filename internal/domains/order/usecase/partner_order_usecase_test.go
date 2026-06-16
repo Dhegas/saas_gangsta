@@ -203,7 +203,7 @@ func TestGetCustomerOrderHistory(t *testing.T) {
 					Status:         "PENDING",
 					TotalPrice:     50000,
 					QueueNumber:    "Q-1",
-					PaymentMethod:  "CASH",
+					PaymentMethod:  pointerToString("CASH"),
 					DiningTablesID: pointerToString("table-1"),
 					Items: []domain.OrderItemEntity{
 						{MenuName: "Bakso", Quantity: 2, Subtotal: 50000},

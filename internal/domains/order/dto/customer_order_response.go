@@ -11,7 +11,8 @@ type PublicOrderDetailsResponse struct {
 	Status        string                    `json:"status"`
 	TotalPrice    float64                   `json:"totalPrice"`
 	QueueNumber   string                    `json:"queueNumber"`
-	PaymentMethod string                    `json:"paymentMethod"`
+	PaymentMethod *string                   `json:"paymentMethod,omitempty"`
+	PaymentChannel *string                   `json:"paymentChannel,omitempty"`
 	CreatedAt     time.Time                 `json:"createdAt"`
 	UserID        *string                   `json:"userId,omitempty"`
 	Customer      PublicCustomerDetails     `json:"customer"`

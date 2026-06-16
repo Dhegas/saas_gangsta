@@ -12,7 +12,7 @@ type CreateOrderRequest struct {
 	UserID          *string                  `json:"-"`
 	DiningTablesID  *string                  `json:"dining_tables_id" binding:"omitempty,uuid"`
 	DiningTableName *string                  `json:"dining_table_name" binding:"omitempty,max=50"`
-	PaymentMethod   string                   `json:"payment_method" binding:"required,oneof=QRIS TRANSFER_BANK CASH E_WALLET KARTU_KREDIT MINIMARKET"`
+	PaymentMethod   *string                  `json:"payment_method" binding:"omitempty,oneof=QRIS TRANSFER_BANK CASH E_WALLET KARTU_KREDIT MINIMARKET"`
 	CustomerName    *string                  `json:"customer_name" binding:"omitempty,max=100"`
 	Items           []CreateOrderItemRequest `json:"items" binding:"required,min=1,dive"`
 }

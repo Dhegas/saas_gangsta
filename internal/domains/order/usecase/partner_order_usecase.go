@@ -165,6 +165,12 @@ func (u *partnerOrderUsecase) CreateOrder(ctx context.Context, tenantID string, 
 
 		orderEntity.QueueNumber = fmt.Sprintf("Q-%d", maxQueueVal+1)
 		orderEntity.PaymentMethod = req.PaymentMethod
+		if req.PaymentMethod != nil && *req.PaymentMethod == "CASH" {
+			ch := "OFFLINE"
+			orderEntity.PaymentChannel = &ch
+		} else {
+			orderEntity.PaymentChannel = nil
+		}
 
 		// 6. Simpan secara transaksional
 		saveErr = u.repo.CreateWithItems(ctx, orderEntity, orderItems)
@@ -305,6 +311,7 @@ func toOrderResponse(entity *domain.OrderEntity) dto.OrderResponse {
 		TotalPrice:     entity.TotalPrice,
 		QueueNumber:    entity.QueueNumber,
 		PaymentMethod:  entity.PaymentMethod,
+		PaymentChannel: entity.PaymentChannel,
 		CreatedAt:      entity.CreatedAt,
 		UpdatedAt:      entity.UpdatedAt,
 		Items:          itemsResp,
@@ -345,6 +352,7 @@ func (u *partnerOrderUsecase) GetPublicOrderStatus(ctx context.Context, tenantID
 		TotalPrice:    order.TotalPrice,
 		QueueNumber:   order.QueueNumber,
 		PaymentMethod: order.PaymentMethod,
+		PaymentChannel: order.PaymentChannel,
 		CreatedAt:     order.CreatedAt,
 		UserID:        order.UserID,
 		Customer:      customerResp,
@@ -399,6 +407,7 @@ func (u *partnerOrderUsecase) GetPublicOrdersList(ctx context.Context, tenantID 
 			TotalPrice:    o.TotalPrice,
 			QueueNumber:   o.QueueNumber,
 			PaymentMethod: o.PaymentMethod,
+			PaymentChannel: o.PaymentChannel,
 			CreatedAt:     o.CreatedAt,
 			UserID:        o.UserID,
 			Customer:      customerResp,
@@ -460,6 +469,7 @@ func (u *partnerOrderUsecase) GetCustomerOrderHistory(ctx context.Context, userI
 			TotalPrice:    o.TotalPrice,
 			QueueNumber:   o.QueueNumber,
 			PaymentMethod: o.PaymentMethod,
+			PaymentChannel: o.PaymentChannel,
 			CreatedAt:     o.CreatedAt,
 			UserID:        o.UserID,
 			Customer:      customerResp,

@@ -57,7 +57,8 @@ type OrderEntity struct {
 	TotalPrice     float64           `gorm:"not null"`
 	CustomerName   string            `gorm:"column:customer_name"`
 	QueueNumber    string            `gorm:"column:queue_number;not null"`
-	PaymentMethod  string            `gorm:"column:payment_method;not null"`
+	PaymentMethod  *string           `gorm:"column:payment_method"`
+	PaymentChannel *string           `gorm:"column:payment_channel"`
 	CreatedAt      time.Time         `gorm:"autoCreateTime"`
 	UpdatedAt      time.Time         `gorm:"autoUpdateTime"`
 	DeletedAt      *time.Time        `gorm:"index"`

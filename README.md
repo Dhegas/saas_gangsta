@@ -19,35 +19,41 @@ Agar tidak ada ambiguitas dalam arsitektur sistem, berikut adalah standar istila
 Sistem ini dibangun menggunakan standar **Clean Architecture** yang dikombinasikan dengan pendekatan **Modular Monolith (Domain-Oriented)**.
 
 ### Architecture Diagram
-[ERD SaaS Gangsta] (https://viewer.diagrams.net/?tags=%7B%7D&lightbox=1&highlight=0000ff&edit=_blank&layers=1&nav=1&title=diagram%20gangsta.drawio&dark=auto#Uhttps%3A%2F%2Fdrive.google.com%2Fuc%3Fid%3D14pQkdyTJauy4w241hsFAc8Z1uFC_wkXd%26export%3Ddownload)
-
-```mermaid
-graph TD
-    Client[Web/Mobile/Flutter] -->|HTTPS| Nginx[Nginx API Gateway]
-    Nginx -->|Reverse Proxy| GoServer[Go + Gin HTTP Server]
-    
-   subgraph "Go Internal (Per Domain)"
-        GoServer --> Delivery[Delivery Layer / HTTP Handler]
-        Delivery --> Usecase[Usecase Layer / Business Logic]
-        Usecase --> Domain[Domain Layer / Models & Interfaces]
-        Usecase --> Repository[Repository Layer / DB Queries]
-    end
-    
-    Repository -->|SQL| DB[(PostgreSQL Supabase)]
-    Repository -->|Cache| Redis[(Redis Caching)]
-```
+[ERD SaaS Gangsta](https://viewer.diagrams.net/?tags=%7B%7D&lightbox=1&highlight=0000ff&edit=_blank&layers=1&nav=1&title=diagram%20gangsta.drawio&dark=auto#Uhttps%3A%2F%2Fdrive.google.com%2Fuc%3Fid%3D14pQkdyTJauy4w241hsFAc8Z1uFC_wkXd%26export%3Ddownload)
 
 ### Layer Responsibility
 - **Delivery**: Menangani binding request JSON, validasi input (`validator/v10`), dan parsing context JWT.
-- **Usecase**: Jantung bisnis aplikasi. Menjalankan logika bisnis dan orkestrasi repository.
+- **Usecase**: Jantung bisnis aplikasi. Menjalankan logika bisnis, caching, dan orkestrasi repository.
 - **Domain**: Definisi entitas bisnis (Struct) dan kontrak interface.
-- **Repository**: Abstraksi data akses. Menggunakan GORM dan Redis.
+- **Repository**: Abstraksi data akses menggunakan GORM untuk PostgreSQL.
+
+### Teknologi Pendukung
+- **Database**: PostgreSQL yang di-hosting di **Supabase**.
+- **Cache**: In-memory cache lokal (**LocalCache**) untuk mempercepat query list data dinamis dan mengurangi load database (tidak menggunakan Redis).
+- **Payment Gateway**: Integrasi pembayaran otomatis menggunakan **Midtrans**.
 
 ### Current Internal Structure
 - **Routing Bootstrap**: dipisah ke `internal/bootstrap/routes.go`, `internal/bootstrap/customer_routes.go`, `internal/bootstrap/partner_routes.go`, dan `internal/bootstrap/admin_routes.go`.
 - **Cross-cutting Infra**: `internal/config`, `internal/middleware`, `internal/infrastructure/database`.
 - **Business Domains**: `internal/domains/{menu,order,payment,report,subscription,table,tenant,user}`.
 - **Shared Utilities**: `internal/common/errors` dan `internal/common/response`.
+
+---
+
+## 🔑 Akun Testing (Untuk Dosen / Penilaian)
+Untuk mempermudah pengujian fitur secara mandiri oleh Dosen, berikut adalah data akun yang siap digunakan:
+
+* **👑 Admin Account** (Super user pengelola platform SaaS)
+  * **Email**: `admin@gmail.com`
+  * **Password**: `ADMIN123`
+
+* **🏪 Partner Account** (Mitra / Pelaku usaha UMKM)
+  * **Email**: `purnomo@gmail.com`
+  * **Password**: `password`
+
+* **📱 Customer Account** (Pelanggan untuk self-ordering)
+  * **Email**: `popo@gmail.com`
+  * **Password**: `password`
 
 ---
 
@@ -72,10 +78,9 @@ Selamat bergabung di tim pengembang! Ikuti panduan ini untuk mulai berkontribusi
    go mod tidy
    ```
 2. **Setup Environment**:
-   Salin `.env.example` menjadi `.env` dan isi variabel berikut:
-   - `DATABASE_URL`: URL PostgreSQL dari Supabase.
-   - `JWT_SECRET`: Minimal 32 karakter rahasia.
-   - `REDIS_URL`: Endpoint Redis.
+   * File `.env` berisi key sensitif (seperti kredensial database Supabase dan token Midtrans) sehingga tidak di-commit ke dalam Git.
+   * File `.env` lengkap yang valid telah dilampirkan pada form pengumpulan tugas di LMS (dalam bentuk teks). Silakan salin isi konfigurasi tersebut dan buat file baru bernama `.env` di root direktori project ini.
+   * Secara default, port aplikasi local diatur pada port `8080` (diakses melalui `http://localhost:8080`).
 3. **Run Application**:
    ```bash
    go run cmd/api/main.go
@@ -113,12 +118,6 @@ swag init -g cmd/api/main.go
 ```
 Akses di: `http://localhost:8080/swagger/index.html`
 
-### Docker Support
-Gunakan Docker Compose untuk mensimulasikan env production (Nginx + API):
-```bash
-docker compose -f deployments/docker-compose.yml up --build
-```
-
 ---
 
 ## ✅ Definition of Done (DoD)
@@ -133,5 +132,14 @@ Sebelum submit Pull Request (PR), pastikan:
 ---
 
 ## 👥 Pengembang & Git Flow
-Pastikan kamu bekerja pada branch yang benar untuk fitur kamu:
-- **dev-dhegas**, **dev-dekgus**, **dev-renata** (Lakukan PR ke branch utama setelah review).
+
+Repository ini menggunakan beberapa branch dengan fungsi masing-masing untuk menjaga kerapian dan integritas kode:
+
+* **Branch Fitur (Developer Pengembang)**:
+  * `dev-dekgus`, `dev-renata`, `dev-dhegas`: Merupakan branch kerja mandiri bagi masing-masing pengembang untuk membangun dan menyempurnakan fitur secara paralel.
+* **Branch Pengujian (Testing)**:
+  * `dev`: Digunakan untuk menggabungkan seluruh fitur baru dan melakukan pengujian fungsional (testing) sebelum siap digabungkan ke kode stabil.
+* **Branch Utama (Stable/Fix)**:
+  * `main`: Menyimpan kode final yang telah teruji, stabil, bersih dari bug, dan siap untuk dirilis secara resmi.
+* **Branch Deployment (Hosting)**:
+  * `production`: Merupakan branch produksi yang dihubungkan langsung ke **Railway** untuk hosting aplikasi secara online.

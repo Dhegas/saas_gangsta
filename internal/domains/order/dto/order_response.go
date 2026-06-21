@@ -20,7 +20,8 @@ type OrderResponse struct {
 	Status         string              `json:"status"`
 	TotalPrice     float64             `json:"total_price"`
 	QueueNumber    string              `json:"queue_number"`
-	PaymentMethod  string              `json:"payment_method"`
+	PaymentMethod  *string             `json:"payment_method,omitempty"`
+	PaymentChannel *string             `json:"payment_channel,omitempty"`
 	CreatedAt      time.Time           `json:"created_at"`
 	UpdatedAt      time.Time           `json:"updated_at"`
 	Items          []OrderItemResponse `json:"items,omitempty"`

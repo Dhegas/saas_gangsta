@@ -24,6 +24,8 @@ func (r *paymentRepository) FindOrderByMidtransOrderID(ctx context.Context, midt
 		TenantID              string     `gorm:"column:tenant_id"`
 		TotalPrice            float64    `gorm:"column:total_price"`
 		PaymentStatus         string     `gorm:"column:payment_status"`
+		PaymentMethod         *string    `gorm:"column:payment_method"`
+		PaymentChannel        *string    `gorm:"column:payment_channel"`
 		MidtransOrderID       *string    `gorm:"column:midtrans_order_id"`
 		MidtransTransactionID *string    `gorm:"column:midtrans_transaction_id"`
 		PaidAt                *time.Time `gorm:"column:paid_at"`
@@ -31,7 +33,7 @@ func (r *paymentRepository) FindOrderByMidtransOrderID(ctx context.Context, midt
 
 	err := r.db.WithContext(ctx).
 		Table("orders").
-		Select("id, tenant_id, total_price, payment_status, midtrans_order_id, midtrans_transaction_id, paid_at").
+		Select("id, tenant_id, total_price, payment_status, payment_method, payment_channel, midtrans_order_id, midtrans_transaction_id, paid_at").
 		Where("midtrans_order_id = ? AND deleted_at IS NULL", midtransOrderID).
 		First(&order).Error
 	if err != nil {
@@ -43,6 +45,8 @@ func (r *paymentRepository) FindOrderByMidtransOrderID(ctx context.Context, midt
 		TenantID:              order.TenantID,
 		TotalPrice:            order.TotalPrice,
 		PaymentStatus:         order.PaymentStatus,
+		PaymentMethod:         order.PaymentMethod,
+		PaymentChannel:        order.PaymentChannel,
 		MidtransOrderID:       order.MidtransOrderID,
 		MidtransTransactionID: order.MidtransTransactionID,
 		PaidAt:                order.PaidAt,
@@ -56,6 +60,8 @@ func (r *paymentRepository) FindOrderByID(ctx context.Context, orderID string) (
 		TenantID              string     `gorm:"column:tenant_id"`
 		TotalPrice            float64    `gorm:"column:total_price"`
 		PaymentStatus         string     `gorm:"column:payment_status"`
+		PaymentMethod         *string    `gorm:"column:payment_method"`
+		PaymentChannel        *string    `gorm:"column:payment_channel"`
 		MidtransOrderID       *string    `gorm:"column:midtrans_order_id"`
 		MidtransTransactionID *string    `gorm:"column:midtrans_transaction_id"`
 		PaidAt                *time.Time `gorm:"column:paid_at"`
@@ -63,7 +69,7 @@ func (r *paymentRepository) FindOrderByID(ctx context.Context, orderID string) (
 
 	err := r.db.WithContext(ctx).
 		Table("orders").
-		Select("id, tenant_id, total_price, payment_status, midtrans_order_id, midtrans_transaction_id, paid_at").
+		Select("id, tenant_id, total_price, payment_status, payment_method, payment_channel, midtrans_order_id, midtrans_transaction_id, paid_at").
 		Where("id = ? AND deleted_at IS NULL", orderID).
 		First(&order).Error
 	if err != nil {
@@ -75,6 +81,8 @@ func (r *paymentRepository) FindOrderByID(ctx context.Context, orderID string) (
 		TenantID:              order.TenantID,
 		TotalPrice:            order.TotalPrice,
 		PaymentStatus:         order.PaymentStatus,
+		PaymentMethod:         order.PaymentMethod,
+		PaymentChannel:        order.PaymentChannel,
 		MidtransOrderID:       order.MidtransOrderID,
 		MidtransTransactionID: order.MidtransTransactionID,
 		PaidAt:                order.PaidAt,
@@ -140,10 +148,12 @@ func (r *paymentRepository) ProcessWebhookPayment(ctx context.Context, req payme
 			Table("orders").
 			Where("id = ? AND payment_status = 'UNPAID'", req.OrderID).
 			Updates(map[string]interface{}{
-				"payment_status":           "PAID",
-				"midtrans_transaction_id":  req.MidtransTransactionID,
-				"paid_at":                  &now,
-				"updated_at":               now,
+				"payment_status":          "PAID",
+				"payment_method":          req.PaymentMethod,
+				"payment_channel":         req.PaymentChannel,
+				"midtrans_transaction_id": req.MidtransTransactionID,
+				"paid_at":                 &now,
+				"updated_at":              now,
 			})
 		if txResult.Error != nil {
 			return txResult.Error
@@ -245,6 +255,8 @@ func (r *paymentRepository) GetOrderWithLockByID(ctx context.Context, orderID st
 		TenantID              string     `gorm:"column:tenant_id"`
 		TotalPrice            float64    `gorm:"column:total_price"`
 		PaymentStatus         string     `gorm:"column:payment_status"`
+		PaymentMethod         *string    `gorm:"column:payment_method"`
+		PaymentChannel        *string    `gorm:"column:payment_channel"`
 		MidtransOrderID       *string    `gorm:"column:midtrans_order_id"`
 		MidtransTransactionID *string    `gorm:"column:midtrans_transaction_id"`
 		PaidAt                *time.Time `gorm:"column:paid_at"`
@@ -253,7 +265,7 @@ func (r *paymentRepository) GetOrderWithLockByID(ctx context.Context, orderID st
 	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		return tx.Table("orders").
 			Clauses(clause.Locking{Strength: "UPDATE"}).
-			Select("id, tenant_id, total_price, payment_status, midtrans_order_id, midtrans_transaction_id, paid_at").
+			Select("id, tenant_id, total_price, payment_status, payment_method, payment_channel, midtrans_order_id, midtrans_transaction_id, paid_at").
 			Where("id = ? AND deleted_at IS NULL", orderID).
 			First(&order).Error
 	})
@@ -266,6 +278,8 @@ func (r *paymentRepository) GetOrderWithLockByID(ctx context.Context, orderID st
 		TenantID:              order.TenantID,
 		TotalPrice:            order.TotalPrice,
 		PaymentStatus:         order.PaymentStatus,
+		PaymentMethod:         order.PaymentMethod,
+		PaymentChannel:        order.PaymentChannel,
 		MidtransOrderID:       order.MidtransOrderID,
 		MidtransTransactionID: order.MidtransTransactionID,
 		PaidAt:                order.PaidAt,
@@ -279,6 +293,8 @@ func (r *paymentRepository) GetOrderWithLockByMidtransOrderID(ctx context.Contex
 		TenantID              string     `gorm:"column:tenant_id"`
 		TotalPrice            float64    `gorm:"column:total_price"`
 		PaymentStatus         string     `gorm:"column:payment_status"`
+		PaymentMethod         *string    `gorm:"column:payment_method"`
+		PaymentChannel        *string    `gorm:"column:payment_channel"`
 		MidtransOrderID       *string    `gorm:"column:midtrans_order_id"`
 		MidtransTransactionID *string    `gorm:"column:midtrans_transaction_id"`
 		PaidAt                *time.Time `gorm:"column:paid_at"`
@@ -287,7 +303,7 @@ func (r *paymentRepository) GetOrderWithLockByMidtransOrderID(ctx context.Contex
 	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		return tx.Table("orders").
 			Clauses(clause.Locking{Strength: "UPDATE"}).
-			Select("id, tenant_id, total_price, payment_status, midtrans_order_id, midtrans_transaction_id, paid_at").
+			Select("id, tenant_id, total_price, payment_status, payment_method, payment_channel, midtrans_order_id, midtrans_transaction_id, paid_at").
 			Where("midtrans_order_id = ? AND deleted_at IS NULL", midtransOrderID).
 			First(&order).Error
 	})
@@ -300,6 +316,8 @@ func (r *paymentRepository) GetOrderWithLockByMidtransOrderID(ctx context.Contex
 		TenantID:              order.TenantID,
 		TotalPrice:            order.TotalPrice,
 		PaymentStatus:         order.PaymentStatus,
+		PaymentMethod:         order.PaymentMethod,
+		PaymentChannel:        order.PaymentChannel,
 		MidtransOrderID:       order.MidtransOrderID,
 		MidtransTransactionID: order.MidtransTransactionID,
 		PaidAt:                order.PaidAt,

@@ -50,6 +50,11 @@ func NewPaymentSnapUsecase(repo paymentdomain.PaymentRepository, cfg *config.Con
 //  5. Hitung fee transaksi (jika diaktifkan)
 //  6. Proses pembayaran dalam DB transaction (atomic)
 func (u *paymentWebhookUsecase) HandleMidtransWebhook(ctx context.Context, payload dto.MidtransWebhookPayload) error {
+	// Normalize order ID if midtrans_order_id is passed instead of order_id
+	if payload.OrderID == "" && payload.MidtransOrderID != "" {
+		payload.OrderID = payload.MidtransOrderID
+	}
+
 	// Step 1: Validasi signature Midtrans
 	// Format: SHA512(order_id + status_code + gross_amount + ServerKey)
 	if !u.validateSignature(payload) {
@@ -114,6 +119,8 @@ func (u *paymentWebhookUsecase) HandleMidtransWebhook(ctx context.Context, paylo
 		OrderID:               order.ID,
 		TenantID:              order.TenantID,
 		MidtransTransactionID: payload.TransactionID,
+		PaymentMethod:         mapMidtransPaymentTypeToMethod(payload.PaymentType),
+		PaymentChannel:        determinePaymentChannel(payload.PaymentType, payload.VaNumbers, payload.Store, payload.PermataVaNumber),
 		GrossAmount:           grossAmount,
 		FeeAmount:             feeAmount,
 		NetAmount:             netAmount,
@@ -212,6 +219,8 @@ func (u *paymentWebhookUsecase) SyncPaymentStatus(ctx context.Context, orderID s
 		OrderID:               order.ID,
 		TenantID:              order.TenantID,
 		MidtransTransactionID: resp.TransactionID,
+		PaymentMethod:         mapMidtransPaymentTypeToMethod(resp.PaymentType),
+		PaymentChannel:        determinePaymentChannelFromResponse(resp),
 		GrossAmount:           grossAmount,
 		FeeAmount:             feeAmount,
 		NetAmount:             netAmount,
@@ -271,6 +280,11 @@ func (u *paymentSnapUsecase) CreateSnapTransaction(ctx context.Context, userID, 
 		return nil, apperrors.New("ORDER_ALREADY_PAID", "Order sudah dibayar atau tidak valid", http.StatusUnprocessableEntity)
 	}
 
+	// Metode CASH tidak diproses via Midtrans
+	if order.PaymentMethod != nil && *order.PaymentMethod == "CASH" {
+		return nil, apperrors.New("CASH_PAYMENT_NOT_SUPPORTED_IN_SNAP", "Metode pembayaran CASH tidak memerlukan Snap token", http.StatusBadRequest)
+	}
+
 	// 3. Gunakan midtrans_order_id yang sudah ada, atau gunakan order ID
 	midtransOrderID := "ORDER-" + order.ID
 	if order.MidtransOrderID != nil && *order.MidtransOrderID != "" {
@@ -313,9 +327,100 @@ func (u *paymentSnapUsecase) CreateSnapTransaction(ctx context.Context, userID, 
 	}
 
 	return &dto.SnapResponse{
-		Token:       snapResp.Token,
-		RedirectURL: snapResp.RedirectURL,
-		OrderID:     midtransOrderID,
-		GrossAmount: order.TotalPrice,
+		Token:           snapResp.Token,
+		RedirectURL:     snapResp.RedirectURL,
+		MidtransOrderID: midtransOrderID,
+		GrossAmount:     order.TotalPrice,
 	}, nil
+}
+
+func mapMidtransPaymentTypeToMethod(paymentType string) string {
+	switch paymentType {
+	case "gopay", "shopeepay", "ovo", "dana":
+		return "E_WALLET"
+	case "qris":
+		return "QRIS"
+	case "bank_transfer", "echannel", "permata_va":
+		return "TRANSFER_BANK"
+	case "credit_card", "akulaku", "kredivo":
+		return "KARTU_KREDIT"
+	case "cstore":
+		return "MINIMARKET"
+	default:
+		return "TRANSFER_BANK"
+	}
+}
+
+// menerima webhook dari Midtrans. Fungsi ini menentukan channel pembayaran (BCA, BRI, GoPay, dll.) berdasarkan data yang dikirim langsung oleh Midtrans ke server setelah terjadi perubahan status transaksi.
+func determinePaymentChannel(paymentType string, vaNumbers []dto.VaNumber, store string, permataVaNumber string) string {
+	if paymentType == "bank_transfer" {
+		if len(vaNumbers) > 0 {
+			return strings.ToUpper(vaNumbers[0].Bank)
+		}
+		if permataVaNumber != "" {
+			return "PERMATA"
+		}
+	}
+	if paymentType == "echannel" {
+		return "MANDIRI"
+	}
+	if paymentType == "permata_va" {
+		return "PERMATA"
+	}
+	if paymentType == "cstore" {
+		if store != "" {
+			return strings.ToUpper(store)
+		}
+		return "MINIMARKET"
+	}
+	if paymentType == "credit_card" {
+		return "CREDIT_CARD"
+	}
+	if paymentType == "akulaku" {
+		return "AKULAKUPAYLATER"
+	}
+	if paymentType == "kredivo" {
+		return "KREDIVO"
+	}
+	if paymentType == "" {
+		return "UNKNOWN"
+	}
+	return strings.ToUpper(paymentType)
+}
+
+// melakukan pengecekan status transaksi ke Midtrans secara manual (sync/polling). Fungsi ini menentukan channel pembayaran berdasarkan data response yang dikembalikan oleh API Midtrans.
+func determinePaymentChannelFromResponse(resp *coreapi.TransactionStatusResponse) string {
+	if resp.PaymentType == "bank_transfer" {
+		if len(resp.VaNumbers) > 0 {
+			return strings.ToUpper(resp.VaNumbers[0].Bank)
+		}
+		if resp.PermataVaNumber != "" {
+			return "PERMATA"
+		}
+	}
+	if resp.PaymentType == "echannel" {
+		return "MANDIRI"
+	}
+	if resp.PaymentType == "permata_va" {
+		return "PERMATA"
+	}
+	if resp.PaymentType == "cstore" {
+		if resp.Store != "" {
+			return strings.ToUpper(resp.Store)
+		}
+		return "MINIMARKET"
+	}
+	if resp.PaymentType == "credit_card" {
+		return "CREDIT_CARD"
+	}
+	if resp.PaymentType == "akulaku" {
+		return "AKULAKUPAYLATER"
+	}
+	if resp.PaymentType == "kredivo" {
+		return "KREDIVO"
+	}
+	if resp.PaymentType == "" {
+		return "UNKNOWN"
+	}
+	return strings.ToUpper(resp.PaymentType)
 }

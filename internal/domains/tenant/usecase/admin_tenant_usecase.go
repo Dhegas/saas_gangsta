@@ -3,9 +3,12 @@ package usecase
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
+	"github.com/dhegas/saas_gangsta/internal/common/cache"
 	apperrors "github.com/dhegas/saas_gangsta/internal/common/errors"
 	"github.com/dhegas/saas_gangsta/internal/domains/tenant/domain"
 	"github.com/dhegas/saas_gangsta/internal/domains/tenant/dto"
@@ -13,11 +16,15 @@ import (
 )
 
 type adminTenantUsecase struct {
-	repo domain.AdminTenantRepository
+	repo  domain.AdminTenantRepository
+	cache *cache.LocalCache
 }
 
-func NewAdminTenantUsecase(repo domain.AdminTenantRepository) domain.AdminTenantUsecase {
-	return &adminTenantUsecase{repo: repo}
+func NewAdminTenantUsecase(repo domain.AdminTenantRepository, cache *cache.LocalCache) domain.AdminTenantUsecase {
+	return &adminTenantUsecase{
+		repo:  repo,
+		cache: cache,
+	}
 }
 
 func (u *adminTenantUsecase) CreateAdminTenant(ctx context.Context, req dto.CreateAdminTenantRequest) (*dto.CreateAdminTenantResponse, error) {
@@ -46,6 +53,10 @@ func (u *adminTenantUsecase) CreateAdminTenant(ctx context.Context, req dto.Crea
 		default:
 			return nil, apperrors.New("INTERNAL_ERROR", "Gagal membuat tenant oleh admin", http.StatusInternalServerError)
 		}
+	}
+
+	if u.cache != nil {
+		u.cache.DeleteByPrefix("admin:tenants:")
 	}
 
 	return &dto.CreateAdminTenantResponse{
@@ -83,6 +94,15 @@ func (u *adminTenantUsecase) ListAllTenants(ctx context.Context, req dto.ListAll
 	limit := req.Limit
 	if limit <= 0 {
 		limit = 10 // default as requested
+	}
+
+	cacheKey := fmt.Sprintf("admin:tenants:page:%d:limit:%d", page, limit)
+	if u.cache != nil {
+		if cached, found := u.cache.Get(cacheKey); found {
+			if cachedResponse, ok := cached.(*dto.ListAllTenantsResponse); ok {
+				return cachedResponse, nil
+			}
+		}
 	}
 
 	offset := (page - 1) * limit
@@ -123,7 +143,7 @@ func (u *adminTenantUsecase) ListAllTenants(ctx context.Context, req dto.ListAll
 		totalPages = int((totalItems + int64(limit) - 1) / int64(limit))
 	}
 
-	return &dto.ListAllTenantsResponse{
+	res := &dto.ListAllTenantsResponse{
 		Tenants: items,
 		Pagination: dto.PaginationResponse{
 			Page:       page,
@@ -131,7 +151,13 @@ func (u *adminTenantUsecase) ListAllTenants(ctx context.Context, req dto.ListAll
 			TotalItems: totalItems,
 			TotalPages: totalPages,
 		},
-	}, nil
+	}
+
+	if u.cache != nil {
+		u.cache.Set(cacheKey, res, 15*time.Minute)
+	}
+
+	return res, nil
 }
 
 func (u *adminTenantUsecase) SoftDeleteTenant(ctx context.Context, tenantID string) error {
@@ -146,6 +172,10 @@ func (u *adminTenantUsecase) SoftDeleteTenant(ctx context.Context, tenantID stri
 			return apperrors.New("NOT_FOUND", "Tenant ID tidak ditemukan", http.StatusNotFound)
 		}
 		return apperrors.New("INTERNAL_ERROR", "Gagal menghapus tenant oleh admin", http.StatusInternalServerError)
+	}
+
+	if u.cache != nil {
+		u.cache.DeleteByPrefix("admin:tenants:")
 	}
 
 	return nil

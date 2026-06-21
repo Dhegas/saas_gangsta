@@ -25,7 +25,7 @@ import (
 
 func RegisterAdminRoutes(api *gin.RouterGroup, cfg *config.Config, db *gorm.DB, localCache *cache.LocalCache) {
 	tenantRepo := repository.NewAdminTenantRepository(db)
-	tenantUsecase := usecase.NewAdminTenantUsecase(tenantRepo)
+	tenantUsecase := usecase.NewAdminTenantUsecase(tenantRepo, localCache)
 	tenantHandler := tenanthttp.NewAdminTenantHandler(tenantUsecase)
 
 	userRepo := userrepo.NewUserRepository(db)
